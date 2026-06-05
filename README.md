@@ -12,6 +12,7 @@ No install needed — system Python 3.9+ only (pure stdlib).
 python3 predict.py --match "France vs Senegal"   # any two teams (also what-if / knockout)
 python3 predict.py --group I                      # a whole group
 python3 predict.py --matchday 1                   # every matchday-1 game
+python3 predict.py --matchday 1 --loop           # ranked confidence + value + Claude queue
 python3 predict.py --all --brief                  # all 72 group games + Claude handoff
 python3 predict.py --list                         # show the groups
 ```
@@ -52,6 +53,19 @@ python3 predict.py --match "France vs Senegal" --odds "1.40,4.50,7.50"
 python3 track.py add --match "France vs Senegal" --sel France --odds 2.70 --stake 1
 python3 track.py close --id 1 --closing 2.45     # CLV +10.2%
 python3 track.py report
+
+# loop value flags for a full matchday with manual prices
+python3 predict.py --matchday 1 --loop --odds-file data/odds_md1.json
+```
+
+`--odds-file` expects JSON mapping either fixture IDs or match labels to decimal
+1X2 triples:
+
+```json
+{
+  "G01": [1.39, 4.50, 8.00],
+  "Mexico vs South Africa": [1.39, 4.50, 8.00]
+}
 ```
 
 - **`engine/strategies.py`** surfaces documented historical leans: group-stage
