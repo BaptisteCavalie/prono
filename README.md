@@ -13,6 +13,7 @@ python3 predict.py --match "France vs Senegal"   # any two teams (also what-if /
 python3 predict.py --group I                      # a whole group
 python3 predict.py --matchday 1                   # every matchday-1 game
 python3 predict.py --matchday 1 --loop           # ranked confidence + value + Claude queue
+python3 predict.py --date 2026-06-11 --loop      # date-based loop once fixture dates exist
 python3 predict.py --all --brief                  # all 72 group games + Claude handoff
 python3 predict.py --list                         # show the groups
 ```
@@ -56,6 +57,9 @@ python3 track.py report
 
 # loop value flags for a full matchday with manual prices
 python3 predict.py --matchday 1 --loop --odds-file data/odds_md1.json
+
+# keep only stronger picks and a tighter Claude queue
+python3 predict.py --matchday 1 --loop --min-pick-prob 0.55 --review-top 8
 ```
 
 `--odds-file` expects JSON mapping either fixture IDs or match labels to decimal

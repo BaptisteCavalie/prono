@@ -11,6 +11,7 @@ Examples:
 import argparse
 import json
 import sys
+from datetime import datetime
 
 from engine import data, model, report, strategies
 from engine import odds as oddsmod
@@ -77,7 +78,11 @@ def _find_match_odds(match, board):
     return board.get(str(match.get("id", "")).upper()) or board.get(_match_key(match))
 
 
-def _loop(ratings, fixtures, odds_board):
+def _parse_date(s):
+    return datetime.strptime(s, "%Y-%m-%d").date()
+
+
+def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
     rows = []
     for m in fixtures:
         home, away = m["home"], m["away"]
@@ -127,13 +132,19 @@ def _loop(ratings, fixtures, odds_board):
         })
 
     ranked = sorted(rows, key=lambda r: (-r["pick_prob"], -r["out"]["top_scores"][0][1]))
+    if min_pick_prob > 0.0:
+        ranked = [r for r in ranked if r["pick_prob"] >= min_pick_prob]
     review_queue = [r for r in sorted(rows, key=lambda r: (-r["review_priority"], r["pick_prob"]))
                     if r["review_reasons"]]
+    if review_top and review_top > 0:
+        review_queue = review_queue[:review_top]
 
     md = fixtures[0].get("matchday") if fixtures else "?"
     print(f"MATCHDAY LOOP · MD{md}")
     print("=" * 64)
     print("Ranked by confidence")
+    if not ranked:
+        print(" - no matches after filtering")
     for idx, r in enumerate(ranked, start=1):
         (i, j), sp = r["out"]["top_scores"][0]
         est_tag = "*" if r["est"] else ""
@@ -179,15 +190,20 @@ def main(argv=None) -> int:
     p.add_argument("--match", help='two teams, e.g. "France vs Senegal"')
     p.add_argument("--group", help="group letter A-L")
     p.add_argument("--matchday", type=int, choices=[1, 2, 3])
+    p.add_argument("--date", help="fixture date (YYYY-MM-DD) for date-based loop selection")
     p.add_argument("--all", action="store_true", help="all group fixtures")
     p.add_argument("--brief", action="store_true", help="add Claude handoff brief")
     p.add_argument("--loop", action="store_true",
                    help="matchday loop: ranked confidence + value flags + Claude queue")
     p.add_argument("--simple", action="store_true",
-                   help="terse output: exact score + bet, each with confidence %")
+                   help="terse output: exact score + bet, each with confidence pct")
     p.add_argument("--odds", help='market 1X2 decimal odds for --match, e.g. "1.40,4.50,7.50"')
     p.add_argument("--odds-file",
                    help="JSON mapping fixture id (e.g. G01) or 'Home vs Away' to [home,draw,away]")
+    p.add_argument("--review-top", type=int, default=0,
+                   help="limit Claude review queue to top N items (0 = all)")
+    p.add_argument("--min-pick-prob", type=float, default=0.0,
+                   help="hide ranked picks below this probability (0.0-1.0)")
     p.add_argument("--list", action="store_true", help="list groups")
     args = p.parse_args(argv)
 
@@ -220,26 +236,48 @@ def main(argv=None) -> int:
         _emit(ratings, home, away, {"venue": "neutral"}, args.brief, odds, args.simple)
         return 0
 
-    if not (args.group or args.matchday or args.all):
+    if not (args.group or args.matchday or args.date or args.all):
         p.print_help()
         return 0
 
+    if args.min_pick_prob < 0 or args.min_pick_prob > 1:
+        print("--min-pick-prob must be between 0.0 and 1.0", file=sys.stderr)
+        return 2
+    if args.review_top < 0:
+        print("--review-top must be >= 0", file=sys.stderr)
+        return 2
+
     sel = data.load_fixtures()
+    if args.date:
+        try:
+            target_date = _parse_date(args.date)
+        except ValueError:
+            print("--date must be YYYY-MM-DD", file=sys.stderr)
+            return 2
+        sel = [m for m in sel if m.get("date") and _parse_date(m["date"]) == target_date]
+        if not sel:
+            print(f"No fixtures found for --date {args.date}", file=sys.stderr)
+            return 2
     if args.group:
         sel = [m for m in sel if m["group"].upper() == args.group.upper()]
     if args.matchday:
         sel = [m for m in sel if m["matchday"] == args.matchday]
     if args.loop:
-        if not args.matchday:
-            print("--loop currently requires --matchday (real calendar dates not loaded yet)",
-                  file=sys.stderr)
+        if not (args.matchday or args.date):
+            print("--loop requires --matchday or --date YYYY-MM-DD", file=sys.stderr)
             return 2
         try:
             odds_board = _load_odds_board(args.odds_file)
         except (OSError, json.JSONDecodeError, ValueError) as e:
             print(f"Unable to load --odds-file: {e}", file=sys.stderr)
             return 2
-        _loop(ratings, sel, odds_board)
+        _loop(
+            ratings,
+            sel,
+            odds_board,
+            min_pick_prob=args.min_pick_prob,
+            review_top=args.review_top,
+        )
         return 0
     for m in sel:
         _emit(ratings, m["home"], m["away"], m, args.brief, simple=args.simple)
