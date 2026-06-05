@@ -1,0 +1,15 @@
+{
+  "_comment": "WC 2026 final draw (5 Dec 2025). Order = draw position 1-4 (pos 1 = pot-1/host seed). Source: NBC Sports / Wikipedia.",
+  "A": ["Mexico", "South Africa", "South Korea", "Czechia"],
+  "B": ["Canada", "Bosnia-Herzegovina", "Qatar", "Switzerland"],
+  "C": ["Brazil", "Morocco", "Haiti", "Scotland"],
+  "D": ["United States", "Paraguay", "Australia", "Türkiye"],
+  "E": ["Germany", "Curaçao", "Ivory Coast", "Ecuador"],
+  "F": ["Netherlands", "Japan", "Sweden", "Tunisia"],
+  "G": ["Belgium", "Egypt", "Iran", "New Zealand"],
+  "H": ["Spain", "Cape Verde", "Saudi Arabia", "Uruguay"],
+  "I": ["France", "Senegal", "Iraq", "Norway"],
+  "J": ["Argentina", "Algeria", "Austria", "Jordan"],
+  "K": ["Portugal", "DR Congo", "Uzbekistan", "Colombia"],
+  "L": ["England", "Croatia", "Ghana", "Panama"]
+}
