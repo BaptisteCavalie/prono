@@ -12,6 +12,7 @@ No install needed — system Python 3.9+ only (pure stdlib).
 python3 predict.py --match "France vs Senegal"   # any two teams (also what-if / knockout)
 python3 predict.py --group I                      # a whole group
 python3 predict.py --matchday 1                   # every matchday-1 game
+python3 predict.py --matchday 1 --sheet          # one-page daily card (score + bet with %)
 python3 predict.py --matchday 1 --loop           # ranked confidence + value + Claude queue
 python3 predict.py --date 2026-06-11 --loop      # date-based loop once fixture dates exist
 python3 predict.py --all --brief                  # all 72 group games + Claude handoff
@@ -60,7 +61,22 @@ python3 predict.py --matchday 1 --loop --odds-file data/odds_md1.json
 
 # keep only stronger picks and a tighter Claude queue
 python3 predict.py --matchday 1 --loop --min-pick-prob 0.55 --review-top 8
+
+# daily one-page card by calendar date (after fixture dates are filled)
+python3 predict.py --date 2026-06-11 --sheet
 ```
+
+### Daily update workflow
+1. After games finish, write final scores into `data/fixtures.json`:
+  - `actual_home`
+  - `actual_away`
+2. Run the daily card:
+  - `python3 predict.py --matchday N --sheet`
+  - or `python3 predict.py --date YYYY-MM-DD --sheet`
+
+By default, `predict.py` automatically applies all completed fixture results to
+ratings before generating new predictions. Use `--no-auto-update` if you need
+the frozen baseline ratings for comparison/backtesting.
 
 `--odds-file` expects JSON mapping either fixture IDs or match labels to decimal
 1X2 triples:

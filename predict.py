@@ -15,6 +15,7 @@ from datetime import datetime
 
 from engine import data, model, report, strategies
 from engine import odds as oddsmod
+from engine import updater
 
 
 def _split_match(s: str):
@@ -79,16 +80,35 @@ def _find_match_odds(match, board):
 
 
 def _parse_date(s):
-    return datetime.strptime(s, "%Y-%m-%d").date()
+    return datetime.strptime(s[:10], "%Y-%m-%d").date()
+
+
+def _analyse_match(ratings, match):
+    home, away = match["home"], match["away"]
+    rh = ratings["teams"][home]
+    ra = ratings["teams"][away]
+    out = model.analyse(rh["rating"], ra["rating"], home_adv=match.get("home_adv", 0.0))
+    return home, away, rh, ra, out
+
+
+def _sheet(ratings, fixtures, odds_board):
+    md = fixtures[0].get("matchday") if fixtures else "?"
+    date_value = fixtures[0].get("date") if fixtures and fixtures[0].get("date") else None
+    tag = date_value[:10] if date_value else f"MD{md}"
+    print(f"DAILY SHEET · {tag}")
+    print("=" * 64)
+    for match in fixtures:
+        home, away, rh, ra, out = _analyse_match(ratings, match)
+        odds = _find_match_odds(match, odds_board)
+        rows = oddsmod.value_1x2(out, odds[0], odds[1], odds[2]) if odds else None
+        print(report.simple(match, home, away, rh, ra, out, rows))
+        print()
 
 
 def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
     rows = []
     for m in fixtures:
-        home, away = m["home"], m["away"]
-        rh = ratings["teams"][home]
-        ra = ratings["teams"][away]
-        out = model.analyse(rh["rating"], ra["rating"], home_adv=m.get("home_adv", 0.0))
+        home, away, rh, ra, out = _analyse_match(ratings, m)
         pick_name, pick_prob = max(
             ((home, out["p_home"]), ("Draw", out["p_draw"]), (away, out["p_away"])),
             key=lambda kv: kv[1],
@@ -193,6 +213,8 @@ def main(argv=None) -> int:
     p.add_argument("--date", help="fixture date (YYYY-MM-DD) for date-based loop selection")
     p.add_argument("--all", action="store_true", help="all group fixtures")
     p.add_argument("--brief", action="store_true", help="add Claude handoff brief")
+    p.add_argument("--sheet", action="store_true",
+                   help="daily one-page card: exact score + bet recommendation for each game")
     p.add_argument("--loop", action="store_true",
                    help="matchday loop: ranked confidence + value flags + Claude queue")
     p.add_argument("--simple", action="store_true",
@@ -204,10 +226,16 @@ def main(argv=None) -> int:
                    help="limit Claude review queue to top N items (0 = all)")
     p.add_argument("--min-pick-prob", type=float, default=0.0,
                    help="hide ranked picks below this probability (0.0-1.0)")
+    p.add_argument("--no-auto-update", action="store_true",
+                   help="disable automatic rating updates from completed fixtures")
     p.add_argument("--list", action="store_true", help="list groups")
     args = p.parse_args(argv)
 
     ratings = data.load_ratings()
+    fixtures = data.load_fixtures()
+    applied_results = 0
+    if not args.no_auto_update:
+        ratings, applied_results = updater.apply_completed_results(ratings, fixtures)
 
     if args.list:
         for g, teams in sorted(data.load_groups().items()):
@@ -247,7 +275,7 @@ def main(argv=None) -> int:
         print("--review-top must be >= 0", file=sys.stderr)
         return 2
 
-    sel = data.load_fixtures()
+    sel = fixtures
     if args.date:
         try:
             target_date = _parse_date(args.date)
@@ -262,6 +290,19 @@ def main(argv=None) -> int:
         sel = [m for m in sel if m["group"].upper() == args.group.upper()]
     if args.matchday:
         sel = [m for m in sel if m["matchday"] == args.matchday]
+    if args.sheet:
+        if not (args.matchday or args.date):
+            print("--sheet requires --matchday or --date YYYY-MM-DD", file=sys.stderr)
+            return 2
+        try:
+            odds_board = _load_odds_board(args.odds_file)
+        except (OSError, json.JSONDecodeError, ValueError) as e:
+            print(f"Unable to load --odds-file: {e}", file=sys.stderr)
+            return 2
+        _sheet(ratings, sel, odds_board)
+        if applied_results:
+            print(f"Applied {applied_results} completed result(s) to ratings before prediction.")
+        return 0
     if args.loop:
         if not (args.matchday or args.date):
             print("--loop requires --matchday or --date YYYY-MM-DD", file=sys.stderr)
@@ -278,6 +319,9 @@ def main(argv=None) -> int:
             min_pick_prob=args.min_pick_prob,
             review_top=args.review_top,
         )
+        if applied_results:
+            print()
+            print(f"Applied {applied_results} completed result(s) to ratings before prediction.")
         return 0
     for m in sel:
         _emit(ratings, m["home"], m["away"], m, args.brief, simple=args.simple)
