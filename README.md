@@ -17,7 +17,28 @@ python3 predict.py --matchday 1 --loop           # ranked confidence + value + C
 python3 predict.py --date 2026-06-11 --loop      # date-based loop once fixture dates exist
 python3 predict.py --all --brief                  # all 72 group games + Claude handoff
 python3 predict.py --list                         # show the groups
+python3 ui.py                                     # local browser UI on http://127.0.0.1:8000
 ```
+
+## UI (local one-page app)
+
+Run:
+
+```bash
+python3 ui.py
+```
+
+Then open `http://127.0.0.1:8000`.
+
+The UI shows one row per game with:
+- exact score guess + confidence %
+- bet recommendation + confidence %
+
+Controls in the page:
+- `matchday` (1-3)
+- `date` (YYYY-MM-DD, once fixture dates are filled)
+- `odds_file` (optional JSON like `data/odds_md1.json`)
+- `no_auto=1` to disable automatic rating updates from completed results
 
 ## What it outputs (per match)
 - 1X2 probabilities, expected goals (xG) per side
