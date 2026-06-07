@@ -33,12 +33,18 @@ Then open `http://127.0.0.1:8000`.
 The UI shows one row per game with:
 - exact score guess + confidence %
 - bet recommendation + confidence %
+- flags and compact match cards grouped by matchday (better dense overview)
+- only core results visible by default, with important details in an accordion
+- one-click ticket suggestions:
+  - single safe bet (10 EUR)
+  - safe combo bet (1 EUR) with higher combined odds
 
 Controls in the page:
-- `matchday` (1-3)
+- `matchday` (1-3, leave blank to show all matchdays at once)
 - `date` (YYYY-MM-DD, once fixture dates are filled)
 - `odds_file` (optional JSON like `data/odds_md1.json`)
 - `no_auto=1` to disable automatic rating updates from completed results
+- `Generate safe bets (10EUR + 1EUR combo)` button
 
 ## What it outputs (per match)
 - 1X2 probabilities, expected goals (xG) per side
