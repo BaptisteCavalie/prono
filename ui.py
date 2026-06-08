@@ -481,17 +481,19 @@ def _sel_fr(sel: str, home: str, away: str) -> str:
 
 
 def _paris_odds_status() -> str:
-    """One-line note on where the odds come from (auto-fetch status)."""
-    if odds_fetch.has_key():
-        state = odds_fetch.read_state()
-        if state.get("fetched_at"):
-            return (f"<div class='legend'>Cotes auto via The Odds API — "
-                    f"{state.get('matches', 0)} match(s), maj {html.escape(str(state['fetched_at']))}.</div>")
-        return ("<div class='legend'>Cotes auto via The Odds API (cle detectee). "
-                "La liste se remplit au prochain rafraichissement / quand des cotes WC sont publiees.</div>")
-    return ("<div class='legend'>Cotes auto <strong>non configurees</strong>: ajoutez une cle gratuite "
-            "The Odds API (env <code>ODDS_API_KEY</code> ou fichier <code>data/odds_api_key.txt</code>) "
-            "pour activer la recuperation automatique des cotes. Sans cotes, aucune value n'est calculable.</div>")
+    """One-line note on where the odds come from + remaining API credits."""
+    if not odds_fetch.has_key():
+        return ("<div class='legend'>Cotes auto <strong>non configurees</strong>: ajoutez une cle gratuite "
+                "The Odds API (env <code>ODDS_API_KEY</code> / <code>odds_api_key</code> ou fichier "
+                "<code>data/odds_api_key.txt</code>). Sans cotes, aucune value n'est calculable.</div>")
+    state = odds_fetch.read_state()
+    rem = state.get("remaining_credits")
+    credits = f" · credits restants: {rem}" if isinstance(rem, int) else ""
+    if state.get("fetched_at"):
+        return (f"<div class='legend'>Cotes auto via The Odds API — {state.get('matches', 0)} match(s), "
+                f"maj {html.escape(str(state['fetched_at']))}{html.escape(credits)}.</div>")
+    return ("<div class='legend'>Cotes auto via The Odds API (cle detectee). La liste se remplit au "
+            f"prochain chargement de cette page / quand des cotes WC sont publiees{html.escape(credits)}.</div>")
 
 
 def _health_level_ui(level: str) -> Dict[str, str]:
@@ -1074,8 +1076,6 @@ class Handler(BaseHTTPRequestHandler):
         tab = (params.get("tab", ["futurs"])[0] or "futurs").strip().lower()
         if action == "reco":          # back-compat: old reco button -> Paris page
             tab = "paris"
-        if tab == "paris" and not odds_file:   # auto-source odds, no manual import
-            odds_file = _default_odds_file()
         no_auto = (params.get("no_auto", [""])[0] or "") in ("1", "on", "true")
         try:
             bankroll = float((params.get("bankroll", ["50"])[0] or "50").strip())
@@ -1111,7 +1111,12 @@ class Handler(BaseHTTPRequestHandler):
                     error = f"Aucun match trouve pour le {date_value}. Verifiez le format YYYY-MM-DD ou choisissez une autre date."
                 else:
                     error = f"Aucun match trouve pour la journee {matchday}. Essayez une autre journee ou retirez le filtre."
-            odds_board = _load_odds_board(odds_file)
+            if odds_file:                                  # manual override (advanced)
+                odds_board = _load_odds_board(odds_file)
+            elif tab == "paris":                           # betting page: auto-fetch (cooldown + credit-capped)
+                odds_board = odds_fetch.ensure_board(ratings, fixtures)
+            else:                                          # other tabs: read cache only, never spend credits
+                odds_board = odds_fetch.load_cached_board()
             rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
             if tab == "paris":
                 if (health or {}).get("level") == "critical":

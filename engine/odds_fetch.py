@@ -1,20 +1,25 @@
-"""Auto-fetch 1X2 (h2h) odds from The Odds API -> data/odds.json.
+"""Auto-fetch 1X2 (h2h) odds from The Odds API -> a cached odds board.
 
-Free tier, but it needs a one-time free API key (https://the-odds-api.com).
-Provide it via the env var ODDS_API_KEY or a file data/odds_api_key.txt. Without
-a key (or offline / out of season), every function degrades cleanly: the fetch is
-skipped and any existing data/odds.json is left untouched, so the Paris page keeps
-working on whatever odds are already there.
+Free tier, one-time free key (https://the-odds-api.com). Key is read from, in
+order: env ODDS_API_KEY, env odds_api_key, file data/odds_api_key.txt.
 
-We take the *median* decimal price across EU bookmakers per outcome (a simple
-consensus that ignores any single book's outlier or extra margin), orient it to
-each fixture's home/away order, and key the board by fixture id (e.g. "G01"),
-exactly the format engine/odds.py + the UI loader expect.
+Credit discipline (the free plan is ~500 requests/month):
+  * Only the Paris betting page calls ensure_board(); other pages read the cache.
+  * ensure_board() re-fetches at most once per COOLDOWN_MIN (default 6h).
+  * The Odds API returns x-requests-remaining; once that drops below MIN_CREDITS
+    we stop fetching and serve the cache. Each fetch costs 1 credit (1 region x
+    1 market); the sports-list lookup is free.
+Each function degrades cleanly: no key / offline / out of season -> return the
+cached board (possibly empty), never raise.
+
+Cache location is writable-aware: data/ locally, the system temp dir on a
+read-only host (Vercel/Lambda), so it works in both places.
 """
 from __future__ import annotations
 
 import json
 import os
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -26,8 +31,6 @@ from engine import data
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
-ODDS_PATH = DATA_DIR / "odds.json"
-STATE_PATH = DATA_DIR / ".odds_state.json"
 KEY_FILE = DATA_DIR / "odds_api_key.txt"
 
 API_BASE = "https://api.the-odds-api.com/v4"
@@ -35,15 +38,26 @@ DEFAULT_SPORT = "soccer_fifa_world_cup"
 REGIONS = "eu"
 MARKETS = "h2h"
 
+COOLDOWN_MIN = 360      # re-fetch at most every 6h
+MIN_CREDITS = 20        # stop fetching once the plan is nearly exhausted
+
 
 def _iso_now() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
+def _to_int(v) -> Optional[int]:
+    try:
+        return int(float(v))
+    except (TypeError, ValueError):
+        return None
+
+
 def get_key() -> str:
-    key = (os.environ.get("ODDS_API_KEY") or "").strip()
-    if key:
-        return key
+    for env in ("ODDS_API_KEY", "odds_api_key"):
+        v = (os.environ.get(env) or "").strip()
+        if v:
+            return v
     if KEY_FILE.is_file():
         try:
             return KEY_FILE.read_text(encoding="utf-8").strip()
@@ -56,23 +70,96 @@ def has_key() -> bool:
     return bool(get_key())
 
 
-def _http_json(url: str, timeout: int = 20):
-    with urlopen(url, timeout=timeout) as r:
-        return json.loads(r.read().decode("utf-8", errors="ignore"))
-
-
-def _discover_sport_keys(key: str) -> List[str]:
-    """World-Cup soccer sport keys currently offered (sports listing is free)."""
-    url = f"{API_BASE}/sports/?" + urlencode({"apiKey": key})
+def _writable_data() -> bool:
+    if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return False
     try:
-        sports = _http_json(url)
-    except Exception:
-        return [DEFAULT_SPORT]
-    keys = [s.get("key") for s in sports
-            if isinstance(s, dict) and isinstance(s.get("key"), str)]
-    wc = [k for k in keys if k.startswith("soccer") and "world_cup" in k
-          and "women" not in k and "qualif" not in k]
-    return wc or [DEFAULT_SPORT]
+        return os.access(DATA_DIR, os.W_OK)
+    except OSError:
+        return False
+
+
+def _cache_paths() -> Tuple[Path, Path]:
+    if _writable_data():
+        return DATA_DIR / "odds.json", DATA_DIR / ".odds_state.json"
+    tmp = Path(tempfile.gettempdir())
+    return tmp / "prono_odds.json", tmp / "prono_odds_state.json"
+
+
+def _http(url: str, timeout: int = 20):
+    resp = urlopen(url, timeout=timeout)
+    payload = json.loads(resp.read().decode("utf-8", errors="ignore"))
+    return payload, resp.headers
+
+
+def _norm_board(raw: Dict) -> Dict[str, List[float]]:
+    board: Dict[str, List[float]] = {}
+    for k, v in (raw or {}).items():
+        if not (isinstance(v, list) and len(v) == 3):
+            continue
+        try:
+            triple = [float(x) for x in v]
+        except (TypeError, ValueError):
+            continue
+        pair = None
+        for sep in (" vs ", " VS ", " v ", " - ", "/"):
+            if sep in k:
+                pair = k.split(sep, 1)
+                break
+        if pair:
+            board[f"{pair[0].strip().lower()}|{pair[1].strip().lower()}"] = triple
+        else:
+            board[k.upper()] = triple
+    return board
+
+
+def _read_board(path: Path) -> Dict[str, List[float]]:
+    if not path.is_file():
+        return {}
+    try:
+        with open(path, encoding="utf-8") as f:
+            return _norm_board(json.load(f))
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _write_json(path: Path, payload) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
+def load_cached_board() -> Dict[str, List[float]]:
+    """Read odds from cache only (no network). Prefers the live cache, then any
+    committed data/odds.json."""
+    cache_path, _ = _cache_paths()
+    for p in (cache_path, DATA_DIR / "odds.json"):
+        board = _read_board(p)
+        if board:
+            return board
+    return {}
+
+
+def read_state() -> Dict:
+    _, state_path = _cache_paths()
+    if not state_path.is_file():
+        return {}
+    try:
+        with open(state_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _fresh(ts: Optional[str], cooldown_min: int) -> bool:
+    if not ts:
+        return False
+    try:
+        dt = datetime.fromisoformat(str(ts).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    age_min = (datetime.now(timezone.utc) - dt).total_seconds() / 60.0
+    return age_min < cooldown_min
 
 
 def _median(values: List[float]) -> Optional[float]:
@@ -85,7 +172,6 @@ def _median(values: List[float]) -> Optional[float]:
 
 
 def _consensus_odds(event: Dict) -> Optional[List[float]]:
-    """Median [home, draw, away] decimal odds for the EVENT's own home/away."""
     home, away = event.get("home_team"), event.get("away_team")
     h, d, a = [], [], []
     for bk in event.get("bookmakers", []):
@@ -106,13 +192,11 @@ def _consensus_odds(event: Dict) -> Optional[List[float]]:
 
 
 def events_to_board(events: List[Dict], ratings_payload: Dict,
-                    fixtures_payload: Dict) -> Tuple[Dict[str, List[float]], int, int]:
+                    fixtures: List[Dict]) -> Tuple[Dict[str, List[float]], int, int]:
     """Pure mapping (no network): API events -> {fixture_id: [home,draw,away]}.
-
-    Returns (board, matched, unmatched). Odds are re-oriented to the fixture's
-    home/away order. Only upcoming fixtures (no final score) are considered."""
+    Odds are re-oriented to each fixture's home/away order. Upcoming fixtures only."""
     fx_index: Dict[frozenset, Dict] = {}
-    for m in fixtures_payload.get("matches", []):
+    for m in fixtures or []:
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
             continue
         home, away = m.get("home"), m.get("away")
@@ -121,7 +205,7 @@ def events_to_board(events: List[Dict], ratings_payload: Dict,
 
     board: Dict[str, List[float]] = {}
     matched = unmatched = 0
-    for ev in events:
+    for ev in events or []:
         odds = _consensus_odds(ev)
         if not odds:
             continue
@@ -134,73 +218,91 @@ def events_to_board(events: List[Dict], ratings_payload: Dict,
         if not m:
             unmatched += 1
             continue
-        # Re-orient: _consensus_odds is in the event's order; align to fixture.
-        if ch.lower() == m["home"].lower():
-            oriented = odds
-        else:
-            oriented = [odds[2], odds[1], odds[0]]
+        oriented = odds if ch.lower() == m["home"].lower() else [odds[2], odds[1], odds[0]]
         fid = str(m.get("id") or "").upper() or f"{m['home']} vs {m['away']}"
         board[fid] = oriented
         matched += 1
     return board, matched, unmatched
 
 
-def fetch_events(key: str) -> Tuple[List[Dict], List[str]]:
-    events: List[Dict] = []
-    errors: List[str] = []
-    for sk in _discover_sport_keys(key):
-        url = f"{API_BASE}/sports/{sk}/odds/?" + urlencode({
-            "apiKey": key, "regions": REGIONS, "markets": MARKETS,
-            "oddsFormat": "decimal",
-        })
-        try:
-            payload = _http_json(url)
-            if isinstance(payload, list):
-                events.extend(payload)
-        except HTTPError as e:
-            errors.append(f"odds_http_{e.code}_{sk}")
-        except Exception as e:  # network / parse — best effort
-            errors.append(f"odds_fetch_{sk}_{type(e).__name__}")
-    return events, errors
-
-
-def build_board(ratings_payload: Dict, fixtures_payload: Dict) -> Tuple[Dict[str, List[float]], Dict]:
-    report = {"fetched": 0, "matched": 0, "unmatched": 0, "skipped": "", "errors": []}
-    key = get_key()
-    if not key:
-        report["skipped"] = "no_api_key"
-        return {}, report
-    events, errors = fetch_events(key)
-    report["fetched"] = len(events)
-    report["errors"].extend(errors)
-    board, matched, unmatched = events_to_board(events, ratings_payload, fixtures_payload)
-    report["matched"] = matched
-    report["unmatched"] = unmatched
-    return board, report
-
-
-def write_board(board: Dict[str, List[float]], report: Optional[Dict] = None) -> None:
-    with open(ODDS_PATH, "w", encoding="utf-8") as f:
-        json.dump(board, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-    state = {
-        "fetched_at": _iso_now(),
-        "source": "The Odds API (median EU bookmakers, h2h)",
-        "matches": len(board),
-    }
-    if report:
-        state["events_seen"] = report.get("fetched", 0)
-        state["unmatched"] = report.get("unmatched", 0)
-    with open(STATE_PATH, "w", encoding="utf-8") as f:
-        json.dump(state, f, ensure_ascii=False, indent=2)
-        f.write("\n")
-
-
-def read_state() -> Dict:
-    if not STATE_PATH.is_file():
-        return {}
+def _discover_sport_key(key: str) -> str:
+    url = f"{API_BASE}/sports/?" + urlencode({"apiKey": key})   # free, no quota
     try:
-        with open(STATE_PATH, encoding="utf-8") as f:
-            return json.load(f)
-    except (OSError, json.JSONDecodeError):
-        return {}
+        sports, _ = _http(url)
+    except Exception:
+        return DEFAULT_SPORT
+    keys = [s.get("key") for s in sports
+            if isinstance(s, dict) and isinstance(s.get("key"), str)]
+    wc = [k for k in keys if k.startswith("soccer") and "world_cup" in k
+          and "women" not in k and "qualif" not in k]
+    return wc[0] if wc else DEFAULT_SPORT
+
+
+def fetch_events(key: str):
+    """Return (events, remaining_credits, used_credits, errors, sport_key)."""
+    errors: List[str] = []
+    sk = _discover_sport_key(key)
+    url = f"{API_BASE}/sports/{sk}/odds/?" + urlencode({
+        "apiKey": key, "regions": REGIONS, "markets": MARKETS, "oddsFormat": "decimal",
+    })
+    try:
+        payload, headers = _http(url)
+        remaining = _to_int(headers.get("x-requests-remaining"))
+        used = _to_int(headers.get("x-requests-used"))
+        events = payload if isinstance(payload, list) else []
+        return events, remaining, used, errors, sk
+    except HTTPError as e:
+        errors.append(f"odds_http_{e.code}")
+        remaining = None
+        try:
+            remaining = _to_int(e.headers.get("x-requests-remaining"))
+        except Exception:
+            pass
+        return [], remaining, None, errors, sk
+    except Exception as e:
+        errors.append(f"odds_fetch_{type(e).__name__}")
+        return [], None, None, errors, sk
+
+
+def ensure_board(ratings_payload: Dict, fixtures: List[Dict],
+                 cooldown_min: int = COOLDOWN_MIN, force: bool = False) -> Dict[str, List[float]]:
+    """Return the odds board, fetching at most once per cooldown and stopping when
+    credits run low. Never raises; falls back to the cache."""
+    cache_path, state_path = _cache_paths()
+    state = read_state()
+    cached = _read_board(cache_path) or load_cached_board()
+
+    if not has_key():
+        return cached
+
+    rem = state.get("remaining_credits")
+    if isinstance(rem, int) and rem < MIN_CREDITS and not force:
+        return cached                                   # protect the budget
+    if not force and _fresh(state.get("attempted_at"), cooldown_min):
+        return cached                                   # cooldown
+
+    events, remaining, used, errors, sk = fetch_events(get_key())
+    board, matched, unmatched = events_to_board(events, ratings_payload, fixtures)
+
+    new_state = {
+        "attempted_at": _iso_now(),
+        "source": "The Odds API (median EU bookmakers, h2h)",
+        "sport_key": sk,
+        "remaining_credits": remaining if remaining is not None else state.get("remaining_credits"),
+        "used_credits": used if used is not None else state.get("used_credits"),
+        "unmatched": unmatched,
+        "errors": errors,
+    }
+    try:
+        if board:                                       # don't wipe good odds with an empty fetch
+            new_state["fetched_at"] = new_state["attempted_at"]
+            new_state["matches"] = len(board)
+            _write_json(cache_path, board)
+            _write_json(state_path, new_state)
+            return board
+        new_state["fetched_at"] = state.get("fetched_at")
+        new_state["matches"] = len(cached)
+        _write_json(state_path, new_state)              # record the attempt -> honour cooldown
+    except OSError:
+        pass                                            # read-only edge: just serve cache
+    return cached

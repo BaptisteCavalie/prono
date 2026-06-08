@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import autonomous, data, data_quality, solidity, team_signals, updater
+from engine import autonomous, data, data_quality, odds_fetch, solidity, team_signals, updater
 import ui
 
 app = Flask(__name__)
@@ -22,8 +22,6 @@ def home():
     tab = (request.args.get("tab", "futurs") or "futurs").strip().lower()
     if action == "reco":          # back-compat: old reco button -> Paris page
         tab = "paris"
-    if tab == "paris" and not odds_file:   # auto-source odds, no manual import
-        odds_file = ui._default_odds_file()
     no_auto = (request.args.get("no_auto", "") or "") in ("1", "on", "true")
     try:
         bankroll = float((request.args.get("bankroll", "50") or "50").strip())
@@ -63,7 +61,12 @@ def home():
             else:
                 error = f"Aucun match trouve pour la journee {matchday}."
 
-        odds_board = ui._load_odds_board(odds_file)
+        if odds_file:                                  # manual override (advanced)
+            odds_board = ui._load_odds_board(odds_file)
+        elif tab == "paris":                           # betting page: auto-fetch (cooldown + credit-capped)
+            odds_board = odds_fetch.ensure_board(ratings, fixtures)
+        else:                                          # other tabs: read cache only, never spend credits
+            odds_board = odds_fetch.load_cached_board()
         rows = ui._analyse_rows(selected, ratings, odds_board, team_status=team_status)
         if tab == "paris":
             if (health or {}).get("level") == "critical":
