@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import autonomous, data, data_quality, odds_fetch, solidity, team_signals, updater
+from engine import autonomous, data, data_quality, live_ratings, odds_fetch, solidity, team_signals, updater
 import ui
 
 app = Flask(__name__)
@@ -46,6 +46,7 @@ def home():
         fixtures = data.load_fixtures()
         base_ratings = data.load_ratings()
         ratings = data.load_ratings()
+        ratings, _ = live_ratings.ensure(ratings)   # keep Elo fresh on read-only hosts (Vercel)
         team_status = data.load_team_status()
         solidity_report = solidity.assess_model_solidity(fixtures, base_ratings)
         if not no_auto:

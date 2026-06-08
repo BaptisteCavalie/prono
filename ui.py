@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, data, data_quality, model, mpp, odds as oddsmod, odds_fetch, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, data, data_quality, live_ratings, model, mpp, odds as oddsmod, odds_fetch, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -1097,6 +1097,7 @@ class Handler(BaseHTTPRequestHandler):
             fixtures = data.load_fixtures()
             base_ratings = data.load_ratings()
             ratings = data.load_ratings()
+            ratings, _ = live_ratings.ensure(ratings)   # keep Elo fresh on read-only hosts (Vercel)
             team_status = data.load_team_status()
             solidity_report = solidity.assess_model_solidity(fixtures, base_ratings)
             if not no_auto:
