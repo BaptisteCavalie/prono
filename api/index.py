@@ -20,7 +20,15 @@ def home():
     odds_file = (request.args.get("odds_file", "") or "").strip()
     action = (request.args.getlist("action")[-1] if request.args.getlist("action") else "refresh").strip().lower()
     tab = (request.args.get("tab", "futurs") or "futurs").strip().lower()
+    if action == "reco":          # back-compat: old reco button -> Paris page
+        tab = "paris"
     no_auto = (request.args.get("no_auto", "") or "") in ("1", "on", "true")
+    try:
+        bankroll = float((request.args.get("bankroll", "50") or "50").strip())
+    except ValueError:
+        bankroll = 50.0
+    if bankroll <= 0:
+        bankroll = 50.0
 
     rows = []
     applied_results = 0
@@ -55,11 +63,11 @@ def home():
 
         odds_board = ui._load_odds_board(odds_file)
         rows = ui._analyse_rows(selected, ratings, odds_board, team_status=team_status)
-        if action == "reco":
+        if tab == "paris":
             if (health or {}).get("level") == "critical":
                 error = "Recommandations indisponibles: la qualite des donnees est critique. Mettez a jour fixtures, ratings et team_status puis reessayez."
             else:
-                recommendations = ui._build_recommendations(rows)
+                recommendations = ui._build_recommendations(rows, bankroll=bankroll)
     except Exception as exc:
         error = str(exc)
 
@@ -77,6 +85,7 @@ def home():
         health,
         solidity_report,
         data_info,
+        bankroll,
     )
     return Response(body, mimetype="text/html; charset=utf-8")
 

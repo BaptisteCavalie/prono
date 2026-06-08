@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, data, data_quality, model, odds as oddsmod, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, data, data_quality, model, odds as oddsmod, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -352,6 +352,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "p_home": round(out["p_home"] * 100),
             "p_draw": round(out["p_draw"] * 100),
             "p_away": round(out["p_away"] * 100),
+            "probs": {"home": out["p_home"], "draw": out["p_draw"], "away": out["p_away"]},
             "nutri": _confidence_nutriscore(pick_prob, est),
             "completed": completed,
             "est": est,
@@ -390,65 +391,69 @@ def _fr_date_label(iso_date: str) -> str:
     return f"{d.day} {months[d.month]} {d.year}"
 
 
-def _build_recommendations(rows: List[Dict]):
+def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
+                           market_weight: Optional[float] = None,
+                           kelly: Optional[float] = None):
+    """Safe betting plan from the analysed rows (see engine/betting.py).
+
+    Only value bets survive (model edge over the de-vigged price, on probabilities
+    shrunk toward the market to tame overconfidence). Stakes are quarter-Kelly,
+    hard-capped, sized off a deliberately small bankroll for a low-stakes crash
+    test. Combos are limited to 2 independent value legs with a tiny ring-fenced
+    stake. Built on the WC2022 backtest (tools/backtest_wc2022*)."""
+    mw = betting.MARKET_WEIGHT if market_weight is None else market_weight
+    kf = betting.KELLY_FRACTION if kelly is None else kelly
+
     future_rows = [r for r in rows if not r.get("completed")]
     if not future_rows:
         return None
 
-    candidates = []
+    evals = []
     for r in future_rows:
-        candidates.append({
-            "match_id": r["id"],
+        odds = r.get("odds")
+        bet = None
+        if odds:
+            out = {"p_home": r["probs"]["home"], "p_draw": r["probs"]["draw"],
+                   "p_away": r["probs"]["away"]}
+            bet = betting.evaluate_single(out, tuple(odds), mw, kf)
+        evals.append({
+            "key": r.get("id", ""),
+            "match_id": r.get("id", ""),
+            "label": f"{r['home']} vs {r['away']}",
             "home": r["home"],
             "away": r["away"],
-            "pick": r["pick_label"],
-            "prob": r["pick_prob"],
-            "odds": r["pick_odds"],
-            "nutri": r["nutri"],
+            "has_odds": bool(odds),
+            "bet": bet,
         })
 
-    singles = [c for c in candidates if c["nutri"] in ("A", "B", "C")]
-    if not singles:
-        singles = candidates[:10]
-    else:
-        singles = singles[:10]
+    singles = betting.plan_singles(evals, bankroll)            # value bets only, capped
+    combos = betting.build_combos(singles, bankroll)           # <=2 legs, tiny stake
 
-    nutri_rank = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
-    combo_pool = sorted(
-        [c for c in candidates if c["nutri"] in ("A", "B", "C")],
-        key=lambda c: (nutri_rank.get(c["nutri"], 9), -c["prob"]),
-    )
-    if len(combo_pool) < 2:
-        combo_pool = sorted(candidates, key=lambda c: -c["prob"])
-
-    combos_a = []
-    target_sizes = [10, 8, 6, 4, 3, 2]
-    for size in target_sizes:
-        if len(combo_pool) < size:
-            continue
-        legs = combo_pool[:size]
-        odds_ok = all(x["odds"] is not None for x in legs)
-        combined_odds = None
-        if odds_ok:
-            combined_odds = 1.0
-            for leg in legs:
-                combined_odds *= leg["odds"]
-        combined_prob = 1.0
-        for leg in legs:
-            combined_prob *= leg["prob"]
-        combos_a.append({
-            "legs": legs,
-            "combined_odds": combined_odds,
-            "combined_prob": combined_prob,
-        })
-        if len(combos_a) >= 3:
-            break
+    n_with_odds = sum(1 for e in evals if e["has_odds"])
+    single_stake = sum(s["stake"] for s in singles)
+    combo_stake = sum(c["stake"] for c in combos)
+    ev_profit = (sum(s["stake"] * s["bet"]["ev"] for s in singles)
+                 + sum(c["stake"] * c["ev"] for c in combos))
 
     return {
         "singles": singles,
-        "combos_a": combos_a,
-        "has_full_odds": any(c["odds"] is not None for c in candidates),
+        "combos": combos,
+        "bankroll": bankroll,
+        "market_weight": mw,
+        "kelly": kf,
+        "n_future": len(future_rows),
+        "n_with_odds": n_with_odds,
+        "single_stake": single_stake,
+        "combo_stake": combo_stake,
+        "total_stake": single_stake + combo_stake,
+        "ev_profit": ev_profit,
+        "has_full_odds": n_with_odds > 0,
     }
+
+
+def _sel_fr(sel: str, home: str, away: str) -> str:
+    return {"home": f"Victoire {home}", "draw": "Match nul",
+            "away": f"Victoire {away}"}.get(sel, sel)
 
 
 def _health_level_ui(level: str) -> Dict[str, str]:
@@ -527,13 +532,13 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                  rows: List[Dict], applied_results: int, action: str,
                  recommendations: Optional[Dict], error: str = "", tab: str = "futurs",
                  health: Optional[Dict] = None, solidity_report: Optional[Dict] = None,
-                 data_info: Optional[Dict] = None) -> bytes:
-    safe_tab = "passes" if tab == "passes" else "futurs"
-    title_tag = "Calendrier"
+                 data_info: Optional[Dict] = None, bankroll: float = 50.0) -> bytes:
+    safe_tab = tab if tab in ("futurs", "passes", "paris") else "futurs"
+    title_tag = "Paris" if safe_tab == "paris" else "Calendrier"
 
     past_rows = [r for r in rows if r.get("completed")]
     future_rows = [r for r in rows if not r.get("completed")]
-    shown_rows = past_rows if safe_tab == "passes" else future_rows
+    shown_rows = [] if safe_tab == "paris" else (past_rows if safe_tab == "passes" else future_rows)
     grouped = _group_rows_by_matchday(shown_rows)
     health_meta = _health_level_ui(str((health or {}).get("level", "")))
     bet_blocked = health_meta["can_bet"] != "1"
@@ -556,6 +561,18 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "button{width:auto;min-height:38px;padding:8px 14px;border-radius:10px;border:0;background:var(--brand);color:var(--brand-ink);font:700 .88rem/1 'Trebuchet MS','Gill Sans','Avenir Next',sans-serif;cursor:pointer}",
         "button.alt{background:linear-gradient(135deg,#efb147,#d88421);color:#1e1406}",
         "button:hover{filter:brightness(1.06)}",
+        ".btn-alt{display:inline-block;text-decoration:none;min-height:38px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#efb147,#d88421);color:#1e1406;font:700 .88rem/1.2 'Trebuchet MS','Gill Sans','Avenir Next',sans-serif;cursor:pointer}",
+        ".btn-alt:hover{filter:brightness(1.06)}",
+        ".btn-disabled{opacity:.55;cursor:not-allowed;background:#cbd3e0;color:#5d6679}",
+        ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px}",
+        ".bet-card{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:linear-gradient(160deg,#fefcf6,#eef5ff)}",
+        ".bet-card .bet-title{font-weight:800;font-size:.95rem;margin-bottom:4px}",
+        ".bet-card .bet-sel{font-weight:700;color:#10384d}",
+        ".bet-card .bet-meta{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.35}",
+        ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:#168a3d;color:#fff;font-weight:800;font-size:.85rem}",
+        ".ctrl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:8px}",
+        ".ctrl-row label{display:flex;flex-direction:column;gap:3px;font-size:.76rem;color:var(--muted)}",
+        ".ctrl-row input,.ctrl-row select{min-height:36px;padding:6px 9px;border-radius:9px;border:1px solid var(--line-2);background:#fff;font:inherit}",
         "input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 40%,white);outline-offset:2px}",
         ".stats{display:flex;gap:8px;flex-wrap:wrap}",
         ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
@@ -656,17 +673,15 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
 
     parts.extend([
         "<div class='panel'>",
-        "<form method='get' action='/' aria-label='Actions calendrier'>",
-        f"<input type='hidden' name='tab' value='{safe_tab}'>",
         (
-            "<div class='actions'><button class='alt' type='submit' name='action' value='reco'>Voir les recommandations de paris</button></div>"
+            "<div class='actions'><a class='btn-alt' href='/?tab=paris'>Voir les recommandations de paris</a></div>"
             if not bet_blocked
-            else "<div class='actions'><button class='alt' type='submit' name='action' value='reco' disabled>Recommandations indisponibles (qualite critique)</button></div>"
+            else "<div class='actions'><span class='btn-alt btn-disabled'>Recommandations indisponibles (qualite critique)</span></div>"
         ),
-        "</form>",
         "<div class='actions' style='justify-content:flex-start;gap:8px;margin-top:10px'>",
         f"<a href='/?tab=futurs' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'futurs' else '')}'>Futurs</a>",
         f"<a href='/?tab=passes' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'passes' else '')}'>Passes</a>",
+        f"<a href='/?tab=paris' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'paris' else '')}'>Paris</a>",
         "</div>",
         f"<div class='guard-msg'>{html.escape(health_meta['message'])}</div>",
         "<div class='legend'>Chaque match affiche une date. Si vous voyez une incoherence, mettez a jour data/fixtures.json.</div>",
@@ -789,83 +804,111 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             parts.append(f"<li>{html.escape(a)}</li>")
         parts.extend(["</ul></details>", "</div>"])
 
-    if recommendations and action == "reco":
-        singles = recommendations.get("singles", [])
-        combos_a = recommendations.get("combos_a", [])
+    if safe_tab == "paris":
+        rec = recommendations
+        bk = (rec.get("bankroll") if rec else bankroll) or bankroll
+        md_opts = "".join(
+            f"<option value='{v}'{' selected' if str(matchday) == v else ''}>{lbl}</option>"
+            for v, lbl in (("", "Toutes les journees"), ("1", "Journee 1"),
+                           ("2", "Journee 2"), ("3", "Journee 3"))
+        )
         parts.extend([
-            "<div id='reco-modal' class='modal' role='dialog' aria-modal='true' aria-labelledby='reco-title'>",
-            "<div class='modal-panel'>",
-            "<div class='modal-head'>",
-            "<h2 id='reco-title' style='margin:0'>Recommandations de paris</h2>",
-            "<button type='button' class='modal-close' id='close-reco'>Fermer</button>",
-            "</div>",
-            "<div class='modal-columns'>",
-            "<section class='reco-card'>",
-            "<h3>Paris simples - mise conseillee: 10 EUR</h3>",
-            "<div class='bet-list'>",
-        ])
-        if singles:
-            for s in singles:
-                parts.append("<article class='bet-item'>")
-                parts.append(f"<div class='bet-title'>{html.escape(s['match_id'])} - {html.escape(s['home'])} vs {html.escape(s['away'])}</div>")
-                parts.append(f"<div>{html.escape(s['pick'])} - {round(s['prob'] * 100)}% (Nutri {html.escape(s['nutri'])})</div>")
-                if s.get("odds"):
-                    parts.append(f"<div class='bet-meta'>Cote {s['odds']:.2f} - retour brut potentiel: {10 * s['odds']:.2f} EUR</div>")
-                else:
-                    parts.append("<div class='bet-meta'>Cote indisponible</div>")
-                parts.append("</article>")
-        else:
-            parts.append("<div class='muted'>Aucun pari simple recommande pour le moment.</div>")
-
-        parts.extend([
-            "</div>",
+            "<section class='panel'>",
+            "<h2 style='margin:0 0 4px'>Recommandations de paris — strategie prudente</h2>",
+            "<p class='subtitle'>Uniquement de la <strong>value</strong> (le modele bat la cote de-marginee), "
+            "probabilites <strong>ramenees vers le marche</strong> pour corriger l'exces de confiance, "
+            "mises en <strong>quart-Kelly plafonnees</strong>, combines limites a <strong>2 selections</strong>. "
+            "Pour le crash test reel: gardez une petite bankroll.</p>",
+            "<form method='get' action='/' class='ctrl-row'>",
+            "<input type='hidden' name='tab' value='paris'>",
+            f"<label>Journee<select name='matchday'>{md_opts}</select></label>",
+            f"<label>Fichier de cotes (JSON)<input type='text' name='odds_file' value='{html.escape(odds_file)}' placeholder='data/odds_md1.json'></label>",
+            f"<label>Bankroll (EUR)<input type='number' name='bankroll' min='1' step='1' value='{bk:g}'></label>",
+            "<button type='submit'>Calculer les paris</button>",
+            "</form>",
+            "<div class='legend'>Sans fichier de cotes valide, aucune value n'est calculable. "
+            "Modele a remplir: <code>data/odds_md1.template.json</code> (mettez les cotes 1 / N / 2 a la place des 0).</div>",
             "</section>",
-            "<section class='reco-card'>",
-            "<h3>Gros combines (jusqu'a 10 matchs) - mise conseillee: 1 EUR</h3>",
-            "<div class='bet-list'>",
         ])
-        if combos_a:
-            for c in combos_a:
-                parts.append("<article class='bet-item'>")
-                legs = c.get("legs", [])
-                parts.append(f"<div class='bet-title'>Combine {len(legs)} matchs</div>")
-                for idx, leg in enumerate(legs, start=1):
+
+        if bet_blocked:
+            parts.append("<div class='panel'><div class='muted'>Recommandations indisponibles: qualite des donnees critique. Mettez a jour fixtures, ratings et team_status.</div></div>")
+        elif not rec:
+            parts.append("<div class='panel'><div class='muted'>Aucun match a venir pour ce filtre.</div></div>")
+        else:
+            parts.extend([
+                "<div class='panel'>",
+                "<div class='stats'>",
+                f"<div class='stamp'>Bankroll: {bk:.2f} EUR</div>",
+                f"<div class='stamp'>Matchs analyses: {rec['n_future']}</div>",
+                f"<div class='stamp'>Avec cotes: {rec['n_with_odds']}</div>",
+                f"<div class='stamp'>Paris simples value: {len(rec['singles'])}</div>",
+                f"<div class='stamp'>Combines: {len(rec['combos'])}</div>",
+                f"<div class='stamp'>Mise totale: {rec['total_stake']:.2f} EUR</div>",
+                f"<div class='stamp'>Gain attendu (modele): {rec['ev_profit']:+.2f} EUR</div>",
+                "</div>",
+                "<div class='legend'>Le \"gain attendu\" est l'esperance du modele: fiable seulement dans la mesure ou le modele est bien calibre (il a tendance a etre trop confiant). Misez petit.</div>",
+                "</div>",
+            ])
+
+            parts.extend([
+                "<section class='panel'>",
+                "<h3 style='margin:0'>Paris simples (value uniquement)</h3>",
+                "<div class='bet-grid'>",
+            ])
+            if rec["singles"]:
+                for s in rec["singles"]:
+                    b = s["bet"]
+                    sel = _sel_fr(b["sel"], s["home"], s["away"])
+                    ret = s["stake"] * b["odds"]
+                    parts.extend([
+                        "<article class='bet-card'>",
+                        f"<div class='bet-title'>{html.escape(s['label'])}</div>",
+                        f"<div class='bet-sel'>{html.escape(sel)} @ {b['odds']:.2f}</div>",
+                        f"<div class='bet-meta'>Modele {round(b['model']*100)}% &rarr; ajuste {round(b['shrunk']*100)}% "
+                        f"(juste marche {round(b['fair']*100)}%)<br>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</div>",
+                        f"<div><span class='bet-stake'>Miser {s['stake']:.2f} EUR</span> "
+                        f"<span class='bet-meta'>retour si gagne ~{ret:.2f} EUR</span></div>",
+                        "</article>",
+                    ])
+            else:
+                parts.append("<div class='muted'>Aucune value detectee — ne pas parier ce creneau (c'est frequent, et c'est sain).</div>")
+            parts.extend(["</div>", "</section>"])
+
+            parts.extend([
+                "<section class='panel'>",
+                "<h3 style='margin:0'>Combines (2 selections max &middot; mise minime)</h3>",
+                "<div class='bet-grid'>",
+            ])
+            if rec["combos"]:
+                for c in rec["combos"]:
+                    ret = c["stake"] * c["combined_odds"]
+                    parts.append("<article class='bet-card'>")
+                    parts.append(f"<div class='bet-title'>Combine {len(c['legs'])} selections</div>")
+                    for idx, leg in enumerate(c["legs"], start=1):
+                        pair = _split_match(leg["label"]) or (leg["label"], "")
+                        sel_txt = _sel_fr(leg["sel"], pair[0], pair[1])
+                        parts.append(
+                            f"<div class='bet-sel'>{idx}. {html.escape(sel_txt)} @ {leg['odds']:.2f}</div>"
+                            f"<div class='bet-meta'>{html.escape(leg['label'])}</div>"
+                        )
                     parts.append(
-                        f"<div><strong>Selection {idx}</strong>: {html.escape(leg['pick'])} ({html.escape(leg['home'])} vs {html.escape(leg['away'])}) - {round(leg['prob'] * 100)}%</div>"
+                        f"<div class='bet-meta'>Cote combinee {c['combined_odds']:.2f} &middot; "
+                        f"EV {c['ev']*100:+.1f}% &middot; proba modele {round(c['combined_prob']*100)}%</div>"
                     )
-                if c.get("combined_odds"):
-                    parts.append(f"<div class='bet-meta'>Cote combinee: {c['combined_odds']:.2f} - retour brut potentiel: {c['combined_odds']:.2f} EUR</div>")
-                else:
-                    parts.append("<div class='bet-meta'>Cote combinee indisponible (odds manquantes)</div>")
-                parts.append(f"<div class='bet-meta'>Probabilite combinee modele: {round(c['combined_prob'] * 100)}%</div>")
-                parts.append("</article>")
-        else:
-            parts.append("<div class='muted'>Pas assez de matchs pour construire un combine pour l'instant.</div>")
+                    parts.append(
+                        f"<div><span class='bet-stake'>Miser {c['stake']:.2f} EUR</span> "
+                        f"<span class='bet-meta'>retour si gagne ~{ret:.2f} EUR</span></div>"
+                    )
+                    parts.append("</article>")
+            else:
+                parts.append("<div class='muted'>Aucun combine ne passe le filtre prudent — sautez les combines (ils ont perdu ~69% au backtest WC2022).</div>")
+            parts.extend(["</div>", "</section>"])
 
-        if not recommendations.get("has_full_odds"):
-            parts.append("<div class='muted'>Ajoutez un fichier de cotes pour afficher les retours potentiels avec precision.</div>")
+            if not rec["has_full_odds"]:
+                parts.append("<div class='panel'><div class='muted'>Aucune cote chargee: renseignez un fichier de cotes pour activer la comparaison modele vs marche.</div></div>")
 
-        parts.extend([
-            "</div>",
-            "</section>",
-            "</div>",
-            "</div>",
-            "</div>",
-            "<script>",
-            "(function(){",
-            "const modal=document.getElementById('reco-modal');",
-            "if(!modal){return;}",
-            "modal.classList.add('open');",
-            "const closeBtn=document.getElementById('close-reco');",
-            "const close=()=>modal.classList.remove('open');",
-            "if(closeBtn){closeBtn.addEventListener('click',close);}",
-            "modal.addEventListener('click',(e)=>{if(e.target===modal){close();}});",
-            "document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){close();}});",
-            "})();",
-            "</script>",
-        ])
-
-    if not shown_rows:
+    if not shown_rows and safe_tab != "paris":
         if safe_tab == "passes":
             parts.extend(["<div class='panel'><div class='muted'>Aucun match joue avec score final disponible pour l'instant.</div></div>"])
         else:
@@ -1007,7 +1050,15 @@ class Handler(BaseHTTPRequestHandler):
         odds_file = (params.get("odds_file", [""])[0] or "").strip()
         action = (params.get("action", ["refresh"])[-1] or "refresh").strip().lower()
         tab = (params.get("tab", ["futurs"])[0] or "futurs").strip().lower()
+        if action == "reco":          # back-compat: old reco button -> Paris page
+            tab = "paris"
         no_auto = (params.get("no_auto", [""])[0] or "") in ("1", "on", "true")
+        try:
+            bankroll = float((params.get("bankroll", ["50"])[0] or "50").strip())
+        except ValueError:
+            bankroll = 50.0
+        if bankroll <= 0:
+            bankroll = 50.0
 
         rows = []
         applied_results = 0
@@ -1038,11 +1089,11 @@ class Handler(BaseHTTPRequestHandler):
                     error = f"Aucun match trouve pour la journee {matchday}. Essayez une autre journee ou retirez le filtre."
             odds_board = _load_odds_board(odds_file)
             rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
-            if action == "reco":
+            if tab == "paris":
                 if (health or {}).get("level") == "critical":
                     error = "Recommandations indisponibles: la qualite des donnees est critique. Mettez a jour fixtures, ratings et team_status puis reessayez."
                 else:
-                    recommendations = _build_recommendations(rows)
+                    recommendations = _build_recommendations(rows, bankroll=bankroll)
         except Exception as exc:
             error = str(exc)
 
@@ -1060,6 +1111,7 @@ class Handler(BaseHTTPRequestHandler):
             health,
             solidity_report,
             data_info,
+            bankroll,
         )
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
