@@ -44,6 +44,7 @@ def home():
         except Exception:
             pass  # best-effort refresh; never block page rendering on it
         fixtures = data.load_fixtures()
+        ui._apply_paris_kickoffs(fixtures)   # show France (Europe/Paris) dates, not US dates
         base_ratings = data.load_ratings()
         ratings = data.load_ratings()
         ratings, _ = live_ratings.ensure(ratings)   # keep Elo fresh on read-only hosts (Vercel)

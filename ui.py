@@ -98,6 +98,24 @@ def _default_odds_file() -> str:
     return ""
 
 
+def _apply_paris_kickoffs(fixtures: List[Dict]) -> None:
+    """Rewrite each fixture's date to its Europe/Paris (France) calendar date using
+    the kickoff time captured from the odds feed — the jetlag fix, so a US-evening
+    game shows on the next day like it does in France. Adds kickoff_paris (HH:MM).
+    Matches with no known kickoff keep their stored date."""
+    kicks = odds_fetch.load_kickoffs()
+    if not kicks:
+        return
+    for m in fixtures:
+        ct = kicks.get(str(m.get("id", "")).upper())
+        if not ct:
+            continue
+        d, t = odds_fetch.paris_parts(ct)
+        if d:
+            m["date"] = d
+            m["kickoff_paris"] = t
+
+
 def _match_key(match: Dict) -> str:
     return f"{match['home'].lower()}|{match['away'].lower()}"
 
@@ -213,14 +231,14 @@ def _team_flag(team: str) -> str:
 def _fr_strategy_flag(text: str) -> str:
     mapping = [
         ("DRAW lean", "Tendance NUL"),
-        ("group draws are historically underpriced", "les nuls de phase de groupes sont historiquement sous-cotes"),
-        ("check the draw price", "verifie la cote du nul"),
-        ("model draw", "modele nul"),
+        ("group draws are historically underpriced", "les nuls de phase de groupes sont historiquement sous-cotés"),
+        ("check the draw price", "vérifie la cote du nul"),
+        ("model draw", "modèle nul"),
         ("UNDER 2.5 lean", "Tendance UNDER 2.5"),
-        ("knockouts run low-scoring", "les matchs a elimination directe sont souvent fermes"),
-        ("model U2.5", "modele U2.5"),
-        ("HOST", "PAYS HOTE"),
-        ("on home soil; hosts overperform their price", "a domicile: les pays hotes surperforment souvent leur cote"),
+        ("knockouts run low-scoring", "les matchs à élimination directe sont souvent fermés"),
+        ("model U2.5", "modèle U2.5"),
+        ("HOST", "PAYS HÔTE"),
+        ("on home soil; hosts overperform their price", "à domicile : les pays hôtes surperforment souvent leur cote"),
     ]
     out = text
     for src, dst in mapping:
@@ -310,40 +328,41 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             delta = float(row.get("status_delta", 0.0) or 0.0)
             if abs(delta) >= 0.5:
                 sign = "+" if delta > 0 else ""
-                notes.append(f"Signal terrain {team}: {sign}{delta:.1f} Elo (forme/blessures/cartons/news)")
+                notes.append(f"Signal terrain {team} : {sign}{delta:.1f} Elo (forme/blessures/cartons/news)")
             for n in team_signals.status_notes(team, team_status or {}):
-                notes.append(f"{team}: {n}")
+                notes.append(f"{team} : {n}")
         if est:
-            notes.append("Au moins une cote Elo est estimee. La confiance peut changer apres mise a jour des ratings live.")
+            notes.append("Au moins une cote Elo est estimée. La confiance peut changer après mise à jour des ratings live.")
         if not odds:
-            notes.append("Aucune cote bookmaker chargee. Ajoutez un fichier JSON de cotes pour activer la comparaison modele vs marche.")
+            notes.append("Aucune cote bookmaker chargée. Ajoutez un fichier JSON de cotes pour activer la comparaison modèle vs marché.")
         elif not value_summaries:
-            notes.append("Pas d'opportunite de value detectee avec les cotes actuelles.")
+            notes.append("Pas d'opportunité de value détectée avec les cotes actuelles.")
 
         if rec["differs"]:
             notes.append(
-                f"Prono optimise Mon Petit Prono: {live_predicted_score} maximise les points "
+                f"Prono optimisé Mon Petit Prono : {live_predicted_score} maximise les points "
                 f"attendus (bonus score exact +{rec['bonus']} {rec['tier']}). Le score le plus "
-                f"probable du modele reste {si}-{sj}."
+                f"probable du modèle reste {si}-{sj}."
             )
         if rec["bonus"] >= 70:
             notes.append(
-                "Pari sur un score rare: gros bonus MPP mais probabilite plus faible. "
-                "Plus risque — bon candidat pour le bonus X2."
+                "Pari sur un score rare : gros bonus MPP mais probabilité plus faible. "
+                "Plus risqué — bon candidat pour le bonus X2."
             )
 
         if completed:
-            notes.append("Match termine: le score affiche correspond au resultat final reel.")
+            notes.append("Match terminé : le score affiché correspond au résultat final réel.")
             if preserved_predicted_score:
-                notes.append("Prono conserve avant match: comparaison reel vs prono disponible directement.")
+                notes.append("Prono conservé avant match : comparaison réel vs prono disponible directement.")
             else:
-                notes.append("Prono non fige: lance 'python3 tools/snapshot_predictions.py' pour conserver les pronos avant les matchs.")
+                notes.append("Prono non figé : lance 'python3 tools/snapshot_predictions.py' pour conserver les pronos avant les matchs.")
 
         rows.append({
             "id": m.get("id", ""),
             "group": m.get("group", "?"),
             "matchday": m.get("matchday", "?"),
             "date": _effective_date(m),
+            "kickoff_paris": m.get("kickoff_paris"),
             "home": home,
             "away": away,
             "home_flag": _team_flag(home),
@@ -399,17 +418,17 @@ def _group_rows_by_matchday(rows: List[Dict]):
 def _fr_date_label(iso_date: str) -> str:
     months = {
         1: "janvier",
-        2: "fevrier",
+        2: "février",
         3: "mars",
         4: "avril",
         5: "mai",
         6: "juin",
         7: "juillet",
-        8: "aout",
+        8: "août",
         9: "septembre",
         10: "octobre",
         11: "novembre",
-        12: "decembre",
+        12: "décembre",
     }
     d = _parse_date(iso_date)
     return f"{d.day} {months[d.month]} {d.year}"
@@ -440,12 +459,21 @@ def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
             out = {"p_home": r["probs"]["home"], "p_draw": r["probs"]["draw"],
                    "p_away": r["probs"]["away"]}
             bet = betting.evaluate_single(out, tuple(odds), mw, kf)
+        when = ""
+        if r.get("date"):
+            try:
+                when = _fr_date_label(r["date"])
+            except (ValueError, KeyError):
+                when = str(r["date"])
+            if r.get("kickoff_paris"):
+                when += f" · {r['kickoff_paris']} (heure FR)"
         evals.append({
             "key": r.get("id", ""),
             "match_id": r.get("id", ""),
             "label": f"{r['home']} vs {r['away']}",
             "home": r["home"],
             "away": r["away"],
+            "when": when,
             "has_odds": bool(odds),
             "bet": bet,
         })
@@ -483,17 +511,17 @@ def _sel_fr(sel: str, home: str, away: str) -> str:
 def _paris_odds_status() -> str:
     """One-line note on where the odds come from + remaining API credits."""
     if not odds_fetch.has_key():
-        return ("<div class='legend'>Cotes auto <strong>non configurees</strong>: ajoutez une cle gratuite "
+        return ("<div class='legend'>Cotes auto <strong>non configurées</strong> : ajoutez une clé gratuite "
                 "The Odds API (env <code>ODDS_API_KEY</code> / <code>odds_api_key</code> ou fichier "
                 "<code>data/odds_api_key.txt</code>). Sans cotes, aucune value n'est calculable.</div>")
     state = odds_fetch.read_state()
     rem = state.get("remaining_credits")
-    credits = f" · credits restants: {rem}" if isinstance(rem, int) else ""
+    credits = f" · crédits restants : {rem}" if isinstance(rem, int) else ""
     if state.get("fetched_at"):
         return (f"<div class='legend'>Cotes auto via The Odds API — {state.get('matches', 0)} match(s), "
                 f"maj {html.escape(str(state['fetched_at']))}{html.escape(credits)}.</div>")
-    return ("<div class='legend'>Cotes auto via The Odds API (cle detectee). La liste se remplit au "
-            f"prochain chargement de cette page / quand des cotes WC sont publiees{html.escape(credits)}.</div>")
+    return ("<div class='legend'>Cotes auto via The Odds API (clé détectée). La liste se remplit au "
+            f"prochain chargement de cette page / quand des cotes WC sont publiées{html.escape(credits)}.</div>")
 
 
 def _health_level_ui(level: str) -> Dict[str, str]:
@@ -504,7 +532,7 @@ def _health_level_ui(level: str) -> Dict[str, str]:
             "class": "health-good",
             "state": "OK",
             "can_bet": "1",
-            "message": "Donnees a jour: vous pouvez generer des recommandations.",
+            "message": "Données à jour : vous pouvez générer des recommandations.",
         }
     if lvl == "warning":
         return {
@@ -512,14 +540,14 @@ def _health_level_ui(level: str) -> Dict[str, str]:
             "class": "health-warning",
             "state": "Surveillance",
             "can_bet": "1",
-            "message": "Donnees a surveiller: verifiez blessures, suspensions et compositions avant de parier.",
+            "message": "Données à surveiller : vérifiez blessures, suspensions et compositions avant de parier.",
         }
     return {
         "label": "Rouge",
         "class": "health-critical",
-        "state": "Bloque",
+        "state": "Bloqué",
         "can_bet": "0",
-        "message": "Donnees insuffisantes: mettez a jour fixtures, ratings et statut equipes pour debloquer les recommandations.",
+        "message": "Données insuffisantes : mettez à jour fixtures, ratings et statut équipes pour débloquer les recommandations.",
     }
 
 
@@ -538,13 +566,13 @@ def _build_data_info(fixtures: List[Dict], ratings: Dict, team_status: Dict,
         "data_sources": [
             f"ratings.json: {(ratings or {}).get('source', 'n/a')}",
             f"team_status.json: {(team_status or {}).get('source', 'n/a')}",
-            "fixtures.json: calendrier + scores reels + snapshots de prediction",
-            (f"odds file: {odds_file}" if odds_file else "odds file: non charge (comparaison marche inactive)"),
+            "fixtures.json: calendrier + scores réels + snapshots de prédiction",
+            (f"odds file: {odds_file}" if odds_file else "odds file: non chargé (comparaison marché inactive)"),
         ],
         "information_sources": [
-            "Ratings Elo (force de base par equipe)",
-            "Signaux equipe: forme, blessures, suspensions, news",
-            "Scores reels enregistres (mise a jour auto des ratings)",
+            "Ratings Elo (force de base par équipe)",
+            "Signaux équipe : forme, blessures, suspensions, news",
+            "Scores réels enregistrés (mise à jour auto des ratings)",
             "Cotes bookmaker 1N2 (si fichier de cotes fourni)",
         ],
         "last_updates": {
@@ -627,7 +655,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".nutri-d{background:#d37a1c}",
         ".nutri-e{background:#b33a2f}",
         ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:2px 2px 6px}",
-        ".line-main{display:grid;grid-template-columns:minmax(120px,1fr) auto auto minmax(120px,1fr);align-items:center;gap:10px}",
+        ".line-main{display:grid;grid-template-columns:minmax(100px,1fr) auto minmax(100px,1fr);align-items:center;gap:8px}",
         ".team-side{display:flex;align-items:center;gap:6px;min-width:0}",
         ".team-side.right{justify-content:flex-end}",
         ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
@@ -640,6 +668,15 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
         ".score-chip-real{background:linear-gradient(135deg,#1e6f3f,#155b31);font-size:.86rem;min-width:88px}",
         ".score-chip-prono{background:linear-gradient(135deg,#4f5e79,#38465f);font-size:.86rem;min-width:98px}",
+        ".prob-cell{min-width:160px}",
+        ".prono-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}",
+        ".prob-bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:#e7ebf3;margin:2px 0 3px;min-width:140px;max-width:240px}",
+        ".prob-seg{display:block;height:100%}",
+        ".prob-seg.home{background:#0f5c78}",
+        ".prob-seg.draw{background:#c2c8d4}",
+        ".prob-seg.away{background:#e0892b}",
+        ".prob-legend{display:flex;gap:12px;font-size:.74rem;color:var(--muted)}",
+        ".prob-legend strong{color:var(--text)}",
         ".flag{font-size:1.05rem}",
         ".tiny{font-size:.76rem;color:var(--muted)}",
         ".result-main{font-weight:700}",
@@ -691,15 +728,15 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "<header class='mast'>",
         "<div>",
         f"<h1>WC2026 Calendrier Pronos - {html.escape(title_tag)}</h1>",
-        "<p class='subtitle'>Vue calendrier rapide: ouvrez un match pour voir les explications utiles a la decision.</p>",
+        "<p class='subtitle'>Vue calendrier rapide : ouvrez un match pour voir les explications utiles à la décision.</p>",
         "</div>",
         "<div class='stats'>",
-        f"<div class='stamp'>Resultats integres automatiquement: {applied_results}</div>",
-        f"<div class='stamp'>Matchs a venir: {len(future_rows)}</div>",
-        f"<div class='stamp'>Matchs joues: {len(past_rows)}</div>",
-        "<div class='stamp' id='done-count'>Pronostics coches: 0</div>",
-        f"<div class='stamp'>Qualite des donnees: {(health or {}).get('score', 'n/a')}/100</div>",
-        f"<div class='stamp'>Solidite modele: {((solidity_report or {}).get('score') if (solidity_report or {}).get('score') is not None else 'n/a')}/100</div>",
+        f"<div class='stamp'>Résultats intégrés automatiquement : {applied_results}</div>",
+        f"<div class='stamp'>Matchs à venir : {len(future_rows)}</div>",
+        f"<div class='stamp'>Matchs joués : {len(past_rows)}</div>",
+        "<div class='stamp' id='done-count'>Pronostics cochés : 0</div>",
+        f"<div class='stamp'>Qualité des données : {(health or {}).get('score', 'n/a')}/100</div>",
+        f"<div class='stamp'>Solidité modèle : {((solidity_report or {}).get('score') if (solidity_report or {}).get('score') is not None else 'n/a')}/100</div>",
         f"<div class='health-pill {health_meta['class']}'><span class='health-dot'></span>Feu data: {health_meta['label']} ({health_meta['state']})</div>",
         "</div>",
         "</header>",
@@ -713,7 +750,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         (
             "<div class='actions'><a class='btn-alt' href='/?tab=paris'>Voir les recommandations de paris</a></div>"
             if not bet_blocked
-            else "<div class='actions'><span class='btn-alt btn-disabled'>Recommandations indisponibles (qualite critique)</span></div>"
+            else "<div class='actions'><span class='btn-alt btn-disabled'>Recommandations indisponibles (qualité critique)</span></div>"
         ),
         "<div class='actions' style='justify-content:flex-start;gap:8px;margin-top:10px'>",
         f"<a href='/?tab=futurs' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'futurs' else '')}'>Futurs</a>",
@@ -721,28 +758,28 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         f"<a href='/?tab=paris' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'paris' else '')}'>Paris</a>",
         "</div>",
         f"<div class='guard-msg'>{html.escape(health_meta['message'])}</div>",
-        "<div class='legend'>Chaque match affiche une date. Si vous voyez une incoherence, mettez a jour data/fixtures.json.</div>",
+        "<div class='legend'>Chaque match affiche une date. Si vous voyez une incohérence, mettez à jour data/fixtures.json.</div>",
         "</div>",
     ])
 
     if health:
         level_label = {
             "good": "Bon",
-            "warning": "A surveiller",
+            "warning": "À surveiller",
             "critical": "Critique",
         }.get(health.get("level"), "Inconnu")
         parts.extend([
             "<div class='panel'>",
-            f"<strong>Qualite des donnees: {health.get('score')}/100 ({level_label})</strong> ",
+            f"<strong>Qualité des données : {health.get('score')}/100 ({level_label})</strong> ",
             f"<span class='health-pill {health_meta['class']}' style='margin-left:8px'><span class='health-dot'></span>{health_meta['label']}</span>",
             "<details style='margin-top:8px'><summary>Pourquoi ce score ?</summary><ul class='note-list'>",
-            f"<li>Dates manquantes: {health.get('fixtures_missing_dates', 0)}</li>",
-            f"<li>Matchs passes sans score final: {health.get('fixtures_past_without_score', 0)}</li>",
-            f"<li>Age ratings (jours): {health.get('ratings_age_days')}</li>",
-            f"<li>Age signaux equipes (jours): {health.get('status_age_days')}</li>",
+            f"<li>Dates manquantes : {health.get('fixtures_missing_dates', 0)}</li>",
+            f"<li>Matchs passés sans score final : {health.get('fixtures_past_without_score', 0)}</li>",
+            f"<li>Âge ratings (jours) : {health.get('ratings_age_days')}</li>",
+            f"<li>Âge signaux équipes (jours) : {health.get('status_age_days')}</li>",
         ])
         if not health.get("alerts"):
-            parts.append("<li>Aucune alerte: les donnees sont coherentes pour l'analyse actuelle.</li>")
+            parts.append("<li>Aucune alerte : les données sont cohérentes pour l'analyse actuelle.</li>")
         for a in health.get("alerts", []):
             parts.append(f"<li>{html.escape(a)}</li>")
         parts.extend(["</ul></details>"])
@@ -750,7 +787,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         if data_info:
             quality_map = {
                 "good": "Bon",
-                "warning": "A surveiller",
+                "warning": "À surveiller",
                 "critical": "Critique",
             }
             q_score = (data_info.get("quality_rating") or {}).get("score")
@@ -761,10 +798,10 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             home_adv_cov_txt = "n/a" if home_adv_cov is None else f"{round(home_adv_cov * 100)}%"
 
             parts.extend([
-                "<details style='margin-top:8px'><summary>Info donnees (sources + fraicheur)</summary>",
+                "<details style='margin-top:8px'><summary>Info données (sources + fraîcheur)</summary>",
                 "<div class='info-grid'>",
                 "<section class='info-card'>",
-                "<h4>Liste des data sources</h4>",
+                "<h4>Sources de données</h4>",
                 "<ul class='info-list'>",
             ])
             for row in data_info.get("data_sources", []):
@@ -773,7 +810,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                 "</ul>",
                 "</section>",
                 "<section class='info-card'>",
-                "<h4>Liste des information sources</h4>",
+                "<h4>Sources d'information</h4>",
                 "<ul class='info-list'>",
             ])
             for row in data_info.get("information_sources", []):
@@ -782,19 +819,19 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                 "</ul>",
                 "</section>",
                 "<section class='info-card'>",
-                "<h4>Date de derniere mise a jour</h4>",
-                f"<div class='info-line'>ratings.as_of: {html.escape(str((data_info.get('last_updates') or {}).get('ratings_as_of')))}</div>",
-                f"<div class='info-line'>team_status.as_of: {html.escape(str((data_info.get('last_updates') or {}).get('team_status_as_of')))}</div>",
-                f"<div class='info-line'>dernier snapshot prediction: {html.escape(str((data_info.get('last_updates') or {}).get('latest_prediction_snapshot')))}</div>",
+                "<h4>Date de dernière mise à jour</h4>",
+                f"<div class='info-line'>ratings.as_of : {html.escape(str((data_info.get('last_updates') or {}).get('ratings_as_of')))}</div>",
+                f"<div class='info-line'>team_status.as_of : {html.escape(str((data_info.get('last_updates') or {}).get('team_status_as_of')))}</div>",
+                f"<div class='info-line'>dernier snapshot prédiction : {html.escape(str((data_info.get('last_updates') or {}).get('latest_prediction_snapshot')))}</div>",
                 "</section>",
                 "<section class='info-card'>",
-                "<h4>Qualite + infos pertinentes</h4>",
-                f"<div class='info-line'>Qualite des donnees: {html.escape(str(q_score))}/100 ({html.escape(q_level)})</div>",
-                f"<div class='info-line'>Ratings live: {html.escape(str((data_info.get('other') or {}).get('live_ratings', 0)))}/{html.escape(str((data_info.get('other') or {}).get('ratings_total', 0)))}</div>",
-                f"<div class='info-line'>Ratings estimes: {html.escape(str((data_info.get('other') or {}).get('estimated_ratings', 0)))}</div>",
-                f"<div class='info-line'>Coverage team status: {html.escape(status_cov_txt)}</div>",
-                f"<div class='info-line'>Coverage home_adv: {html.escape(home_adv_cov_txt)}</div>",
-                f"<div class='info-line'>Matchs completes: {html.escape(str((data_info.get('other') or {}).get('fixtures_completed', 0)))}/{html.escape(str((data_info.get('other') or {}).get('fixtures_total', 0)))}</div>",
+                "<h4>Qualité + infos pertinentes</h4>",
+                f"<div class='info-line'>Qualité des données : {html.escape(str(q_score))}/100 ({html.escape(q_level)})</div>",
+                f"<div class='info-line'>Ratings live : {html.escape(str((data_info.get('other') or {}).get('live_ratings', 0)))}/{html.escape(str((data_info.get('other') or {}).get('ratings_total', 0)))}</div>",
+                f"<div class='info-line'>Ratings estimés : {html.escape(str((data_info.get('other') or {}).get('estimated_ratings', 0)))}</div>",
+                f"<div class='info-line'>Couverture team status : {html.escape(status_cov_txt)}</div>",
+                f"<div class='info-line'>Couverture home_adv : {html.escape(home_adv_cov_txt)}</div>",
+                f"<div class='info-line'>Matchs complétés : {html.escape(str((data_info.get('other') or {}).get('fixtures_completed', 0)))}/{html.escape(str((data_info.get('other') or {}).get('fixtures_total', 0)))}</div>",
                 "</section>",
                 "</div>",
                 "</details>",
@@ -812,31 +849,31 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         score_text = "n/a" if solidity_report.get("score") is None else str(solidity_report.get("score"))
         parts.extend([
             "<div class='panel'>",
-            f"<strong>Solidite du systeme: {score_text}/100 ({level_label})</strong>",
-            "<details style='margin-top:8px'><summary>Comment ce score est calcule ?</summary><ul class='note-list'>",
-            f"<li>Matchs evalues: {solidity_report.get('matches', 0)}</li>",
-            f"<li>Precision 1N2: {('n/a' if solidity_report.get('result_accuracy') is None else str(round(solidity_report.get('result_accuracy') * 100)) + '%')}</li>",
-            f"<li>Score exact touche: {('n/a' if solidity_report.get('exact_score_hit') is None else str(round(solidity_report.get('exact_score_hit') * 100)) + '%')}</li>",
-            f"<li>Brier 1N2 (plus bas = mieux): {('n/a' if solidity_report.get('brier_1x2') is None else format(solidity_report.get('brier_1x2'), '.3f'))}</li>",
-            f"<li>Log-loss 1N2 (plus bas = mieux): {('n/a' if solidity_report.get('logloss_1x2') is None else format(solidity_report.get('logloss_1x2'), '.3f'))}</li>",
-            f"<li>RPS 1N2 (standard du domaine, plus bas = mieux): {('n/a' if solidity_report.get('rps_1x2') is None else format(solidity_report.get('rps_1x2'), '.3f'))}</li>",
-            f"<li>Confiance moyenne des picks: {('n/a' if solidity_report.get('avg_pick_conf') is None else str(round(solidity_report.get('avg_pick_conf') * 100)) + '%')}</li>",
+            f"<strong>Solidité du système : {score_text}/100 ({level_label})</strong>",
+            "<details style='margin-top:8px'><summary>Comment ce score est calculé ?</summary><ul class='note-list'>",
+            f"<li>Matchs évalués : {solidity_report.get('matches', 0)}</li>",
+            f"<li>Précision 1N2 : {('n/a' if solidity_report.get('result_accuracy') is None else str(round(solidity_report.get('result_accuracy') * 100)) + '%')}</li>",
+            f"<li>Score exact touché : {('n/a' if solidity_report.get('exact_score_hit') is None else str(round(solidity_report.get('exact_score_hit') * 100)) + '%')}</li>",
+            f"<li>Brier 1N2 (plus bas = mieux) : {('n/a' if solidity_report.get('brier_1x2') is None else format(solidity_report.get('brier_1x2'), '.3f'))}</li>",
+            f"<li>Log-loss 1N2 (plus bas = mieux) : {('n/a' if solidity_report.get('logloss_1x2') is None else format(solidity_report.get('logloss_1x2'), '.3f'))}</li>",
+            f"<li>RPS 1N2 (standard du domaine, plus bas = mieux) : {('n/a' if solidity_report.get('rps_1x2') is None else format(solidity_report.get('rps_1x2'), '.3f'))}</li>",
+            f"<li>Confiance moyenne des picks : {('n/a' if solidity_report.get('avg_pick_conf') is None else str(round(solidity_report.get('avg_pick_conf') * 100)) + '%')}</li>",
         ])
         if solidity_report.get("calibration_gap") is not None:
             parts.append(
-                f"<li>Ecart calibration (confiance - precision): {(solidity_report.get('calibration_gap') * 100):+.1f} point(s)</li>"
+                f"<li>Écart calibration (confiance - précision) : {(solidity_report.get('calibration_gap') * 100):+.1f} point(s)</li>"
             )
         else:
-            parts.append("<li>Ecart calibration (confiance - precision): n/a</li>")
+            parts.append("<li>Écart calibration (confiance - précision) : n/a</li>")
         buckets = solidity_report.get("confidence_buckets") or []
         if buckets:
-            parts.append("<li>Calibration par tranche de confiance:</li>")
+            parts.append("<li>Calibration par tranche de confiance :</li>")
             for b in buckets:
                 parts.append(
                     f"<li>{b['range']} | n={b['count']} | hit {round(b['hit_rate'] * 100)}% | conf {round(b['avg_conf'] * 100)}% | gap {(b['gap'] * 100):+.1f}pt</li>"
                 )
         else:
-            parts.append("<li>Calibration par tranche de confiance: n/a (aucun match termine)</li>")
+            parts.append("<li>Calibration par tranche de confiance : n/a (aucun match terminé)</li>")
         for a in solidity_report.get("alerts", []):
             parts.append(f"<li>{html.escape(a)}</li>")
         parts.extend(["</ul></details>", "</div>"])
@@ -846,32 +883,32 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         bk = (rec.get("bankroll") if rec else bankroll) or bankroll
         parts.extend([
             "<section class='panel'>",
-            "<h2 style='margin:0 0 4px'>Recommandations de paris — strategie prudente</h2>",
-            "<p class='subtitle'>Selection calculee automatiquement: uniquement de la <strong>value</strong> "
-            "(le modele bat la cote de-marginee), probabilites <strong>ramenees vers le marche</strong> pour "
-            "corriger l'exces de confiance, mises en <strong>quart-Kelly plafonnees</strong>, combines limites "
-            f"a <strong>2 selections</strong>. Bankroll de test: {bk:.0f} EUR (petites mises).</p>",
+            "<h2 style='margin:0 0 4px'>Recommandations de paris — stratégie prudente</h2>",
+            "<p class='subtitle'>Sélection calculée automatiquement : uniquement de la <strong>value</strong> "
+            "(le modèle bat la cote dé-marginée), probabilités <strong>ramenées vers le marché</strong> pour "
+            "corriger l'excès de confiance, mises en <strong>quart-Kelly plafonnées</strong>, combinés limités "
+            f"à <strong>2 sélections</strong>. Bankroll de test : {bk:.0f} EUR (petites mises).</p>",
             _paris_odds_status(),
             "</section>",
         ])
 
         if bet_blocked:
-            parts.append("<div class='panel'><div class='muted'>Recommandations indisponibles: qualite des donnees critique. Mettez a jour fixtures, ratings et team_status.</div></div>")
+            parts.append("<div class='panel'><div class='muted'>Recommandations indisponibles : qualité des données critique. Mettez à jour fixtures, ratings et team_status.</div></div>")
         elif not rec:
-            parts.append("<div class='panel'><div class='muted'>Aucun match a venir pour ce filtre.</div></div>")
+            parts.append("<div class='panel'><div class='muted'>Aucun match à venir pour ce filtre.</div></div>")
         else:
             parts.extend([
                 "<div class='panel'>",
                 "<div class='stats'>",
-                f"<div class='stamp'>Bankroll: {bk:.2f} EUR</div>",
-                f"<div class='stamp'>Matchs analyses: {rec['n_future']}</div>",
-                f"<div class='stamp'>Avec cotes: {rec['n_with_odds']}</div>",
-                f"<div class='stamp'>Paris simples value: {len(rec['singles'])}</div>",
-                f"<div class='stamp'>Combines: {len(rec['combos'])}</div>",
-                f"<div class='stamp'>Mise totale: {rec['total_stake']:.2f} EUR</div>",
-                f"<div class='stamp'>Gain attendu (modele): {rec['ev_profit']:+.2f} EUR</div>",
+                f"<div class='stamp'>Bankroll : {bk:.2f} EUR</div>",
+                f"<div class='stamp'>Matchs analysés : {rec['n_future']}</div>",
+                f"<div class='stamp'>Avec cotes : {rec['n_with_odds']}</div>",
+                f"<div class='stamp'>Paris simples value : {len(rec['singles'])}</div>",
+                f"<div class='stamp'>Combinés : {len(rec['combos'])}</div>",
+                f"<div class='stamp'>Mise totale : {rec['total_stake']:.2f} EUR</div>",
+                f"<div class='stamp'>Gain attendu (modèle) : {rec['ev_profit']:+.2f} EUR</div>",
                 "</div>",
-                "<div class='legend'>Le \"gain attendu\" est l'esperance du modele: fiable seulement dans la mesure ou le modele est bien calibre (il a tendance a etre trop confiant). Misez petit.</div>",
+                "<div class='legend'>Le \"gain attendu\" est l'espérance du modèle : fiable seulement dans la mesure où le modèle est bien calibré (il a tendance à être trop confiant). Misez petit.</div>",
                 "</div>",
             ])
 
@@ -888,27 +925,28 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                     parts.extend([
                         "<article class='bet-card'>",
                         f"<div class='bet-title'>{html.escape(s['label'])}</div>",
+                        (f"<div class='bet-meta'>🗓 {html.escape(s['when'])}</div>" if s.get("when") else ""),
                         f"<div class='bet-sel'>{html.escape(sel)} @ {b['odds']:.2f}</div>",
-                        f"<div class='bet-meta'>Modele {round(b['model']*100)}% &rarr; ajuste {round(b['shrunk']*100)}% "
-                        f"(juste marche {round(b['fair']*100)}%)<br>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</div>",
+                        f"<div class='bet-meta'>Modèle {round(b['model']*100)}% &rarr; ajusté {round(b['shrunk']*100)}% "
+                        f"(juste marché {round(b['fair']*100)}%)<br>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</div>",
                         f"<div><span class='bet-stake'>Miser {s['stake']:.2f} EUR</span> "
-                        f"<span class='bet-meta'>retour si gagne ~{ret:.2f} EUR</span></div>",
+                        f"<span class='bet-meta'>retour si gagné ~{ret:.2f} EUR</span></div>",
                         "</article>",
                     ])
             else:
-                parts.append("<div class='muted'>Aucune value detectee — ne pas parier ce creneau (c'est frequent, et c'est sain).</div>")
+                parts.append("<div class='muted'>Aucune value détectée — ne pas parier ce créneau (c'est fréquent, et c'est sain).</div>")
             parts.extend(["</div>", "</section>"])
 
             parts.extend([
                 "<section class='panel'>",
-                "<h3 style='margin:0'>Combines (2 selections max &middot; mise minime)</h3>",
+                "<h3 style='margin:0'>Combinés (2 sélections max &middot; mise minime)</h3>",
                 "<div class='bet-grid'>",
             ])
             if rec["combos"]:
                 for c in rec["combos"]:
                     ret = c["stake"] * c["combined_odds"]
                     parts.append("<article class='bet-card'>")
-                    parts.append(f"<div class='bet-title'>Combine {len(c['legs'])} selections</div>")
+                    parts.append(f"<div class='bet-title'>Combiné {len(c['legs'])} sélections</div>")
                     for idx, leg in enumerate(c["legs"], start=1):
                         pair = _split_match(leg["label"]) or (leg["label"], "")
                         sel_txt = _sel_fr(leg["sel"], pair[0], pair[1])
@@ -917,26 +955,26 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                             f"<div class='bet-meta'>{html.escape(leg['label'])}</div>"
                         )
                     parts.append(
-                        f"<div class='bet-meta'>Cote combinee {c['combined_odds']:.2f} &middot; "
-                        f"EV {c['ev']*100:+.1f}% &middot; proba modele {round(c['combined_prob']*100)}%</div>"
+                        f"<div class='bet-meta'>Cote combinée {c['combined_odds']:.2f} &middot; "
+                        f"EV {c['ev']*100:+.1f}% &middot; proba modèle {round(c['combined_prob']*100)}%</div>"
                     )
                     parts.append(
                         f"<div><span class='bet-stake'>Miser {c['stake']:.2f} EUR</span> "
-                        f"<span class='bet-meta'>retour si gagne ~{ret:.2f} EUR</span></div>"
+                        f"<span class='bet-meta'>retour si gagné ~{ret:.2f} EUR</span></div>"
                     )
                     parts.append("</article>")
             else:
-                parts.append("<div class='muted'>Aucun combine ne passe le filtre prudent — sautez les combines (ils ont perdu ~69% au backtest WC2022).</div>")
+                parts.append("<div class='muted'>Aucun combiné ne passe le filtre prudent — sautez les combinés (ils ont perdu ~69% au backtest WC2022).</div>")
             parts.extend(["</div>", "</section>"])
 
             if not rec["has_full_odds"]:
-                parts.append("<div class='panel'><div class='muted'>Aucune cote chargee: renseignez un fichier de cotes pour activer la comparaison modele vs marche.</div></div>")
+                parts.append("<div class='panel'><div class='muted'>Aucune cote chargée : renseignez un fichier de cotes pour activer la comparaison modèle vs marché.</div></div>")
 
     if not shown_rows and safe_tab != "paris":
         if safe_tab == "passes":
-            parts.extend(["<div class='panel'><div class='muted'>Aucun match joue avec score final disponible pour l'instant.</div></div>"])
+            parts.extend(["<div class='panel'><div class='muted'>Aucun match joué avec score final disponible pour l'instant.</div></div>"])
         else:
-            parts.extend(["<div class='panel'><div class='muted'>Aucun match a venir a afficher pour ce filtre.</div></div>"])
+            parts.extend(["<div class='panel'><div class='muted'>Aucun match à venir à afficher pour ce filtre.</div></div>"])
 
     for day, md_rows in grouped:
         day_label = _fr_date_label(day)
@@ -947,32 +985,41 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             f"<span class='tiny'>{len(md_rows)} matchs</span>",
             "</div>",
             "<table><thead><tr>",
-            "<th>Contexte</th><th>Pronostique</th><th>Match + Resultat + Nutri</th><th>Infos</th>",
+            "<th>Match</th><th>Pronostic</th><th>Suivi</th><th>Détails</th>",
             "</tr></thead><tbody>",
         ])
 
         for r in md_rows:
             est = " *" if r["est"] else ""
-            parts.append("<tr>")
-            parts.append(
-                f"<td data-label='Contexte'><div class='tiny'>J{html.escape(str(r['matchday']))} · Groupe {html.escape(str(r['group']))}</div>"
-                f"<div class='tiny'>{html.escape(str(r['id']))}</div></td>"
-            )
             match_ref = f"{r['id']}|{r['home']}|{r['away']}|{r['date']}"
-            parts.append(
-                f"<td data-label='Pronostique' class='done-cell'><input class='done-toggle' type='checkbox' aria-label='Marquer {html.escape(r['home'])} vs {html.escape(r['away'])} comme deja pronostique' data-match='{html.escape(match_ref)}'></td>"
+
+            ph, pd, pa = r["p_home"], r["p_draw"], r["p_away"]
+            mx = max(ph, pd, pa)
+            leg_home = f"<strong>1 {ph}%</strong>" if ph == mx else f"1 {ph}%"
+            leg_draw = f"<strong>N {pd}%</strong>" if pd == mx else f"N {pd}%"
+            leg_away = f"<strong>2 {pa}%</strong>" if pa == mx else f"2 {pa}%"
+            prob_block = (
+                f"<div class='prob-bar' role='img' aria-label='Probabilités 1 {ph}%, nul {pd}%, 2 {pa}%'>"
+                f"<span class='prob-seg home' style='width:{ph}%'></span>"
+                f"<span class='prob-seg draw' style='width:{pd}%'></span>"
+                f"<span class='prob-seg away' style='width:{pa}%'></span>"
+                f"</div>"
+                f"<div class='prob-legend'><span>{leg_home}</span><span>{leg_draw}</span><span>{leg_away}</span></div>"
             )
+            nutri_chip = f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}'>{html.escape(r['nutri'])}</span>"
+
             if r["completed"]:
                 score_block = (
-                    f"<span class='score-wrap score-dual'><span class='score-chip score-chip-real'>Reel {html.escape(r['actual_score'] or r['score'])}</span>"
+                    f"<span class='score-dual'>"
+                    f"<span class='score-chip score-chip-real'>Réel {html.escape(r['actual_score'] or r['score'])}</span>"
                     f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['predicted_score'])}</span>"
-                    f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}'>{html.escape(r['nutri'])}</span></span>"
+                    f"</span>"
                 )
             else:
                 change_dot = ""
                 if r.get("prediction_changed"):
                     change_tip = (
-                        f"Prono mis a jour apres une maj des donnees : "
+                        f"Prono mis à jour après une maj des données : "
                         f"{r['predicted_score']} -> {r['predicted_score_live']}"
                     )
                     change_dot = (
@@ -981,45 +1028,54 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                         f"title='{html.escape(change_tip)}'></span>"
                     )
                 score_block = (
-                    f"<span class='score-wrap'><span class='score-chip'>{html.escape(r['score'])}{change_dot}</span>"
-                    f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}'>{html.escape(r['nutri'])}</span></span>"
+                    f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['score'])}{change_dot}</span>"
                 )
+
+            parts.append("<tr>")
             parts.append(
-                f"<td data-label='Match + Resultat + Nutri'><div class='line-main'>"
+                f"<td data-label='Match'>"
+                f"<div class='tiny'>J{html.escape(str(r['matchday']))} · Groupe {html.escape(str(r['group']))} · {html.escape(str(r['id']))}"
+                + (f" · 🗓 {html.escape(r['kickoff_paris'])} (FR)" if r.get('kickoff_paris') else "")
+                + "</div>"
+                f"<div class='line-main'>"
                 f"<div class='team-side'><span class='flag'>{r['home_flag']}</span><span class='team-name'>{html.escape(r['home'])}</span></div>"
                 f"<span class='vs-dot'>vs</span>"
-                f"{score_block}"
                 f"<div class='team-side right'><span class='team-name'>{html.escape(r['away'])}</span><span class='flag'>{r['away_flag']}</span></div>"
                 f"</div></td>"
             )
+            parts.append(
+                f"<td data-label='Pronostic' class='prob-cell'>"
+                f"<div class='prono-line'>{score_block}{nutri_chip}</div>"
+                f"{prob_block}</td>"
+            )
+            parts.append(
+                f"<td data-label='Suivi' class='done-cell'><input class='done-toggle' type='checkbox' aria-label='Marquer {html.escape(r['home'])} vs {html.escape(r['away'])} comme déjà pronostiqué' data-match='{html.escape(match_ref)}'></td>"
+            )
 
-            parts.append("<td data-label='Infos'><details><summary>Infos utiles pour decider</summary><ul class='note-list'>")
+            parts.append("<td data-label='Détails'><details><summary>Infos utiles pour décider</summary><ul class='note-list'>")
             parts.append(
-                f"<li>Probabilites 1N2 du modele: 1={r['p_home']}% | N={r['p_draw']}% | 2={r['p_away']}%</li>"
+                f"<li>Score exact le plus probable : {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
             )
             parts.append(
-                f"<li>Score exact le plus probable: {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
+                f"<li>Choix 1N2 le plus probable : {html.escape(r['pick_label'])} ({round(r['pick_prob'] * 100)}%), Nutri {html.escape(r['nutri'])}</li>"
             )
             parts.append(
-                f"<li>Choix 1N2 le plus probable: {html.escape(r['pick_label'])} ({round(r['pick_prob'] * 100)}%), Nutri {html.escape(r['nutri'])}</li>"
-            )
-            parts.append(
-                f"<li>Recommandation de pari actuelle: {html.escape(r['bet'])} ({r['bet_conf']}%{est})</li>"
+                f"<li>Recommandation de pari actuelle : {html.escape(r['bet'])} ({r['bet_conf']}%{est})</li>"
             )
             if r.get("prediction_changed"):
                 parts.append(
-                    f"<li><strong>● Prono mis a jour</strong> : le prono fige etait "
-                    f"{html.escape(r['predicted_score'])}, le modele estime maintenant "
-                    f"{html.escape(r['predicted_score_live'])} apres une maj des donnees "
-                    f"(ratings / forme / blessures / avantage hote / attaque-defense).</li>"
+                    f"<li><strong>● Prono mis à jour</strong> : le prono figé était "
+                    f"{html.escape(r['predicted_score'])}, le modèle estime maintenant "
+                    f"{html.escape(r['predicted_score_live'])} après une maj des données "
+                    f"(ratings / forme / blessures / avantage hôte / attaque-défense).</li>"
                 )
             if r["completed"]:
-                parts.append(f"<li>Prono conserve: {html.escape(r['predicted_score'])}</li>")
+                parts.append(f"<li>Prono conservé : {html.escape(r['predicted_score'])}</li>")
                 if not r.get("prediction_saved"):
-                    parts.append(f"<li>Note: prono non fige (estimation actuelle: {html.escape(r['predicted_score_live'])}).</li>")
+                    parts.append(f"<li>Note : prono non figé (estimation actuelle : {html.escape(r['predicted_score_live'])}).</li>")
             if r["odds"]:
                 parts.append(
-                    f"<li>Cotes bookmaker chargees: 1 {r['odds'][0]:.2f} / N {r['odds'][1]:.2f} / 2 {r['odds'][2]:.2f}</li>"
+                    f"<li>Cotes bookmaker chargées : 1 {r['odds'][0]:.2f} / N {r['odds'][1]:.2f} / 2 {r['odds'][2]:.2f}</li>"
                 )
             for vs in r["value_summaries"]:
                 parts.append(f"<li>{html.escape(vs)}</li>")
@@ -1037,7 +1093,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "const countEl=document.getElementById('done-count');",
         "const parse=()=>{try{return new Set(JSON.parse(localStorage.getItem(key)||'[]'));}catch(_){return new Set();}};",
         "const save=(set)=>localStorage.setItem(key,JSON.stringify(Array.from(set)));",
-        "const refreshCount=(set)=>{if(countEl){countEl.textContent='Pronostics coches: '+set.size;}};",
+        "const refreshCount=(set)=>{if(countEl){countEl.textContent='Pronostics cochés : '+set.size;}};",
         "const done=parse();",
         "const checks=document.querySelectorAll('.done-toggle');",
         "checks.forEach((box)=>{",
@@ -1095,6 +1151,7 @@ class Handler(BaseHTTPRequestHandler):
         try:
             autonomous.autonomous_refresh()
             fixtures = data.load_fixtures()
+            _apply_paris_kickoffs(fixtures)   # show France (Europe/Paris) dates, not US dates
             base_ratings = data.load_ratings()
             ratings = data.load_ratings()
             ratings, _ = live_ratings.ensure(ratings)   # keep Elo fresh on read-only hosts (Vercel)
@@ -1109,9 +1166,9 @@ class Handler(BaseHTTPRequestHandler):
             selected = _select_fixtures(fixtures, date_value, matchday)
             if not selected:
                 if date_value:
-                    error = f"Aucun match trouve pour le {date_value}. Verifiez le format YYYY-MM-DD ou choisissez une autre date."
+                    error = f"Aucun match trouvé pour le {date_value}. Vérifiez le format YYYY-MM-DD ou choisissez une autre date."
                 else:
-                    error = f"Aucun match trouve pour la journee {matchday}. Essayez une autre journee ou retirez le filtre."
+                    error = f"Aucun match trouvé pour la journée {matchday}. Essayez une autre journée ou retirez le filtre."
             if odds_file:                                  # manual override (advanced)
                 odds_board = _load_odds_board(odds_file)
             elif tab == "paris":                           # betting page: auto-fetch (cooldown + credit-capped)
@@ -1121,7 +1178,7 @@ class Handler(BaseHTTPRequestHandler):
             rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
             if tab == "paris":
                 if (health or {}).get("level") == "critical":
-                    error = "Recommandations indisponibles: la qualite des donnees est critique. Mettez a jour fixtures, ratings et team_status puis reessayez."
+                    error = "Recommandations indisponibles : la qualité des données est critique. Mettez à jour fixtures, ratings et team_status puis réessayez."
                 else:
                     recommendations = _build_recommendations(rows, bankroll=bankroll)
         except Exception as exc:

@@ -14,3 +14,4 @@ data/.auto_refresh_state.json
 # The Odds API: secret key must never be committed; odds cache is regenerated
 data/odds_api_key.txt
 data/.odds_state.json
+data/kickoffs.json

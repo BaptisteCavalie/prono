@@ -1,7 +1,7 @@
 {
   "scale": "elo",
   "as_of": "2026-06-08",
-  "source": "World Football Elo auto-refresh via eloratings.net TSV endpoints (last refresh 2026-06-08T15:08:00Z)",
+  "source": "World Football Elo auto-refresh via eloratings.net TSV endpoints (last refresh 2026-06-08T19:57:20Z)",
   "teams": {
     "Spain": {
       "rating": 2155,

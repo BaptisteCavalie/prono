@@ -20,7 +20,7 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.error import HTTPError
@@ -28,6 +28,12 @@ from urllib.parse import urlencode
 from urllib.request import urlopen
 
 from engine import data
+
+try:                                            # exact Europe/Paris incl. DST
+    from zoneinfo import ZoneInfo
+    _PARIS = ZoneInfo("Europe/Paris")
+except Exception:                               # no tz database -> WC is summer (CEST = UTC+2)
+    _PARIS = timezone(timedelta(hours=2))
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -84,6 +90,42 @@ def _cache_paths() -> Tuple[Path, Path]:
         return DATA_DIR / "odds.json", DATA_DIR / ".odds_state.json"
     tmp = Path(tempfile.gettempdir())
     return tmp / "prono_odds.json", tmp / "prono_odds_state.json"
+
+
+def _kick_path() -> Path:
+    if _writable_data():
+        return DATA_DIR / "kickoffs.json"
+    return Path(tempfile.gettempdir()) / "prono_kickoffs.json"
+
+
+def paris_parts(utc_iso: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
+    """UTC ISO kickoff -> (Paris date 'YYYY-MM-DD', Paris time 'HH:MM').
+
+    This is the jetlag fix: a 21:00 US-evening kickoff is ~03:00 next-day in
+    France, so it correctly rolls onto the next calendar date."""
+    if not utc_iso:
+        return None, None
+    try:
+        dt = datetime.fromisoformat(str(utc_iso).replace("Z", "+00:00"))
+    except ValueError:
+        return None, None
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    local = dt.astimezone(_PARIS)
+    return local.date().isoformat(), local.strftime("%H:%M")
+
+
+def load_kickoffs() -> Dict[str, str]:
+    """{FIXTURE_ID: utc_iso} captured from the odds feed (cache-only, no network)."""
+    for p in (_kick_path(), DATA_DIR / "kickoffs.json"):
+        if p.is_file():
+            try:
+                with open(p, encoding="utf-8") as f:
+                    raw = json.load(f)
+                return {str(k).upper(): v for k, v in raw.items() if isinstance(v, str)}
+            except (OSError, json.JSONDecodeError):
+                continue
+    return {}
 
 
 def _http(url: str, timeout: int = 20):
@@ -192,9 +234,11 @@ def _consensus_odds(event: Dict) -> Optional[List[float]]:
 
 
 def events_to_board(events: List[Dict], ratings_payload: Dict,
-                    fixtures: List[Dict]) -> Tuple[Dict[str, List[float]], int, int]:
-    """Pure mapping (no network): API events -> {fixture_id: [home,draw,away]}.
-    Odds are re-oriented to each fixture's home/away order. Upcoming fixtures only."""
+                    fixtures: List[Dict]) -> Tuple[Dict[str, List[float]], Dict[str, str], int, int]:
+    """Pure mapping (no network): API events -> (board, kickoffs, matched, unmatched).
+
+    board = {fixture_id: [home,draw,away]} (re-oriented to the fixture's order);
+    kickoffs = {fixture_id: commence_time_utc}. Upcoming fixtures only."""
     fx_index: Dict[frozenset, Dict] = {}
     for m in fixtures or []:
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
@@ -204,6 +248,7 @@ def events_to_board(events: List[Dict], ratings_payload: Dict,
             fx_index[frozenset((home.lower(), away.lower()))] = m
 
     board: Dict[str, List[float]] = {}
+    kickoffs: Dict[str, str] = {}
     matched = unmatched = 0
     for ev in events or []:
         odds = _consensus_odds(ev)
@@ -221,8 +266,11 @@ def events_to_board(events: List[Dict], ratings_payload: Dict,
         oriented = odds if ch.lower() == m["home"].lower() else [odds[2], odds[1], odds[0]]
         fid = str(m.get("id") or "").upper() or f"{m['home']} vs {m['away']}"
         board[fid] = oriented
+        ct = ev.get("commence_time")
+        if isinstance(ct, str) and ct:
+            kickoffs[fid] = ct
         matched += 1
-    return board, matched, unmatched
+    return board, kickoffs, matched, unmatched
 
 
 def _discover_sport_key(key: str) -> str:
@@ -282,7 +330,7 @@ def ensure_board(ratings_payload: Dict, fixtures: List[Dict],
         return cached                                   # cooldown
 
     events, remaining, used, errors, sk = fetch_events(get_key())
-    board, matched, unmatched = events_to_board(events, ratings_payload, fixtures)
+    board, kickoffs, matched, unmatched = events_to_board(events, ratings_payload, fixtures)
 
     new_state = {
         "attempted_at": _iso_now(),
@@ -299,6 +347,8 @@ def ensure_board(ratings_payload: Dict, fixtures: List[Dict],
             new_state["matches"] = len(board)
             _write_json(cache_path, board)
             _write_json(state_path, new_state)
+            if kickoffs:
+                _write_json(_kick_path(), kickoffs)     # persist kickoff times for the date fix
             return board
         new_state["fetched_at"] = state.get("fetched_at")
         new_state["matches"] = len(cached)
