@@ -14,7 +14,7 @@ import sys
 from datetime import datetime
 from typing import Dict
 
-from engine import autonomous, data, data_quality, model, report, solidity, strategies, team_signals
+from engine import autonomous, data, data_quality, model, mpp, report, solidity, strategies, team_signals
 from engine import odds as oddsmod
 from engine import updater
 
@@ -152,6 +152,7 @@ def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
             "values": values,
             "review_reasons": review_reasons,
             "review_priority": review_priority,
+            "rec": mpp.recommend(out, odds),
         })
 
     ranked = sorted(rows, key=lambda r: (-r["pick_prob"], -r["out"]["top_scores"][0][1]))
@@ -169,15 +170,28 @@ def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
     if not ranked:
         print(" - no matches after filtering")
     for idx, r in enumerate(ranked, start=1):
-        (i, j), sp = r["out"]["top_scores"][0]
+        rec = r["rec"]
+        i, j = rec["score"]
         est_tag = "*" if r["est"] else ""
         vtag = " VALUE" if r["values"] else ""
         print(
             f"{idx:>2}. {r['home']} vs {r['away']:<26} "
             f"pick {r['pick']} {round(r['pick_prob'] * 100):>2}%{est_tag} "
-            f"score {i}-{j} {round(sp * 100):>2}%{est_tag} "
+            f"prono {i}-{j} +{rec['bonus']:>3} {rec['tier']:<9} "
+            f"E[MPP] {rec['exp_points']:>4.1f} "
             f"conf {r['conf']}{vtag}"
         )
+
+    print()
+    print("MPP X2 boost candidate (highest expected points)")
+    x2 = max(rows, key=lambda r: r["rec"]["exp_points"])
+    xr = x2["rec"]
+    xi, xj = xr["score"]
+    print(
+        f" - {x2['home']} vs {x2['away']}: {xi}-{xj} "
+        f"(+{xr['bonus']} {xr['tier']}, E[MPP] {xr['exp_points']:.1f}) "
+        f"-> double it with your one X2"
+    )
 
     print()
     print("Value flags")

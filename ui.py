@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, data, data_quality, model, odds as oddsmod, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, data, data_quality, model, mpp, odds as oddsmod, odds_fetch, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -87,6 +87,15 @@ def _load_odds_board(path: Optional[str]) -> Dict[str, List[float]]:
         raise ValueError(f"invalid odds key {key!r}; use fixture id or 'Home vs Away'")
 
     return board
+
+
+def _default_odds_file() -> str:
+    """Auto-fetched odds first, then an optional manual file. No demo data, so the
+    Paris page only ever shows odds that are really there."""
+    for cand in ("data/odds.json", "data/odds_md1.json"):
+        if (ROOT / cand).is_file():
+            return cand
+    return ""
 
 
 def _match_key(match: Dict) -> str:
@@ -240,14 +249,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
                             ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
         pick_sel, pick_label, pick_prob = _best_selection(home, away, out)
 
-        (si, sj), sp = out["top_scores"][0]
-        live_predicted_score = f"{si}-{sj}"
-        frozen_home = _as_int(m.get("predicted_home"))
-        frozen_away = _as_int(m.get("predicted_away"))
-        preserved_predicted_score = None
-        if frozen_home is not None and frozen_away is not None:
-            preserved_predicted_score = f"{frozen_home}-{frozen_away}"
-        predicted_score = preserved_predicted_score or live_predicted_score
+        (si, sj), sp = out["top_scores"][0]  # modal score (kept for the note below)
         est = rh.get("source") != "live" or ra.get("source") != "live"
         completed = _is_completed(m)
         actual_score = None
@@ -255,6 +257,19 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             actual_score = f"{m.get('actual_home')}-{m.get('actual_away')}"
 
         odds = _find_match_odds(m, odds_board)
+
+        # MPP-optimal prono: the scoreline that maximises expected Mon Petit Prono
+        # points (consistent with the favoured 1N2, then rarity-bonus aware), not
+        # just the single most-likely scoreline.
+        rec = mpp.recommend(out, odds)
+        rsi, rsj = rec["score"]
+        live_predicted_score = f"{rsi}-{rsj}"
+        frozen_home = _as_int(m.get("predicted_home"))
+        frozen_away = _as_int(m.get("predicted_away"))
+        preserved_predicted_score = None
+        if frozen_home is not None and frozen_away is not None:
+            preserved_predicted_score = f"{frozen_home}-{frozen_away}"
+        predicted_score = preserved_predicted_score or live_predicted_score
         bet_label = pick_label
         bet_conf = round(pick_prob * 100)
         value_rows = []
@@ -305,12 +320,16 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         elif not value_summaries:
             notes.append("Pas d'opportunite de value detectee avec les cotes actuelles.")
 
-        pick_is_draw = pick_sel == "draw"
-        top_score_is_draw = si == sj
-        if pick_is_draw != top_score_is_draw:
+        if rec["differs"]:
             notes.append(
-                "Le score exact le plus probable peut etre different du meilleur choix 1N2. "
-                "Le score exact est un seul scenario, alors que le 1N2 additionne plusieurs scenarios."
+                f"Prono optimise Mon Petit Prono: {live_predicted_score} maximise les points "
+                f"attendus (bonus score exact +{rec['bonus']} {rec['tier']}). Le score le plus "
+                f"probable du modele reste {si}-{sj}."
+            )
+        if rec["bonus"] >= 70:
+            notes.append(
+                "Pari sur un score rare: gros bonus MPP mais probabilite plus faible. "
+                "Plus risque — bon candidat pour le bonus X2."
             )
 
         if completed:
@@ -331,9 +350,14 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "away_flag": _team_flag(away),
             "score": actual_score or predicted_score,
             "actual_score": actual_score,
-            "score_conf": round(sp * 100),
+            "score_conf": round(rec["p_exact"] * 100),
             "predicted_score": predicted_score,
             "predicted_score_live": live_predicted_score,
+            "mpp_bonus": rec["bonus"],
+            "mpp_tier": rec["tier"],
+            "mpp_exp_points": round(rec["exp_points"], 1),
+            "mpp_modal_score": f"{si}-{sj}",
+            "mpp_differs": rec["differs"],
             "prediction_saved": bool(preserved_predicted_score),
             "prediction_changed": (
                 bool(preserved_predicted_score)
@@ -456,6 +480,20 @@ def _sel_fr(sel: str, home: str, away: str) -> str:
             "away": f"Victoire {away}"}.get(sel, sel)
 
 
+def _paris_odds_status() -> str:
+    """One-line note on where the odds come from (auto-fetch status)."""
+    if odds_fetch.has_key():
+        state = odds_fetch.read_state()
+        if state.get("fetched_at"):
+            return (f"<div class='legend'>Cotes auto via The Odds API — "
+                    f"{state.get('matches', 0)} match(s), maj {html.escape(str(state['fetched_at']))}.</div>")
+        return ("<div class='legend'>Cotes auto via The Odds API (cle detectee). "
+                "La liste se remplit au prochain rafraichissement / quand des cotes WC sont publiees.</div>")
+    return ("<div class='legend'>Cotes auto <strong>non configurees</strong>: ajoutez une cle gratuite "
+            "The Odds API (env <code>ODDS_API_KEY</code> ou fichier <code>data/odds_api_key.txt</code>) "
+            "pour activer la recuperation automatique des cotes. Sans cotes, aucune value n'est calculable.</div>")
+
+
 def _health_level_ui(level: str) -> Dict[str, str]:
     lvl = (level or "").lower()
     if lvl == "good":
@@ -570,9 +608,6 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".bet-card .bet-sel{font-weight:700;color:#10384d}",
         ".bet-card .bet-meta{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.35}",
         ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:#168a3d;color:#fff;font-weight:800;font-size:.85rem}",
-        ".ctrl-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;margin-top:8px}",
-        ".ctrl-row label{display:flex;flex-direction:column;gap:3px;font-size:.76rem;color:var(--muted)}",
-        ".ctrl-row input,.ctrl-row select{min-height:36px;padding:6px 9px;border-radius:9px;border:1px solid var(--line-2);background:#fff;font:inherit}",
         "input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 40%,white);outline-offset:2px}",
         ".stats{display:flex;gap:8px;flex-wrap:wrap}",
         ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
@@ -807,27 +842,14 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
     if safe_tab == "paris":
         rec = recommendations
         bk = (rec.get("bankroll") if rec else bankroll) or bankroll
-        md_opts = "".join(
-            f"<option value='{v}'{' selected' if str(matchday) == v else ''}>{lbl}</option>"
-            for v, lbl in (("", "Toutes les journees"), ("1", "Journee 1"),
-                           ("2", "Journee 2"), ("3", "Journee 3"))
-        )
         parts.extend([
             "<section class='panel'>",
             "<h2 style='margin:0 0 4px'>Recommandations de paris — strategie prudente</h2>",
-            "<p class='subtitle'>Uniquement de la <strong>value</strong> (le modele bat la cote de-marginee), "
-            "probabilites <strong>ramenees vers le marche</strong> pour corriger l'exces de confiance, "
-            "mises en <strong>quart-Kelly plafonnees</strong>, combines limites a <strong>2 selections</strong>. "
-            "Pour le crash test reel: gardez une petite bankroll.</p>",
-            "<form method='get' action='/' class='ctrl-row'>",
-            "<input type='hidden' name='tab' value='paris'>",
-            f"<label>Journee<select name='matchday'>{md_opts}</select></label>",
-            f"<label>Fichier de cotes (JSON)<input type='text' name='odds_file' value='{html.escape(odds_file)}' placeholder='data/odds_md1.json'></label>",
-            f"<label>Bankroll (EUR)<input type='number' name='bankroll' min='1' step='1' value='{bk:g}'></label>",
-            "<button type='submit'>Calculer les paris</button>",
-            "</form>",
-            "<div class='legend'>Sans fichier de cotes valide, aucune value n'est calculable. "
-            "Modele a remplir: <code>data/odds_md1.template.json</code> (mettez les cotes 1 / N / 2 a la place des 0).</div>",
+            "<p class='subtitle'>Selection calculee automatiquement: uniquement de la <strong>value</strong> "
+            "(le modele bat la cote de-marginee), probabilites <strong>ramenees vers le marche</strong> pour "
+            "corriger l'exces de confiance, mises en <strong>quart-Kelly plafonnees</strong>, combines limites "
+            f"a <strong>2 selections</strong>. Bankroll de test: {bk:.0f} EUR (petites mises).</p>",
+            _paris_odds_status(),
             "</section>",
         ])
 
@@ -1052,6 +1074,8 @@ class Handler(BaseHTTPRequestHandler):
         tab = (params.get("tab", ["futurs"])[0] or "futurs").strip().lower()
         if action == "reco":          # back-compat: old reco button -> Paris page
             tab = "paris"
+        if tab == "paris" and not odds_file:   # auto-source odds, no manual import
+            odds_file = _default_odds_file()
         no_auto = (params.get("no_auto", [""])[0] or "") in ("1", "on", "true")
         try:
             bankroll = float((params.get("bankroll", ["50"])[0] or "50").strip())

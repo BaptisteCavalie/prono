@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 from urllib.request import urlopen
 
-from engine import data, model
+from engine import data, model, mpp, odds_fetch
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -183,7 +183,7 @@ def _refresh_prediction_snapshots(fixtures_payload: Dict, ratings_payload: Dict)
         ra = float(teams[away].get("rating", 0.0))
         home_adv = float(m.get("home_adv", 0.0) or 0.0)
         out = model.analyse(rh, ra, home_adv=home_adv)
-        (ph, pa), _ = out["top_scores"][0]
+        ph, pa = mpp.recommend(out)["score"]  # freeze the MPP-optimal prono
 
         old_h = m.get("predicted_home")
         old_a = m.get("predicted_away")
@@ -243,6 +243,9 @@ def autonomous_refresh(force: bool = False, cooldown_minutes: int = 180) -> Dict
         "home_adv_updated": 0,
         "team_status_added": 0,
         "predictions_updated": 0,
+        "odds_matched": 0,
+        "odds_written": 0,
+        "odds_skipped": "",
         "errors": [],
     }
 
@@ -282,6 +285,19 @@ def autonomous_refresh(force: bool = False, cooldown_minutes: int = 180) -> Dict
         report["predictions_updated"] = _refresh_prediction_snapshots(fixtures_payload, ratings_payload)
     except Exception as exc:
         report["errors"].append(f"prediction_refresh_failed: {exc}")
+
+    try:
+        if odds_fetch.has_key():
+            board, odds_report = odds_fetch.build_board(ratings_payload, fixtures_payload)
+            report["odds_matched"] = odds_report.get("matched", 0)
+            report["errors"].extend(odds_report.get("errors", []))
+            if board:                              # never wipe good odds with an empty fetch
+                odds_fetch.write_board(board, odds_report)
+                report["odds_written"] = len(board)
+        else:
+            report["odds_skipped"] = "no_api_key"
+    except Exception as exc:
+        report["errors"].append(f"odds_fetch_failed: {exc}")
 
     try:
         _write_json(RATINGS_PATH, ratings_payload)

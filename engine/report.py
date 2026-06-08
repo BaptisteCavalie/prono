@@ -1,5 +1,7 @@
 """Render model output as a human-readable prediction card + Claude brief."""
-from typing import Dict
+from typing import Dict, List, Optional
+
+from engine import mpp
 
 
 def _pct(x: float) -> str:
@@ -8,6 +10,15 @@ def _pct(x: float) -> str:
 
 def _scores(top) -> str:
     return "   ".join(f"{i}-{j} {_pct(p)}" for (i, j), p in top[:4])
+
+
+def _odds_from_value_rows(value_rows) -> Optional[List[float]]:
+    """Rebuild a [home, draw, away] decimal triple from value_1x2 rows."""
+    if not value_rows:
+        return None
+    by_sel = {r["sel"]: r.get("odds") for r in value_rows}
+    triple = [by_sel.get("home"), by_sel.get("draw"), by_sel.get("away")]
+    return triple if all(isinstance(x, (int, float)) for x in triple) else None
 
 
 def confidence(out: Dict, both_live: bool) -> str:
@@ -34,6 +45,8 @@ def card(match: Dict, home: str, away: str,
          r_home: Dict, r_away: Dict, out: Dict) -> str:
     both_live = r_home.get("source") == "live" and r_away.get("source") == "live"
     conf = confidence(out, both_live)
+    rec = mpp.recommend(out)
+    ri, rj = rec["score"]
     return "\n".join([
         "─" * 64,
         f" {home}  vs  {away}    · {_header_tag(match)}",
@@ -44,6 +57,8 @@ def card(match: Dict, home: str, away: str,
         f"   xG:    {home} {out['lambda_home']:.2f}  ·  "
         f"{away} {out['lambda_away']:.2f}",
         f"   scores: {_scores(out['top_scores'])}",
+        f"   MPP prono: {ri}-{rj}  (+{rec['bonus']} {rec['tier']}, "
+        f"E[MPP] {rec['exp_points']:.1f})",
         f"   O2.5 {_pct(out['p_over25'])}   ·   BTTS {_pct(out['p_btts'])}"
         f"   ·   confidence: {conf}",
     ])
@@ -54,12 +69,16 @@ def brief(match: Dict, home: str, away: str,
     src = f"{r_home['source']}/{r_away['source']}"
     top = ", ".join(f"{i}-{j}" for (i, j), _ in out["top_scores"][:3])
     grp = f" (Group {match.get('group')})" if match.get("group") else ""
+    rec = mpp.recommend(out)
+    ri, rj = rec["score"]
     return "\n".join([
         f"ASK CLAUDE — {home} vs {away}{grp}",
         f"  model: {home} {_pct(out['p_home'])} / Draw {_pct(out['p_draw'])} "
         f"/ {away} {_pct(out['p_away'])}; top {top}; "
         f"O2.5 {_pct(out['p_over25'])}; BTTS {_pct(out['p_btts'])}; "
         f"xG {out['lambda_home']:.2f}-{out['lambda_away']:.2f}",
+        f"  MPP prono: {ri}-{rj} (+{rec['bonus']} {rec['tier']}, "
+        f"E[MPP] {rec['exp_points']:.1f})",
         f"  ratings: {src}",
         "  need from live research: confirmed XIs, injuries/suspensions, "
         "qualification scenario & motivation, weather/venue, last-3 form",
@@ -84,7 +103,10 @@ def render_value(home: str, away: str, rows) -> str:
 
 def simple(match: Dict, home: str, away: str,
            r_home: Dict, r_away: Dict, out: Dict, value_rows=None) -> str:
-    (i, j), sp = out["top_scores"][0]
+    rec = mpp.recommend(out, _odds_from_value_rows(value_rows))
+    i, j = rec["score"]
+    sp = rec["p_exact"]
+    mi, mj = rec["modal_score"]
     est = "*" if (r_home.get("source") != "live"
                   or r_away.get("source") != "live") else ""
     tag = ""
@@ -107,6 +129,8 @@ def simple(match: Dict, home: str, away: str,
         name, p = max(picks, key=lambda x: x[1])
         bet = f"{name}   {round(p * 100)}%{est}"
 
+    ref = f"  (model top {mi}-{mj})" if rec["differs"] else ""
     return (f"{home} vs {away}{tag}\n"
-            f"  score   {i}-{j}   {round(sp * 100)}%{est}\n"
+            f"  prono   {i}-{j}   {round(sp * 100)}%{est}   "
+            f"+{rec['bonus']} {rec['tier']}   E[MPP] {rec['exp_points']:.1f}{ref}\n"
             f"  bet     {bet}")

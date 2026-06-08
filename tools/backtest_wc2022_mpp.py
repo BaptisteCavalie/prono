@@ -36,52 +36,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from engine import model  # noqa: E402
+from engine import model, mpp  # noqa: E402
+from engine.mpp import (  # noqa: E402  (single source of truth for the barème)
+    CROWD_SHARE, DEFAULT_SHARE, base_points, bonus_for_share, tier_name,
+)
 from tools.backtest_wc2022 import ELO_2022  # noqa: E402
 from tools.backtest_wc2022_groupstage import GROUP_STAGE, HOST, HOST_ADV, outcome  # noqa: E402
 from tools.backtest_wc2022_odds import ODDS  # noqa: E402
-
-# MPP Mondial exact-score bonus tiers: (max crowd share, bonus points).
-BONUS_TIERS = [
-    (0.30, 20),   # commun
-    (0.20, 30),   # rare         (20-30%)
-    (0.05, 50),   # tres rare    (5-20%)
-    (0.005, 70),  # mega rare    (0.5-5%)
-    (0.0, 100),   # ultra rare   (<0.5%)
-]
-
-# Estimated share of correct-result players who pick a given exact score. Common
-# scorelines get piled on (low bonus); odd scores are rare (big bonus). These are
-# realistic central estimates, not a 2022 feed — see the band the script prints.
-CROWD_SHARE = {
-    (1, 0): 0.28, (0, 1): 0.28,
-    (2, 1): 0.20, (1, 2): 0.20,
-    (1, 1): 0.24,
-    (2, 0): 0.16, (0, 2): 0.16,
-    (0, 0): 0.12,
-    (3, 1): 0.07, (1, 3): 0.07,
-    (3, 0): 0.06, (0, 3): 0.06,
-    (2, 2): 0.05,
-    (3, 2): 0.025, (2, 3): 0.025,
-}
-DEFAULT_SHARE = 0.01  # anything not listed = a "rare" scoreline
-
-
-def bonus_for_share(share: float) -> int:
-    for max_share, pts in BONUS_TIERS:
-        if share >= max_share:
-            return pts
-    return 100
-
-
-def tier_name(pts: int) -> str:
-    return {20: "commun", 30: "rare", 50: "tres rare",
-            70: "mega rare", 100: "ultra rare"}[pts]
-
-
-def base_points(odds: float) -> int:
-    """MPP base ('bon resultat') points, approximated as odds x 10."""
-    return round(odds * 10)
 
 
 def rows():
@@ -216,17 +177,45 @@ def main() -> int:
     print(f"  keeps the ~{b_base - base_total} base points A throws away by over-submitting 1-1"
           f" draws.")
 
+    # Strategy C: the SHIPPED recommender, engine/mpp.recommend() — picks the
+    # outcome-consistent score that maximises expected MPP points (and chases the
+    # rarity bonus). This is what predict.py now prints, graded on the same games.
+    c_base = c_exact = c_bonus = 0
+    for i, (md, grp, h, a, gh, ga) in enumerate(GROUP_STAGE, start=1):
+        hadv = HOST_ADV if h == HOST else 0.0
+        out = model.analyse(ELO_2022[h], ELO_2022[a], home_adv=hadv)
+        rec = mpp.recommend(out)  # no full 1X2 odds triple in this dataset
+        s = rec["score"]
+        if outcome(*s) == outcome(gh, ga):
+            c_base += base_points(ODDS[i])
+        if s == (gh, ga):
+            c_exact += 1
+            c_bonus += bonus_for_share(CROWD_SHARE.get(s, DEFAULT_SHARE))
+    print(f"\nSTRATEGY C — engine/mpp.recommend() (the shipped prono)")
+    print(f"  exact scores : {c_exact}/{n} = {c_exact/n*100:.0f}%   "
+          f"MPP total {c_base + c_bonus} (base {c_base} + bonus +{c_bonus})")
+    print(f"  Maximises expected points: keeps B's outcome discipline AND chases")
+    print(f"  the rarity bonus — but rare-score bids miss more often than they hit.")
+
+    c_total = c_base + c_bonus
     print(f"\nVERDICT")
-    edge_exact = exact_hits - fav_exact
-    print(f"  Exact scores: {exact_hits}/{n} = {exact_hits/n*100:.0f}% — strong. Above the ~10-15% "
-          f"football norm and")
-    print(f"  beats the lazy 1-0-favourite baseline ({fav_exact}/{n}) by {edge_exact:+d} games.")
-    print(f"  All hits land on COMMON scores (2-0 / 1-1 / 0-2) -> MPP's low +30/+50")
-    print(f"  bonus tiers; the model never fires the rare +70/+100 jackpots.")
-    print(f"  Total MPP ~{tot_lo}-{tot_hi} pts (crowd-tier band) vs baseline {fav_base + fav_bonus}: "
-          f"you'd finish")
-    print(f"  comfortably mid-upper table, NOT win a league on lottery scorelines.")
-    print(f"  Best lever: play strategy B (consistent score), not the raw modal score.")
+    edge_exact = c_exact - fav_exact
+    print(f"  Exact scores are a real strength: the shipped recommender (C) hits "
+          f"{c_exact}/{n} = {c_exact/n*100:.0f}%,")
+    print(f"  above the ~10-15% football norm and beating the lazy 1-0-favourite "
+          f"baseline ({fav_exact}/{n}) by {edge_exact:+d}.")
+    print(f"  MPP points, best -> worst:  C {c_total}  >  B {b_base + b_bonus}  >  "
+          f"A {tot_mid}  >  baseline {fav_base + fav_bonus}.")
+    print(f"  Two levers do the work: (1) submit the score CONSISTENT with the "
+          f"favoured 1N2 (B over A,")
+    print(f"  +{b_base - base_total} base pts, stops wasting picks on 1-1 draws); (2) chase the "
+          f"rarity BONUS where the")
+    print(f"  model rates a rare score nearly as likely (C over B). C is higher "
+          f"EV but higher variance —")
+    print(f"  its rare bids miss more often, and the gain leans on the CROWD_SHARE "
+          f"estimates. Net: you'd")
+    print(f"  finish upper table and occasionally snag a big bonus, but it's not a "
+          f"guaranteed league win.")
     return 0
 
 

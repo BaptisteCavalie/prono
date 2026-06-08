@@ -22,6 +22,8 @@ def home():
     tab = (request.args.get("tab", "futurs") or "futurs").strip().lower()
     if action == "reco":          # back-compat: old reco button -> Paris page
         tab = "paris"
+    if tab == "paris" and not odds_file:   # auto-source odds, no manual import
+        odds_file = ui._default_odds_file()
     no_auto = (request.args.get("no_auto", "") or "") in ("1", "on", "true")
     try:
         bankroll = float((request.args.get("bankroll", "50") or "50").strip())

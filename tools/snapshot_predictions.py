@@ -18,7 +18,7 @@ FIXTURES_PATH = ROOT / "data" / "fixtures.json"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import data, model, team_signals, updater
+from engine import data, model, mpp, team_signals, updater
 
 
 def _sort_key(match):
@@ -61,7 +61,7 @@ def main(argv=None) -> int:
         out = model.analyse(float(rh["rating"]), float(ra["rating"]),
                             home_adv=float(m.get("home_adv", 0.0) or 0.0),
                             ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
-        (ph, pa), _ = out["top_scores"][0]
+        ph, pa = mpp.recommend(out)["score"]  # freeze the MPP-optimal prono
 
         m["predicted_home"] = int(ph)
         m["predicted_away"] = int(pa)
