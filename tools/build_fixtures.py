@@ -6,10 +6,14 @@ groups.json changes. Knockout fixtures are added separately once the bracket
 is known.
 """
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
+sys.path.insert(0, str(ROOT))
+
+from engine import home_advantage  # noqa: E402
 
 # Standard 4-team schedule by draw position (0-indexed): two matches per round.
 PATTERN = [(0, 1), (2, 3), (0, 2), (3, 1), (3, 0), (1, 2)]
@@ -24,15 +28,18 @@ def main() -> None:
     for g in sorted(groups):
         teams = groups[g]
         for (h, a), md in zip(PATTERN, MATCHDAY):
+            home, away = teams[h], teams[a]
+            adv = home_advantage.home_adv_for(home, away)
             matches.append({
                 "id": f"G{n:02d}",
                 "stage": "group",
                 "group": g,
                 "matchday": md,
-                "home": teams[h],
-                "away": teams[a],
-                "venue": "neutral",
+                "home": home,
+                "away": away,
+                "venue": home_advantage.host_venue_label(home, away) or "neutral",
                 "date": None,
+                "home_adv": adv,
                 "actual_home": None,
                 "actual_away": None,
             })

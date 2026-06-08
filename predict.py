@@ -12,8 +12,9 @@ import argparse
 import json
 import sys
 from datetime import datetime
+from typing import Dict
 
-from engine import data, model, report, strategies
+from engine import autonomous, data, data_quality, model, report, solidity, strategies, team_signals
 from engine import odds as oddsmod
 from engine import updater
 
@@ -29,7 +30,8 @@ def _split_match(s: str):
 def _emit(ratings, home, away, match, show_brief, odds=None, simple=False):
     rh = ratings["teams"][home]
     ra = ratings["teams"][away]
-    out = model.analyse(rh["rating"], ra["rating"], home_adv=match.get("home_adv", 0.0))
+    out = model.analyse(rh["rating"], ra["rating"], home_adv=match.get("home_adv", 0.0),
+                        ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
     if simple:
         rows = oddsmod.value_1x2(out, odds[0], odds[1], odds[2]) if odds else None
         print(report.simple(match, home, away, rh, ra, out, rows))
@@ -87,7 +89,8 @@ def _analyse_match(ratings, match):
     home, away = match["home"], match["away"]
     rh = ratings["teams"][home]
     ra = ratings["teams"][away]
-    out = model.analyse(rh["rating"], ra["rating"], home_adv=match.get("home_adv", 0.0))
+    out = model.analyse(rh["rating"], ra["rating"], home_adv=match.get("home_adv", 0.0),
+                        ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
     return home, away, rh, ra, out
 
 
@@ -205,6 +208,79 @@ def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
         )
 
 
+def _print_solidity_report(solidity_report: Dict, title: str = "MODEL SOLIDITY") -> None:
+    print(title)
+    print("=" * 64)
+    if solidity_report.get("score") is None:
+        print("score: n/a (insufficient)")
+    else:
+        print(f"score: {solidity_report['score']}/100 ({solidity_report['level']})")
+    print(f"matches evaluated: {solidity_report['matches']}")
+    if solidity_report.get("result_accuracy") is not None:
+        print(f"1X2 accuracy: {round(solidity_report['result_accuracy'] * 100)}%")
+    if solidity_report.get("exact_score_hit") is not None:
+        print(f"exact score hit: {round(solidity_report['exact_score_hit'] * 100)}%")
+    if solidity_report.get("brier_1x2") is not None:
+        print(f"1X2 brier: {solidity_report['brier_1x2']:.3f}")
+    if solidity_report.get("logloss_1x2") is not None:
+        print(f"1X2 log-loss: {solidity_report['logloss_1x2']:.3f}")
+    if solidity_report.get("rps_1x2") is not None:
+        print(f"1X2 RPS (lower=better): {solidity_report['rps_1x2']:.3f}")
+    if solidity_report.get("avg_pick_conf") is not None:
+        print(f"avg pick confidence: {round(solidity_report['avg_pick_conf'] * 100)}%")
+    if solidity_report.get("calibration_gap") is not None:
+        gap = solidity_report["calibration_gap"] * 100
+        print(f"calibration gap (conf-hit): {gap:+.1f}pt")
+
+    buckets = solidity_report.get("confidence_buckets") or []
+    if buckets:
+        print("confidence buckets:")
+        for b in buckets:
+            print(
+                f" - {b['range']}: n={b['count']} hit={round(b['hit_rate'] * 100)}% "
+                f"conf={round(b['avg_conf'] * 100)}% gap={(b['gap'] * 100):+.1f}pt"
+            )
+
+    if solidity_report.get("alerts"):
+        print("alerts:")
+        for a in solidity_report["alerts"]:
+            print(f" - {a}")
+    print()
+
+
+def _fmt_pct(value):
+    if value is None:
+        return "n/a"
+    return f"{round(value * 100)}%"
+
+
+def _print_coverage_report(health: Dict, fixture_count: int) -> None:
+    print("MISSING DATA COVERAGE")
+    print("=" * 64)
+    print(
+        "ratings live coverage: "
+        f"{(health.get('ratings_total_teams') or 0) - (health.get('ratings_estimate_count') or 0)}"
+        f"/{health.get('ratings_total_teams') or 0} "
+        f"({_fmt_pct(1.0 - (health.get('ratings_estimate_pct') or 0.0) if health.get('ratings_total_teams') else None)})"
+    )
+    print(
+        "team status coverage: "
+        f"{(health.get('status_total_teams') or 0) - (health.get('status_missing_count') or 0)}"
+        f"/{health.get('status_total_teams') or 0} "
+        f"({_fmt_pct(health.get('status_coverage_pct'))})"
+    )
+    print(
+        "home_adv coverage: "
+        f"{health.get('fixtures_with_home_adv') or 0}/{fixture_count} "
+        f"({_fmt_pct(health.get('home_adv_coverage_pct'))})"
+    )
+    if health.get("status_missing_sample"):
+        print("missing team_status sample:")
+        for team in health["status_missing_sample"]:
+            print(f" - {team}")
+    print()
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="WC2026 prediction engine")
     p.add_argument("--match", help='two teams, e.g. "France vs Senegal"')
@@ -228,14 +304,110 @@ def main(argv=None) -> int:
                    help="hide ranked picks below this probability (0.0-1.0)")
     p.add_argument("--no-auto-update", action="store_true",
                    help="disable automatic rating updates from completed fixtures")
+    p.add_argument("--no-auto-refresh", action="store_true",
+                   help="disable autonomous data refresh (live ratings/home_adv/prediction snapshots)")
+    p.add_argument("--auto-refresh-force", action="store_true",
+                   help="force autonomous refresh now (ignores cooldown)")
+    p.add_argument("--health-report", action="store_true",
+                   help="print data freshness/quality report before predictions")
+    p.add_argument("--coverage-report", action="store_true",
+                   help="print what data is missing (ratings/team status/home_adv coverage)")
+    p.add_argument("--backtest", action="store_true",
+                   help="run detailed backtest/calibration report on completed matches")
+    p.add_argument("--backtest-last", type=int, default=0,
+                   help="restrict backtest to the last N completed matches (0 = all)")
     p.add_argument("--list", action="store_true", help="list groups")
     args = p.parse_args(argv)
 
+    auto_report = None
+    if not args.no_auto_refresh:
+        auto_report = autonomous.autonomous_refresh(force=args.auto_refresh_force)
+
     ratings = data.load_ratings()
     fixtures = data.load_fixtures()
+    team_status = data.load_team_status()
+    solidity_report = solidity.assess_model_solidity(fixtures, ratings)
+
+    if args.backtest_last < 0:
+        print("--backtest-last must be >= 0", file=sys.stderr)
+        return 2
+
+    if args.backtest:
+        completed = [m for m in fixtures if m.get("actual_home") is not None and m.get("actual_away") is not None]
+        if args.backtest_last > 0 and len(completed) > args.backtest_last:
+            completed = sorted(completed, key=lambda m: (str(m.get("date") or "9999-99-99"), m.get("id") or ""))[-args.backtest_last:]
+        backtest_report = solidity.assess_model_solidity(completed, ratings)
+        _print_solidity_report(backtest_report, title="MODEL BACKTEST")
+        return 0
+
     applied_results = 0
     if not args.no_auto_update:
         ratings, applied_results = updater.apply_completed_results(ratings, fixtures)
+    ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
+    health = data_quality.assess_data_health(fixtures, ratings, team_status)
+
+    if args.health_report:
+        if auto_report and auto_report.get("ran"):
+            print("AUTONOMOUS REFRESH")
+            print("=" * 64)
+            print(
+                "ratings matched/updated: "
+                f"{auto_report.get('ratings_matched', 0)}/{auto_report.get('ratings_updated', 0)}"
+            )
+            print(
+                "home_adv rows updated: "
+                f"{auto_report.get('home_adv_updated', 0)}"
+            )
+            print(
+                "team_status rows added: "
+                f"{auto_report.get('team_status_added', 0)}"
+            )
+            print(
+                "prediction snapshots updated: "
+                f"{auto_report.get('predictions_updated', 0)}"
+            )
+            if auto_report.get("errors"):
+                print("refresh warnings:")
+                for err in auto_report["errors"]:
+                    print(f" - {err}")
+            print()
+        elif auto_report and auto_report.get("skipped"):
+            print(f"AUTONOMOUS REFRESH: skipped ({auto_report.get('reason')})")
+            print()
+
+        print("DATA HEALTH")
+        print("=" * 64)
+        print(f"score: {health['score']}/100 ({health['level']})")
+        print(f"missing fixture dates: {health['fixtures_missing_dates']}")
+        print(f"past fixtures without final score: {health['fixtures_past_without_score']}")
+        print(f"ratings age (days): {health['ratings_age_days']}")
+        print(
+            "estimated ratings: "
+            f"{health.get('ratings_estimate_count', 0)}/{health.get('ratings_total_teams', 0)}"
+            f" ({_fmt_pct(health.get('ratings_estimate_pct'))})"
+        )
+        print(f"team_status age (days): {health['status_age_days']}")
+        print(
+            "team_status coverage: "
+            f"{(health.get('status_total_teams') or 0) - (health.get('status_missing_count') or 0)}"
+            f"/{health.get('status_total_teams') or 0}"
+            f" ({_fmt_pct(health.get('status_coverage_pct'))})"
+        )
+        print(
+            "home_adv coverage: "
+            f"{health.get('fixtures_with_home_adv', 0)}/{len(fixtures)}"
+            f" ({_fmt_pct(health.get('home_adv_coverage_pct'))})"
+        )
+        if health["alerts"]:
+            print("alerts:")
+            for a in health["alerts"]:
+                print(f" - {a}")
+        print()
+
+        _print_solidity_report(solidity_report)
+
+    if args.coverage_report:
+        _print_coverage_report(health, len(fixtures))
 
     if args.list:
         for g, teams in sorted(data.load_groups().items()):

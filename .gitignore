@@ -6,3 +6,7 @@ venv/
 
 # personal runtime data (bet log + CLV), created by track.py on first use
 data/bets.json
+.vercel
+
+# autonomous refresh runtime state (regenerated on each run)
+data/.auto_refresh_state.json

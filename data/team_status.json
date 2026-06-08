@@ -1,0 +1,438 @@
+{
+  "as_of": "2026-06-08T09:44:01Z",
+  "source": "autonomous_refresh",
+  "teams": {
+    "France": {
+      "form": 0.2,
+      "injury_impact": 0.05,
+      "suspension_impact": 0.0,
+      "news_risk": 0.05,
+      "notes": [
+        "effectif quasi complet"
+      ]
+    },
+    "South Korea": {
+      "form": -0.1,
+      "injury_impact": 0.08,
+      "suspension_impact": 0.0,
+      "news_risk": 0.12,
+      "notes": [
+        "incertitudes sur un titulaire offensif"
+      ]
+    },
+    "Czechia": {
+      "form": 0.05,
+      "injury_impact": 0.03,
+      "suspension_impact": 0.0,
+      "news_risk": 0.08,
+      "notes": [
+        "groupe stable"
+      ]
+    },
+    "United States": {
+      "form": 0.1,
+      "injury_impact": 0.04,
+      "suspension_impact": 0.0,
+      "news_risk": 0.08,
+      "notes": [
+        "dynamique positive sur les derniers matchs"
+      ]
+    },
+    "Spain": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Argentina": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "England": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Brazil": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Portugal": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Colombia": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Netherlands": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Ecuador": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Croatia": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Germany": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Norway": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Türkiye": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Japan": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Switzerland": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Uruguay": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Mexico": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Belgium": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Senegal": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Morocco": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Iran": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Austria": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Ivory Coast": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Algeria": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Egypt": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Scotland": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Canada": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Sweden": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "DR Congo": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Paraguay": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Bosnia-Herzegovina": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Australia": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Ghana": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Tunisia": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "South Africa": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Uzbekistan": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Qatar": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Iraq": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Panama": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Saudi Arabia": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Cape Verde": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Jordan": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Haiti": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "Curaçao": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    },
+    "New Zealand": {
+      "form": 0.0,
+      "injury_impact": 0.0,
+      "suspension_impact": 0.0,
+      "news_risk": 0.0,
+      "notes": [
+        "seeded default"
+      ]
+    }
+  }
+}

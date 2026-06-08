@@ -3,6 +3,8 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from engine import home_advantage
+
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 ALIASES = {
@@ -37,7 +39,28 @@ def load_groups() -> Dict:
 
 
 def load_fixtures() -> List[Dict]:
-    return _load("fixtures.json")["matches"]
+    matches = _load("fixtures.json")["matches"]
+    for m in matches:
+        # Host-nation home advantage is fully derivable from the two team names,
+        # so derive it authoritatively on load. This is the single source of
+        # truth (engine/home_advantage.py) and stays correct even if a cached
+        # home_adv in the data file is stale or partial — notably it credits a
+        # host playing as the *away* team (negative home_adv), which a naive
+        # "home team only" fill misses. Set `home_adv_manual: true` on a fixture
+        # to opt out (e.g. a real neutral-site game inside a host country).
+        if not m.get("home_adv_manual"):
+            adv = home_advantage.home_adv_for(m.get("home", ""), m.get("away", ""))
+            m["home_adv"] = adv
+            if adv and m.get("venue") in (None, "", "neutral"):
+                m["venue"] = home_advantage.host_venue_label(m["home"], m["away"])
+    return matches
+
+
+def load_team_status() -> Dict:
+    path = DATA_DIR / "team_status.json"
+    if not path.is_file():
+        return {"as_of": None, "teams": {}, "source": "missing"}
+    return _load("team_status.json")
 
 
 def resolve_team(name: str, ratings: Dict) -> Optional[str]:

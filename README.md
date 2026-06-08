@@ -14,10 +14,19 @@ python3 predict.py --group I                      # a whole group
 python3 predict.py --matchday 1                   # every matchday-1 game
 python3 predict.py --matchday 1 --sheet          # one-page daily card (score + bet with %)
 python3 predict.py --matchday 1 --loop           # ranked confidence + value + Claude queue
+python3 predict.py --health-report --matchday 1  # data freshness/quality audit + predictions
+python3 predict.py --coverage-report --matchday 1 # explicit missing-data coverage report
+python3 predict.py --health-report --auto-refresh-force --matchday 1 # force autonomous data refresh now
+python3 predict.py --backtest                    # full backtest + calibration on completed matches
+python3 predict.py --backtest --backtest-last 20 # backtest limited to latest 20 completed matches
 python3 predict.py --date 2026-06-11 --loop      # date-based loop once fixture dates exist
 python3 predict.py --all --brief                  # all 72 group games + Claude handoff
 python3 predict.py --list                         # show the groups
 python3 ui.py                                     # local browser UI on http://127.0.0.1:8000
+python3 tools/update_team_status.py --team "France" --form 0.2 --injury 0.04 --news 0.05 --note "effectif quasi complet"
+python3 tools/bootstrap_team_status.py            # create missing team_status rows for all rated teams
+python3 tools/build_odds_template.py --matchday 1 --out data/odds_md1.template.json
+python3 tools/snapshot_predictions.py             # freeze pre-match predicted scores in fixtures.json
 ```
 
 ## UI (local one-page app)
@@ -35,9 +44,12 @@ The UI shows one row per game with:
 - bet recommendation + confidence %
 - flags and compact match cards grouped by matchday (better dense overview)
 - only core results visible by default, with important details in an accordion
+- data-health traffic light (green/orange/red) to decide if betting mode should be trusted
 - one-click ticket suggestions:
   - single safe bet (10 EUR)
   - safe combo bet (1 EUR) with higher combined odds
+
+If data health is **critical**, the UI blocks ticket generation until fixtures/ratings/team status are refreshed.
 
 Controls in the page:
 - `matchday` (1-3, leave blank to show all matchdays at once)
@@ -67,6 +79,46 @@ Controls in the page:
 | `data/groups.json` | the 12 groups (final draw) | edit by hand or ask Claude |
 | `data/ratings.json` | team Elo ratings | **ask Claude** to update with live numbers |
 | `data/fixtures.json` | 72 group matches (generated) | `python3 tools/build_fixtures.py` |
+| `data/team_status.json` | injuries/suspensions/form/news signals | update frequently (manual/Claude/automation) |
+
+### Autonomous mode (no manual data edits)
+- By default, `predict.py`, `ui.py`, and `api/index.py` run an autonomous refresh step before predictions.
+- The refresh step automatically:
+  - pulls live Elo ratings from `eloratings.net` TSV feeds
+  - updates `home_adv` in fixtures (host teams boosted, others neutral)
+  - ensures `team_status` coverage for all rated teams
+  - refreshes saved predicted scores in `fixtures.json` when inputs change
+- Built-in cooldown avoids hitting remote sources too frequently.
+- CLI controls:
+  - `--no-auto-refresh` disables autonomous refresh for a run
+  - `--auto-refresh-force` forces an immediate refresh (ignores cooldown)
+
+### Data quality + team signals
+- `engine/data_quality.py` computes a health score (freshness/completeness checks).
+- `engine/team_signals.py` converts team status (injury/suspension/form/news) into Elo deltas before prediction.
+- `--health-report` prints the quality report in CLI before cards/loops.
+- `--coverage-report` prints exactly what is missing for prediction quality:
+  - estimated ratings count
+  - team status coverage vs total teams
+  - fixture-level `home_adv` coverage
+- `tools/update_team_status.py` updates `data/team_status.json` quickly:
+
+```bash
+# single team update
+python3 tools/update_team_status.py --team "South Korea" --form -0.15 --injury 0.10 --news 0.12 --note "incertitude sur un titulaire"
+
+# bulk merge from a patch file
+python3 tools/update_team_status.py --merge-file data/team_status_patch.json --source morning_digest
+
+# strict check: fail if any team misses one required signal key
+python3 tools/update_team_status.py --merge-file data/team_status_patch.json --strict
+
+# bootstrap missing teams with neutral defaults
+python3 tools/bootstrap_team_status.py --note "seeded default"
+
+# create a fillable odds board template (id and match-label keys)
+python3 tools/build_odds_template.py --matchday 1 --out data/odds_md1.template.json
+```
 
 The tool itself never touches the network — that keeps it robust and offline.
 Live data refresh is done through Claude (the "ask Claude" layer), which has
@@ -97,7 +149,10 @@ python3 predict.py --date 2026-06-11 --sheet
 1. After games finish, write final scores into `data/fixtures.json`:
   - `actual_home`
   - `actual_away`
-2. Run the daily card:
+2. Before new games start, freeze model predictions (so you can compare later):
+  - `python3 tools/snapshot_predictions.py`
+  - adds `predicted_home`, `predicted_away`, `predicted_at` in fixtures
+3. Run the daily card:
   - `python3 predict.py --matchday N --sheet`
   - or `python3 predict.py --date YYYY-MM-DD --sheet`
 

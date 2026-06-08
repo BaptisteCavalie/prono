@@ -22,26 +22,84 @@ DC_RHO = -0.13              # Dixon-Coles low-score correlation (negative lifts 
 MIN_LAMBDA = 0.20           # floor on expected goals (no team is ever truly 0)
 MAX_GOALS = 10              # scoreline grid size (Poisson tail beyond this ~ 0)
 
+# Attack/defense profile (optional, off by default). The rating gap fixes *who*
+# wins and the base total; these per-team multipliers let scoring tendency shape
+# the *goal total* — the lever that drives Over/Under 2.5 and BTTS, which the
+# rating-only model leaves to the BASE_TOTAL constant. This is the classic
+# Poisson "attack strength × opponent defensive weakness" decomposition
+# (Maher 1982; Dixon-Coles 1997), kept multiplicative and centred at 1.0 so a
+# neutral profile reproduces the rating-only output exactly.
+AVG_GOALS_PG = 1.35         # league-average goals-for per team per game (intl)
+AD_CLAMP = (0.65, 1.55)     # bound attack/defense ratios against thin samples
+NEUTRAL_AD = (1.0, 1.0)     # (attack, defense) for a team with no goals data
+
 
 def win_expectancy(rating_diff: float) -> float:
     """Classic logistic expected score for the side with +rating_diff."""
     return 1.0 / (1.0 + 10 ** (-rating_diff / RATING_DIVISOR))
 
 
+def _clamp(v: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, v))
+
+
+def ad_from_row(row: Dict, league_avg: float = AVG_GOALS_PG) -> Tuple[float, float]:
+    """(attack, defense) for a team's ratings row, or neutral if no goals data.
+
+    Reads optional `goals_for_pg` / `goals_against_pg`. Missing/blank -> neutral,
+    so the model is unchanged for any team without a scoring profile.
+    """
+    if not isinstance(row, dict):
+        return NEUTRAL_AD
+    gf = row.get("goals_for_pg")
+    ga = row.get("goals_against_pg")
+    if gf is None or ga is None:
+        return NEUTRAL_AD
+    try:
+        return attack_defense_from_goals(float(gf), float(ga), league_avg)
+    except (TypeError, ValueError):
+        return NEUTRAL_AD
+
+
+def attack_defense_from_goals(goals_for_pg: float, goals_against_pg: float,
+                              league_avg: float = AVG_GOALS_PG) -> Tuple[float, float]:
+    """Derive (attack, defense) multipliers from per-game goals scored/conceded.
+
+    attack  > 1 -> scores more than an average side (raises its own lambda)
+    defense > 1 -> concedes more than average / leakier (raises the opponent's
+                   lambda). Both centred at 1.0 and clamped, so a side at the
+                   league average is neutral. Feed rolling goals (or xG) over the
+                   last ~6-12 matches; xG is the less noisy choice.
+    """
+    avg = league_avg if league_avg and league_avg > 0 else AVG_GOALS_PG
+    attack = _clamp(float(goals_for_pg) / avg, *AD_CLAMP)
+    defense = _clamp(float(goals_against_pg) / avg, *AD_CLAMP)
+    return attack, defense
+
+
 def expected_goals(rating_home: float, rating_away: float,
-                   home_adv: float = 0.0) -> Tuple[float, float]:
+                   home_adv: float = 0.0,
+                   ad_home: Tuple[float, float] = NEUTRAL_AD,
+                   ad_away: Tuple[float, float] = NEUTRAL_AD) -> Tuple[float, float]:
     """Map two ratings to expected goals (lambda) for each side.
 
     The favourite's goals rise *and* the total rises with mismatch (blowouts
     are higher-scoring) — fixing the old "total stuck at ~2.7" behaviour.
+
+    `ad_home`/`ad_away` are optional (attack, defense) multipliers; the defaults
+    are neutral (1.0, 1.0), so omitting them leaves the rating-only behaviour
+    byte-for-byte unchanged. When supplied, each side's lambda is scaled by its
+    own attack and the opponent's defensive weakness.
     """
     dr = (rating_home + home_adv) - rating_away
     tilt = 2 * win_expectancy(dr) - 1                 # in [-1, 1]
     supremacy = MAX_SUPREMACY * tilt
     total = BASE_TOTAL + GOAL_MISMATCH_BOOST * abs(tilt)
-    lam_home = max(MIN_LAMBDA, (total + supremacy) / 2)
-    lam_away = max(MIN_LAMBDA, (total - supremacy) / 2)
-    return lam_home, lam_away
+    lam_home = (total + supremacy) / 2
+    lam_away = (total - supremacy) / 2
+    lam_home *= ad_home[0] * ad_away[1]
+    lam_away *= ad_away[0] * ad_home[1]
+    return max(MIN_LAMBDA, lam_home), max(MIN_LAMBDA, lam_away)
 
 
 def poisson_pmf(k: int, lam: float) -> float:
@@ -72,9 +130,16 @@ def score_matrix(lam_home: float, lam_away: float,
     return m
 
 
-def analyse(rating_home: float, rating_away: float, home_adv: float = 0.0) -> Dict:
-    """Full model output for a single match."""
-    lam_h, lam_a = expected_goals(rating_home, rating_away, home_adv)
+def analyse(rating_home: float, rating_away: float, home_adv: float = 0.0,
+            ad_home: Tuple[float, float] = NEUTRAL_AD,
+            ad_away: Tuple[float, float] = NEUTRAL_AD) -> Dict:
+    """Full model output for a single match.
+
+    `ad_home`/`ad_away` are optional (attack, defense) multipliers; neutral by
+    default so existing rating-only callers are unaffected.
+    """
+    lam_h, lam_a = expected_goals(rating_home, rating_away, home_adv,
+                                  ad_home=ad_home, ad_away=ad_away)
     m = score_matrix(lam_h, lam_a)
     n = len(m)
     total = sum(m[i][j] for i in range(n) for j in range(n))  # renormalise (DC + tail)

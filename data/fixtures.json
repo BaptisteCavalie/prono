@@ -10,7 +10,11 @@
       "venue": "neutral",
       "date": "2026-06-11",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 65.0
     },
     {
       "id": "G02",
@@ -22,7 +26,11 @@
       "venue": "neutral",
       "date": "2026-06-11",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G03",
@@ -34,7 +42,11 @@
       "venue": "neutral",
       "date": "2026-06-19",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 65.0
     },
     {
       "id": "G04",
@@ -46,7 +58,11 @@
       "venue": "neutral",
       "date": "2026-06-19",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G05",
@@ -58,7 +74,11 @@
       "venue": "neutral",
       "date": "2026-06-27",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G06",
@@ -70,7 +90,11 @@
       "venue": "neutral",
       "date": "2026-06-27",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G07",
@@ -82,7 +106,11 @@
       "venue": "neutral",
       "date": "2026-06-11",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 65.0
     },
     {
       "id": "G08",
@@ -94,7 +122,11 @@
       "venue": "neutral",
       "date": "2026-06-12",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 3,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G09",
@@ -106,7 +138,11 @@
       "venue": "neutral",
       "date": "2026-06-19",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 65.0
     },
     {
       "id": "G10",
@@ -118,7 +154,11 @@
       "venue": "neutral",
       "date": "2026-06-20",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G11",
@@ -130,7 +170,11 @@
       "venue": "neutral",
       "date": "2026-06-27",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G12",
@@ -142,7 +186,11 @@
       "venue": "neutral",
       "date": "2026-06-28",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G13",
@@ -154,7 +202,11 @@
       "venue": "neutral",
       "date": "2026-06-12",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G14",
@@ -166,7 +218,11 @@
       "venue": "neutral",
       "date": "2026-06-12",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G15",
@@ -178,7 +234,11 @@
       "venue": "neutral",
       "date": "2026-06-20",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G16",
@@ -190,7 +250,11 @@
       "venue": "neutral",
       "date": "2026-06-20",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G17",
@@ -202,7 +266,11 @@
       "venue": "neutral",
       "date": "2026-06-28",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G18",
@@ -214,7 +282,11 @@
       "venue": "neutral",
       "date": "2026-06-28",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G19",
@@ -226,7 +298,11 @@
       "venue": "neutral",
       "date": "2026-06-13",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 65.0
     },
     {
       "id": "G20",
@@ -238,7 +314,11 @@
       "venue": "neutral",
       "date": "2026-06-13",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G21",
@@ -250,7 +330,11 @@
       "venue": "neutral",
       "date": "2026-06-21",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 65.0
     },
     {
       "id": "G22",
@@ -262,7 +346,11 @@
       "venue": "neutral",
       "date": "2026-06-21",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G23",
@@ -274,7 +362,11 @@
       "venue": "neutral",
       "date": "2026-06-29",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G24",
@@ -286,7 +378,11 @@
       "venue": "neutral",
       "date": "2026-06-29",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G25",
@@ -298,7 +394,11 @@
       "venue": "neutral",
       "date": "2026-06-13",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G26",
@@ -310,7 +410,11 @@
       "venue": "neutral",
       "date": "2026-06-14",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G27",
@@ -322,7 +426,11 @@
       "venue": "neutral",
       "date": "2026-06-21",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G28",
@@ -334,7 +442,11 @@
       "venue": "neutral",
       "date": "2026-06-22",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G29",
@@ -346,7 +458,11 @@
       "venue": "neutral",
       "date": "2026-06-29",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G30",
@@ -358,7 +474,11 @@
       "venue": "neutral",
       "date": "2026-06-30",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G31",
@@ -370,7 +490,11 @@
       "venue": "neutral",
       "date": "2026-06-14",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G32",
@@ -382,7 +506,11 @@
       "venue": "neutral",
       "date": "2026-06-14",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G33",
@@ -394,7 +522,11 @@
       "venue": "neutral",
       "date": "2026-06-22",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G34",
@@ -406,7 +538,11 @@
       "venue": "neutral",
       "date": "2026-06-22",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G35",
@@ -418,7 +554,11 @@
       "venue": "neutral",
       "date": "2026-06-30",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G36",
@@ -430,7 +570,11 @@
       "venue": "neutral",
       "date": "2026-06-30",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G37",
@@ -442,7 +586,11 @@
       "venue": "neutral",
       "date": "2026-06-15",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G38",
@@ -454,7 +602,11 @@
       "venue": "neutral",
       "date": "2026-06-15",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G39",
@@ -466,7 +618,11 @@
       "venue": "neutral",
       "date": "2026-06-23",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G40",
@@ -478,7 +634,11 @@
       "venue": "neutral",
       "date": "2026-06-23",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G41",
@@ -490,7 +650,11 @@
       "venue": "neutral",
       "date": "2026-07-01",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G42",
@@ -502,7 +666,11 @@
       "venue": "neutral",
       "date": "2026-07-01",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G43",
@@ -514,7 +682,11 @@
       "venue": "neutral",
       "date": "2026-06-15",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G44",
@@ -526,7 +698,11 @@
       "venue": "neutral",
       "date": "2026-06-16",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G45",
@@ -538,7 +714,11 @@
       "venue": "neutral",
       "date": "2026-06-23",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G46",
@@ -550,7 +730,11 @@
       "venue": "neutral",
       "date": "2026-06-24",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G47",
@@ -562,7 +746,11 @@
       "venue": "neutral",
       "date": "2026-07-01",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G48",
@@ -574,7 +762,11 @@
       "venue": "neutral",
       "date": "2026-07-02",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G49",
@@ -586,7 +778,11 @@
       "venue": "neutral",
       "date": "2026-06-16",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G50",
@@ -598,7 +794,11 @@
       "venue": "neutral",
       "date": "2026-06-16",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G51",
@@ -610,7 +810,11 @@
       "venue": "neutral",
       "date": "2026-06-24",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G52",
@@ -622,7 +826,11 @@
       "venue": "neutral",
       "date": "2026-06-24",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G53",
@@ -634,7 +842,11 @@
       "venue": "neutral",
       "date": "2026-07-02",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G54",
@@ -646,7 +858,11 @@
       "venue": "neutral",
       "date": "2026-07-02",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G55",
@@ -658,7 +874,11 @@
       "venue": "neutral",
       "date": "2026-06-17",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G56",
@@ -670,7 +890,11 @@
       "venue": "neutral",
       "date": "2026-06-17",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G57",
@@ -682,7 +906,11 @@
       "venue": "neutral",
       "date": "2026-06-25",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G58",
@@ -694,7 +922,11 @@
       "venue": "neutral",
       "date": "2026-06-25",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G59",
@@ -706,7 +938,11 @@
       "venue": "neutral",
       "date": "2026-07-03",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 3,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G60",
@@ -718,7 +954,11 @@
       "venue": "neutral",
       "date": "2026-07-03",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G61",
@@ -730,7 +970,11 @@
       "venue": "neutral",
       "date": "2026-06-17",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G62",
@@ -742,7 +986,11 @@
       "venue": "neutral",
       "date": "2026-06-18",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G63",
@@ -754,7 +1002,11 @@
       "venue": "neutral",
       "date": "2026-06-25",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G64",
@@ -766,7 +1018,11 @@
       "venue": "neutral",
       "date": "2026-06-26",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G65",
@@ -778,7 +1034,11 @@
       "venue": "neutral",
       "date": "2026-07-03",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G66",
@@ -790,7 +1050,11 @@
       "venue": "neutral",
       "date": "2026-07-04",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 3,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G67",
@@ -802,7 +1066,11 @@
       "venue": "neutral",
       "date": "2026-06-18",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 1,
+      "predicted_away": 1,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G68",
@@ -814,7 +1082,11 @@
       "venue": "neutral",
       "date": "2026-06-18",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G69",
@@ -826,7 +1098,11 @@
       "venue": "neutral",
       "date": "2026-06-26",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 3,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:40:14Z",
+      "home_adv": 0.0
     },
     {
       "id": "G70",
@@ -838,7 +1114,11 @@
       "venue": "neutral",
       "date": "2026-06-26",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G71",
@@ -850,7 +1130,11 @@
       "venue": "neutral",
       "date": "2026-07-04",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 0,
+      "predicted_away": 2,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     },
     {
       "id": "G72",
@@ -862,7 +1146,11 @@
       "venue": "neutral",
       "date": "2026-07-04",
       "actual_home": null,
-      "actual_away": null
+      "actual_away": null,
+      "predicted_home": 2,
+      "predicted_away": 0,
+      "predicted_at": "2026-06-08T09:33:39Z",
+      "home_adv": 0.0
     }
   ]
 }

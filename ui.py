@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from engine import data, model, odds as oddsmod, strategies, updater
+from engine import autonomous, data, data_quality, model, odds as oddsmod, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -26,6 +26,13 @@ def _split_match(s: str):
 
 def _parse_date(s: str):
     return datetime.strptime(s[:10], "%Y-%m-%d").date()
+
+
+def _as_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _is_completed(match: Dict) -> bool:
@@ -221,18 +228,26 @@ def _best_selection(home: str, away: str, out: Dict):
     )
 
 
-def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, List[float]]):
+def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, List[float]],
+                  team_status: Optional[Dict] = None):
     rows = []
     for m in fixtures:
         home = m["home"]
         away = m["away"]
         rh = ratings["teams"][home]
         ra = ratings["teams"][away]
-        out = model.analyse(rh["rating"], ra["rating"], home_adv=m.get("home_adv", 0.0))
+        out = model.analyse(rh["rating"], ra["rating"], home_adv=m.get("home_adv", 0.0),
+                            ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
         pick_sel, pick_label, pick_prob = _best_selection(home, away, out)
 
         (si, sj), sp = out["top_scores"][0]
-        predicted_score = f"{si}-{sj}"
+        live_predicted_score = f"{si}-{sj}"
+        frozen_home = _as_int(m.get("predicted_home"))
+        frozen_away = _as_int(m.get("predicted_away"))
+        preserved_predicted_score = None
+        if frozen_home is not None and frozen_away is not None:
+            preserved_predicted_score = f"{frozen_home}-{frozen_away}"
+        predicted_score = preserved_predicted_score or live_predicted_score
         est = rh.get("source") != "live" or ra.get("source") != "live"
         completed = _is_completed(m)
         actual_score = None
@@ -276,23 +291,34 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             }[pick_sel]
 
         notes = [_fr_strategy_flag(x) for x in strategies.flags(m, home, away, rh, ra, out)]
+        for team, row in ((home, rh), (away, ra)):
+            delta = float(row.get("status_delta", 0.0) or 0.0)
+            if abs(delta) >= 0.5:
+                sign = "+" if delta > 0 else ""
+                notes.append(f"Signal terrain {team}: {sign}{delta:.1f} Elo (forme/blessures/cartons/news)")
+            for n in team_signals.status_notes(team, team_status or {}):
+                notes.append(f"{team}: {n}")
         if est:
-            notes.append("Au moins une cote Elo est estimee. Le niveau de confiance peut bouger apres mise a jour live.")
+            notes.append("Au moins une cote Elo est estimee. La confiance peut changer apres mise a jour des ratings live.")
         if not odds:
-            notes.append("Aucune cote chargee. Ajoute un fichier JSON de cotes pour activer la detection de value.")
+            notes.append("Aucune cote bookmaker chargee. Ajoutez un fichier JSON de cotes pour activer la comparaison modele vs marche.")
         elif not value_summaries:
-            notes.append("Aucune opportunite EV positive detectee contre les cotes actuelles.")
+            notes.append("Pas d'opportunite de value detectee avec les cotes actuelles.")
 
         pick_is_draw = pick_sel == "draw"
         top_score_is_draw = si == sj
         if pick_is_draw != top_score_is_draw:
             notes.append(
-                "Important: le score exact le plus probable peut etre different du meilleur pari 1X2. "
-                "Le score exact est un seul scenario, alors que le pari 1X2 additionne plusieurs scenarios."
+                "Le score exact le plus probable peut etre different du meilleur choix 1N2. "
+                "Le score exact est un seul scenario, alors que le 1N2 additionne plusieurs scenarios."
             )
 
         if completed:
-            notes.append("Match termine: le score affiche est le score reel final.")
+            notes.append("Match termine: le score affiche correspond au resultat final reel.")
+            if preserved_predicted_score:
+                notes.append("Prono conserve avant match: comparaison reel vs prono disponible directement.")
+            else:
+                notes.append("Prono non fige: lance 'python3 tools/snapshot_predictions.py' pour conserver les pronos avant les matchs.")
 
         rows.append({
             "id": m.get("id", ""),
@@ -304,8 +330,16 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "home_flag": _team_flag(home),
             "away_flag": _team_flag(away),
             "score": actual_score or predicted_score,
+            "actual_score": actual_score,
             "score_conf": round(sp * 100),
             "predicted_score": predicted_score,
+            "predicted_score_live": live_predicted_score,
+            "prediction_saved": bool(preserved_predicted_score),
+            "prediction_changed": (
+                bool(preserved_predicted_score)
+                and not completed
+                and live_predicted_score != preserved_predicted_score
+            ),
             "bet": bet_label,
             "bet_conf": bet_conf,
             "pick_label": pick_label,
@@ -326,11 +360,34 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
 
 
 def _group_rows_by_matchday(rows: List[Dict]):
-    grouped: Dict[int, List[Dict]] = {}
+    grouped: Dict[str, List[Dict]] = {}
     for r in rows:
-        md = int(r.get("matchday") or 0)
-        grouped.setdefault(md, []).append(r)
-    return sorted(grouped.items(), key=lambda kv: kv[0])
+        day = str(r.get("date") or "")[:10]
+        grouped.setdefault(day, []).append(r)
+
+    ordered = sorted(grouped.items(), key=lambda kv: kv[0])
+    for _, items in ordered:
+        items.sort(key=lambda x: (x.get("date") or "", x.get("id") or ""))
+    return ordered
+
+
+def _fr_date_label(iso_date: str) -> str:
+    months = {
+        1: "janvier",
+        2: "fevrier",
+        3: "mars",
+        4: "avril",
+        5: "mai",
+        6: "juin",
+        7: "juillet",
+        8: "aout",
+        9: "septembre",
+        10: "octobre",
+        11: "novembre",
+        12: "decembre",
+    }
+    d = _parse_date(iso_date)
+    return f"{d.day} {months[d.month]} {d.year}"
 
 
 def _build_recommendations(rows: List[Dict]):
@@ -356,33 +413,36 @@ def _build_recommendations(rows: List[Dict]):
     else:
         singles = singles[:10]
 
-    combos_a_source = [c for c in candidates if c["nutri"] == "A"]
-    combos_a = []
-    for i in range(0, max(0, len(combos_a_source) - 1)):
-        c1 = combos_a_source[i]
-        c2 = combos_a_source[i + 1]
-        pair = [c1, c2]
-        odds_ok = c1["odds"] is not None and c2["odds"] is not None
-        combined_odds = (c1["odds"] * c2["odds"]) if odds_ok else None
-        combined_prob = c1["prob"] * c2["prob"]
-        combos_a.append({
-            "legs": pair,
-            "combined_odds": combined_odds,
-            "combined_prob": combined_prob,
-        })
-        if len(combos_a) >= 6:
-            break
+    nutri_rank = {"A": 0, "B": 1, "C": 2, "D": 3, "E": 4}
+    combo_pool = sorted(
+        [c for c in candidates if c["nutri"] in ("A", "B", "C")],
+        key=lambda c: (nutri_rank.get(c["nutri"], 9), -c["prob"]),
+    )
+    if len(combo_pool) < 2:
+        combo_pool = sorted(candidates, key=lambda c: -c["prob"])
 
-    if len(combos_a_source) >= 3:
-        triple = combos_a_source[:3]
-        odds_ok = all(x["odds"] is not None for x in triple)
-        combined_odds = (triple[0]["odds"] * triple[1]["odds"] * triple[2]["odds"]) if odds_ok else None
-        combined_prob = triple[0]["prob"] * triple[1]["prob"] * triple[2]["prob"]
+    combos_a = []
+    target_sizes = [10, 8, 6, 4, 3, 2]
+    for size in target_sizes:
+        if len(combo_pool) < size:
+            continue
+        legs = combo_pool[:size]
+        odds_ok = all(x["odds"] is not None for x in legs)
+        combined_odds = None
+        if odds_ok:
+            combined_odds = 1.0
+            for leg in legs:
+                combined_odds *= leg["odds"]
+        combined_prob = 1.0
+        for leg in legs:
+            combined_prob *= leg["prob"]
         combos_a.append({
-            "legs": triple,
+            "legs": legs,
             "combined_odds": combined_odds,
             "combined_prob": combined_prob,
         })
+        if len(combos_a) >= 3:
+            break
 
     return {
         "singles": singles,
@@ -391,9 +451,83 @@ def _build_recommendations(rows: List[Dict]):
     }
 
 
+def _health_level_ui(level: str) -> Dict[str, str]:
+    lvl = (level or "").lower()
+    if lvl == "good":
+        return {
+            "label": "Vert",
+            "class": "health-good",
+            "state": "OK",
+            "can_bet": "1",
+            "message": "Donnees a jour: vous pouvez generer des recommandations.",
+        }
+    if lvl == "warning":
+        return {
+            "label": "Orange",
+            "class": "health-warning",
+            "state": "Surveillance",
+            "can_bet": "1",
+            "message": "Donnees a surveiller: verifiez blessures, suspensions et compositions avant de parier.",
+        }
+    return {
+        "label": "Rouge",
+        "class": "health-critical",
+        "state": "Bloque",
+        "can_bet": "0",
+        "message": "Donnees insuffisantes: mettez a jour fixtures, ratings et statut equipes pour debloquer les recommandations.",
+    }
+
+
+def _build_data_info(fixtures: List[Dict], ratings: Dict, team_status: Dict,
+                     health: Optional[Dict], odds_file: str) -> Dict:
+    teams = (ratings or {}).get("teams", {})
+    total_teams = len(teams)
+    live_teams = sum(1 for row in teams.values() if str(row.get("source", "")).lower() == "live")
+    estimate_teams = max(0, total_teams - live_teams)
+
+    completed_matches = sum(1 for m in fixtures if _is_completed(m))
+    predicted_at_values = [str(m.get("predicted_at")) for m in fixtures if m.get("predicted_at")]
+    latest_prediction_snapshot = max(predicted_at_values) if predicted_at_values else None
+
+    return {
+        "data_sources": [
+            f"ratings.json: {(ratings or {}).get('source', 'n/a')}",
+            f"team_status.json: {(team_status or {}).get('source', 'n/a')}",
+            "fixtures.json: calendrier + scores reels + snapshots de prediction",
+            (f"odds file: {odds_file}" if odds_file else "odds file: non charge (comparaison marche inactive)"),
+        ],
+        "information_sources": [
+            "Ratings Elo (force de base par equipe)",
+            "Signaux equipe: forme, blessures, suspensions, news",
+            "Scores reels enregistres (mise a jour auto des ratings)",
+            "Cotes bookmaker 1N2 (si fichier de cotes fourni)",
+        ],
+        "last_updates": {
+            "ratings_as_of": (ratings or {}).get("as_of"),
+            "team_status_as_of": (team_status or {}).get("as_of"),
+            "latest_prediction_snapshot": latest_prediction_snapshot,
+        },
+        "quality_rating": {
+            "score": (health or {}).get("score"),
+            "level": (health or {}).get("level"),
+        },
+        "other": {
+            "fixtures_total": len(fixtures),
+            "fixtures_completed": completed_matches,
+            "live_ratings": live_teams,
+            "estimated_ratings": estimate_teams,
+            "ratings_total": total_teams,
+            "status_coverage_pct": (health or {}).get("status_coverage_pct"),
+            "home_adv_coverage_pct": (health or {}).get("home_adv_coverage_pct"),
+        },
+    }
+
+
 def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                  rows: List[Dict], applied_results: int, action: str,
-                 recommendations: Optional[Dict], error: str = "", tab: str = "futurs") -> bytes:
+                 recommendations: Optional[Dict], error: str = "", tab: str = "futurs",
+                 health: Optional[Dict] = None, solidity_report: Optional[Dict] = None,
+                 data_info: Optional[Dict] = None) -> bytes:
     safe_tab = "passes" if tab == "passes" else "futurs"
     title_tag = "Calendrier"
 
@@ -401,6 +535,8 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
     future_rows = [r for r in rows if not r.get("completed")]
     shown_rows = past_rows if safe_tab == "passes" else future_rows
     grouped = _group_rows_by_matchday(shown_rows)
+    health_meta = _health_level_ui(str((health or {}).get("level", "")))
+    bet_blocked = health_meta["can_bet"] != "1"
 
     parts = [
         "<!doctype html>",
@@ -415,37 +551,52 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}",
         "h1{margin:0;font-size:clamp(1.4rem,2.3vw,2rem);letter-spacing:.3px;line-height:1.08}",
         ".subtitle{margin:6px 0 0;color:var(--muted);font-size:.95rem;max-width:70ch}",
-        ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 12px 10px;margin-bottom:12px;box-shadow:0 8px 26px rgba(24,37,66,.06)}",
-        ".actions{display:flex;justify-content:flex-end}",
-        "button{width:100%;min-height:43px;padding:10px 14px;border-radius:10px;border:0;background:var(--brand);color:var(--brand-ink);font:700 .9rem/1.1 'Trebuchet MS','Gill Sans','Avenir Next',sans-serif;cursor:pointer}",
-        "button.alt{background:linear-gradient(135deg,#f0a53d,#d9801f);color:#1e1406}",
+        ".panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:0 14px 34px rgba(24,37,66,.08)}",
+        ".actions{display:flex;justify-content:flex-start;align-items:center;gap:8px}",
+        "button{width:auto;min-height:38px;padding:8px 14px;border-radius:10px;border:0;background:var(--brand);color:var(--brand-ink);font:700 .88rem/1 'Trebuchet MS','Gill Sans','Avenir Next',sans-serif;cursor:pointer}",
+        "button.alt{background:linear-gradient(135deg,#efb147,#d88421);color:#1e1406}",
         "button:hover{filter:brightness(1.06)}",
         "input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 40%,white);outline-offset:2px}",
         ".stats{display:flex;gap:8px;flex-wrap:wrap}",
         ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
-        "table{width:100%;border-collapse:collapse}",
-        "th,td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:middle}",
-        "th{text-align:left;font-size:.69rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em}",
+        "table{width:100%;border-collapse:separate;border-spacing:0 8px}",
+        "th,td{padding:8px 10px;vertical-align:middle}",
+        "thead th{text-align:left;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:2px}",
+        "tbody tr{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 12px rgba(15,30,55,.03)}",
+        "tbody tr td:first-child{border-radius:12px 0 0 12px}",
+        "tbody tr td:last-child{border-radius:0 12px 12px 0}",
         "td strong{font-weight:700}",
-        ".nutri{display:inline-block;min-width:28px;text-align:center;padding:3px 7px;border-radius:999px;font-weight:700;font-size:.75rem;color:#fff;margin-left:6px}",
+        ".nutri{display:inline-block;min-width:26px;text-align:center;padding:4px 8px;border-radius:999px;font-weight:700;font-size:.74rem;color:#fff}",
         ".nutri-a{background:#168a3d}",
         ".nutri-b{background:#4ea93a}",
         ".nutri-c{background:#d4a813}",
         ".nutri-d{background:#d37a1c}",
         ".nutri-e{background:#b33a2f}",
         ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:2px 2px 6px}",
-        ".matchline{display:flex;align-items:center;gap:6px;font-size:.95rem;line-height:1.15}",
-        ".line-main{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}",
-        ".line-left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-        ".line-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
+        ".line-main{display:grid;grid-template-columns:minmax(120px,1fr) auto auto minmax(120px,1fr);align-items:center;gap:10px}",
+        ".team-side{display:flex;align-items:center;gap:6px;min-width:0}",
+        ".team-side.right{justify-content:flex-end}",
+        ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+        ".vs-dot{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
+        ".score-wrap{display:inline-flex;align-items:center;gap:8px;justify-self:center}",
+        ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,#0f5c78,#0a4a66);color:#f4fbff;font-weight:800;font-size:1rem;line-height:1}",
+        ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff922b;margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(255,146,43,.6);animation:changePulse 1.8s infinite}",
+        "@keyframes changePulse{0%{box-shadow:0 0 0 0 rgba(255,146,43,.55)}70%{box-shadow:0 0 0 7px rgba(255,146,43,0)}100%{box-shadow:0 0 0 0 rgba(255,146,43,0)}}",
+        "@media (prefers-reduced-motion:reduce){.change-dot{animation:none}}",
+        ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
+        ".score-chip-real{background:linear-gradient(135deg,#1e6f3f,#155b31);font-size:.86rem;min-width:88px}",
+        ".score-chip-prono{background:linear-gradient(135deg,#4f5e79,#38465f);font-size:.86rem;min-width:98px}",
         ".flag{font-size:1.05rem}",
         ".tiny{font-size:.76rem;color:var(--muted)}",
         ".result-main{font-weight:700}",
         ".result-sub{font-size:.82rem;color:var(--muted)}",
-        "details{border:1px solid var(--line);border-radius:10px;padding:5px 8px;background:#fbfdff}",
-        "summary{cursor:pointer;font-size:.82rem;color:var(--brand);font-weight:700}",
+        ".done-cell{white-space:nowrap}",
+        ".done-toggle{width:18px;height:18px;accent-color:#0f5c78;cursor:pointer}",
+        "tr.done-row{outline:2px solid #9ad0af;background:linear-gradient(180deg,#f6fff8,#ffffff)}",
+        "details{border:0;background:transparent}",
+        "summary{cursor:pointer;font-size:.82rem;color:var(--brand);font-weight:700;display:inline-block;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:#f7fbff}",
         "summary::marker{color:var(--brand)}",
-        ".note-list{margin:6px 0 0;padding-left:16px;color:var(--muted);font-size:.8rem;line-height:1.3}",
+        ".note-list{margin:8px 0 0;padding-left:16px;color:var(--muted);font-size:.8rem;line-height:1.3;background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding-top:8px;padding-bottom:8px;padding-right:8px}",
         ".odds{font-size:.79rem;color:var(--muted)}",
         ".reco-grid{display:grid;grid-template-columns:repeat(2,minmax(250px,1fr));gap:10px}",
         ".reco-card{border:1px solid var(--line);border-radius:12px;padding:10px;background:linear-gradient(160deg,#fefcf6,#eef5ff)}",
@@ -464,18 +615,38 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".muted{color:var(--muted);font-size:.9rem}",
         ".err{background:var(--alert);color:#fff;padding:11px 12px;border-radius:10px;margin-bottom:10px}",
         ".legend{margin-top:8px;color:var(--muted);font-size:.82rem}",
+        ".health-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:700;border:1px solid transparent}",
+        ".health-dot{display:inline-block;width:8px;height:8px;border-radius:50%}",
+        ".health-good{background:#edf8f1;color:#1f6e3a;border-color:#9ad0af}",
+        ".health-good .health-dot{background:#1f9d50}",
+        ".health-warning{background:#fff6e7;color:#7c4b10;border-color:#f1cd8b}",
+        ".health-warning .health-dot{background:#cc8a20}",
+        ".health-critical{background:#fdecec;color:#8f2736;border-color:#e4a7b1}",
+        ".health-critical .health-dot{background:#b03346}",
+        ".guard-msg{margin-top:10px;padding:9px 10px;border-radius:10px;border:1px dashed #c69d5a;background:#fff8e8;color:#704313;font-size:.84rem}",
+        "button[disabled]{opacity:.62;cursor:not-allowed;filter:none}",
+        ".info-grid{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:10px;margin-top:8px}",
+        ".info-card{border:1px solid var(--line);border-radius:10px;background:#fbfdff;padding:10px}",
+        ".info-card h4{margin:0 0 6px;font-size:.88rem}",
+        ".info-list{margin:0;padding-left:17px;color:var(--muted);font-size:.82rem;line-height:1.35}",
+        ".info-line{font-size:.82rem;color:var(--muted);margin:2px 0}",
         "@media (max-width:860px){.reco-grid{grid-template-columns:1fr}.modal-columns{grid-template-columns:1fr}}",
-        "@media (max-width:760px){.wrap{padding:16px 12px 26px}.panel{padding:11px 10px}.actions{margin-top:2px}table thead{display:none}table,tbody,tr,td{display:block;width:100%}tr{border:1px solid var(--line);border-radius:12px;padding:8px 9px;margin-bottom:8px;background:var(--surface)}td{border:0;padding:4px 0}td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}}",
+        "@media (max-width:860px){.info-grid{grid-template-columns:1fr}}",
+        "@media (max-width:760px){.wrap{padding:14px 10px 20px}.panel{padding:11px 10px}.actions{margin-top:2px}.actions button{width:100%}.line-main{grid-template-columns:1fr;gap:6px}.team-side.right{justify-content:flex-start}.score-wrap{justify-self:start}.score-chip{min-width:64px;font-size:.95rem;padding:6px 9px}table thead{display:none}table,tbody,tr,td{display:block;width:100%}table{border-spacing:0 10px}tr{border:1px solid var(--line);border-radius:12px;padding:8px 9px;margin-bottom:8px;background:var(--surface)}tbody tr td:first-child,tbody tr td:last-child{border-radius:0}td{border:0;padding:4px 0}td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}}",
         "</style></head><body><main class='wrap'>",
         "<header class='mast'>",
         "<div>",
         f"<h1>WC2026 Calendrier Pronos - {html.escape(title_tag)}</h1>",
-        "<p class='subtitle'>Vue compacte calendrier. Ouvre les accordions pour les details importants uniquement.</p>",
+        "<p class='subtitle'>Vue calendrier rapide: ouvrez un match pour voir les explications utiles a la decision.</p>",
         "</div>",
         "<div class='stats'>",
-        f"<div class='stamp'>Resultats appliques automatiquement: {applied_results}</div>",
-        f"<div class='stamp'>Futurs: {len(future_rows)}</div>",
-        f"<div class='stamp'>Passes: {len(past_rows)}</div>",
+        f"<div class='stamp'>Resultats integres automatiquement: {applied_results}</div>",
+        f"<div class='stamp'>Matchs a venir: {len(future_rows)}</div>",
+        f"<div class='stamp'>Matchs joues: {len(past_rows)}</div>",
+        "<div class='stamp' id='done-count'>Pronostics coches: 0</div>",
+        f"<div class='stamp'>Qualite des donnees: {(health or {}).get('score', 'n/a')}/100</div>",
+        f"<div class='stamp'>Solidite modele: {((solidity_report or {}).get('score') if (solidity_report or {}).get('score') is not None else 'n/a')}/100</div>",
+        f"<div class='health-pill {health_meta['class']}'><span class='health-dot'></span>Feu data: {health_meta['label']} ({health_meta['state']})</div>",
         "</div>",
         "</header>",
     ]
@@ -487,15 +658,136 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "<div class='panel'>",
         "<form method='get' action='/' aria-label='Actions calendrier'>",
         f"<input type='hidden' name='tab' value='{safe_tab}'>",
-        "<div class='actions'><button class='alt' type='submit' name='action' value='reco'>Generer les paris (single 10EUR + combine 1EUR)</button></div>",
+        (
+            "<div class='actions'><button class='alt' type='submit' name='action' value='reco'>Voir les recommandations de paris</button></div>"
+            if not bet_blocked
+            else "<div class='actions'><button class='alt' type='submit' name='action' value='reco' disabled>Recommandations indisponibles (qualite critique)</button></div>"
+        ),
         "</form>",
         "<div class='actions' style='justify-content:flex-start;gap:8px;margin-top:10px'>",
         f"<a href='/?tab=futurs' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'futurs' else '')}'>Futurs</a>",
         f"<a href='/?tab=passes' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'passes' else '')}'>Passes</a>",
         "</div>",
-        "<div class='legend'>Date inconnue = date absente dans les donnees. Ici, une date est toujours affichee.</div>",
+        f"<div class='guard-msg'>{html.escape(health_meta['message'])}</div>",
+        "<div class='legend'>Chaque match affiche une date. Si vous voyez une incoherence, mettez a jour data/fixtures.json.</div>",
         "</div>",
     ])
+
+    if health:
+        level_label = {
+            "good": "Bon",
+            "warning": "A surveiller",
+            "critical": "Critique",
+        }.get(health.get("level"), "Inconnu")
+        parts.extend([
+            "<div class='panel'>",
+            f"<strong>Qualite des donnees: {health.get('score')}/100 ({level_label})</strong> ",
+            f"<span class='health-pill {health_meta['class']}' style='margin-left:8px'><span class='health-dot'></span>{health_meta['label']}</span>",
+            "<details style='margin-top:8px'><summary>Pourquoi ce score ?</summary><ul class='note-list'>",
+            f"<li>Dates manquantes: {health.get('fixtures_missing_dates', 0)}</li>",
+            f"<li>Matchs passes sans score final: {health.get('fixtures_past_without_score', 0)}</li>",
+            f"<li>Age ratings (jours): {health.get('ratings_age_days')}</li>",
+            f"<li>Age signaux equipes (jours): {health.get('status_age_days')}</li>",
+        ])
+        if not health.get("alerts"):
+            parts.append("<li>Aucune alerte: les donnees sont coherentes pour l'analyse actuelle.</li>")
+        for a in health.get("alerts", []):
+            parts.append(f"<li>{html.escape(a)}</li>")
+        parts.extend(["</ul></details>"])
+
+        if data_info:
+            quality_map = {
+                "good": "Bon",
+                "warning": "A surveiller",
+                "critical": "Critique",
+            }
+            q_score = (data_info.get("quality_rating") or {}).get("score")
+            q_level = quality_map.get((data_info.get("quality_rating") or {}).get("level"), "Inconnu")
+            status_cov = (data_info.get("other") or {}).get("status_coverage_pct")
+            home_adv_cov = (data_info.get("other") or {}).get("home_adv_coverage_pct")
+            status_cov_txt = "n/a" if status_cov is None else f"{round(status_cov * 100)}%"
+            home_adv_cov_txt = "n/a" if home_adv_cov is None else f"{round(home_adv_cov * 100)}%"
+
+            parts.extend([
+                "<details style='margin-top:8px'><summary>Info donnees (sources + fraicheur)</summary>",
+                "<div class='info-grid'>",
+                "<section class='info-card'>",
+                "<h4>Liste des data sources</h4>",
+                "<ul class='info-list'>",
+            ])
+            for row in data_info.get("data_sources", []):
+                parts.append(f"<li>{html.escape(str(row))}</li>")
+            parts.extend([
+                "</ul>",
+                "</section>",
+                "<section class='info-card'>",
+                "<h4>Liste des information sources</h4>",
+                "<ul class='info-list'>",
+            ])
+            for row in data_info.get("information_sources", []):
+                parts.append(f"<li>{html.escape(str(row))}</li>")
+            parts.extend([
+                "</ul>",
+                "</section>",
+                "<section class='info-card'>",
+                "<h4>Date de derniere mise a jour</h4>",
+                f"<div class='info-line'>ratings.as_of: {html.escape(str((data_info.get('last_updates') or {}).get('ratings_as_of')))}</div>",
+                f"<div class='info-line'>team_status.as_of: {html.escape(str((data_info.get('last_updates') or {}).get('team_status_as_of')))}</div>",
+                f"<div class='info-line'>dernier snapshot prediction: {html.escape(str((data_info.get('last_updates') or {}).get('latest_prediction_snapshot')))}</div>",
+                "</section>",
+                "<section class='info-card'>",
+                "<h4>Qualite + infos pertinentes</h4>",
+                f"<div class='info-line'>Qualite des donnees: {html.escape(str(q_score))}/100 ({html.escape(q_level)})</div>",
+                f"<div class='info-line'>Ratings live: {html.escape(str((data_info.get('other') or {}).get('live_ratings', 0)))}/{html.escape(str((data_info.get('other') or {}).get('ratings_total', 0)))}</div>",
+                f"<div class='info-line'>Ratings estimes: {html.escape(str((data_info.get('other') or {}).get('estimated_ratings', 0)))}</div>",
+                f"<div class='info-line'>Coverage team status: {html.escape(status_cov_txt)}</div>",
+                f"<div class='info-line'>Coverage home_adv: {html.escape(home_adv_cov_txt)}</div>",
+                f"<div class='info-line'>Matchs completes: {html.escape(str((data_info.get('other') or {}).get('fixtures_completed', 0)))}/{html.escape(str((data_info.get('other') or {}).get('fixtures_total', 0)))}</div>",
+                "</section>",
+                "</div>",
+                "</details>",
+            ])
+
+        parts.append("</div>")
+
+    if solidity_report:
+        level_label = {
+            "solid": "Solide",
+            "mixed": "Moyenne",
+            "fragile": "Fragile",
+            "insufficient": "Insuffisant",
+        }.get(solidity_report.get("level"), "Inconnu")
+        score_text = "n/a" if solidity_report.get("score") is None else str(solidity_report.get("score"))
+        parts.extend([
+            "<div class='panel'>",
+            f"<strong>Solidite du systeme: {score_text}/100 ({level_label})</strong>",
+            "<details style='margin-top:8px'><summary>Comment ce score est calcule ?</summary><ul class='note-list'>",
+            f"<li>Matchs evalues: {solidity_report.get('matches', 0)}</li>",
+            f"<li>Precision 1N2: {('n/a' if solidity_report.get('result_accuracy') is None else str(round(solidity_report.get('result_accuracy') * 100)) + '%')}</li>",
+            f"<li>Score exact touche: {('n/a' if solidity_report.get('exact_score_hit') is None else str(round(solidity_report.get('exact_score_hit') * 100)) + '%')}</li>",
+            f"<li>Brier 1N2 (plus bas = mieux): {('n/a' if solidity_report.get('brier_1x2') is None else format(solidity_report.get('brier_1x2'), '.3f'))}</li>",
+            f"<li>Log-loss 1N2 (plus bas = mieux): {('n/a' if solidity_report.get('logloss_1x2') is None else format(solidity_report.get('logloss_1x2'), '.3f'))}</li>",
+            f"<li>RPS 1N2 (standard du domaine, plus bas = mieux): {('n/a' if solidity_report.get('rps_1x2') is None else format(solidity_report.get('rps_1x2'), '.3f'))}</li>",
+            f"<li>Confiance moyenne des picks: {('n/a' if solidity_report.get('avg_pick_conf') is None else str(round(solidity_report.get('avg_pick_conf') * 100)) + '%')}</li>",
+        ])
+        if solidity_report.get("calibration_gap") is not None:
+            parts.append(
+                f"<li>Ecart calibration (confiance - precision): {(solidity_report.get('calibration_gap') * 100):+.1f} point(s)</li>"
+            )
+        else:
+            parts.append("<li>Ecart calibration (confiance - precision): n/a</li>")
+        buckets = solidity_report.get("confidence_buckets") or []
+        if buckets:
+            parts.append("<li>Calibration par tranche de confiance:</li>")
+            for b in buckets:
+                parts.append(
+                    f"<li>{b['range']} | n={b['count']} | hit {round(b['hit_rate'] * 100)}% | conf {round(b['avg_conf'] * 100)}% | gap {(b['gap'] * 100):+.1f}pt</li>"
+                )
+        else:
+            parts.append("<li>Calibration par tranche de confiance: n/a (aucun match termine)</li>")
+        for a in solidity_report.get("alerts", []):
+            parts.append(f"<li>{html.escape(a)}</li>")
+        parts.extend(["</ul></details>", "</div>"])
 
     if recommendations and action == "reco":
         singles = recommendations.get("singles", [])
@@ -504,12 +796,12 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             "<div id='reco-modal' class='modal' role='dialog' aria-modal='true' aria-labelledby='reco-title'>",
             "<div class='modal-panel'>",
             "<div class='modal-head'>",
-            "<h2 id='reco-title' style='margin:0'>Propositions de paris</h2>",
+            "<h2 id='reco-title' style='margin:0'>Recommandations de paris</h2>",
             "<button type='button' class='modal-close' id='close-reco'>Fermer</button>",
             "</div>",
             "<div class='modal-columns'>",
             "<section class='reco-card'>",
-            "<h3>Paris uniques - mise 10 EUR</h3>",
+            "<h3>Paris simples - mise conseillee: 10 EUR</h3>",
             "<div class='bet-list'>",
         ])
         if singles:
@@ -523,22 +815,23 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                     parts.append("<div class='bet-meta'>Cote indisponible</div>")
                 parts.append("</article>")
         else:
-            parts.append("<div class='muted'>Aucun pari unique propose.</div>")
+            parts.append("<div class='muted'>Aucun pari simple recommande pour le moment.</div>")
 
         parts.extend([
             "</div>",
             "</section>",
             "<section class='reco-card'>",
-            "<h3>Combines Nutri A - mise 1 EUR</h3>",
+            "<h3>Gros combines (jusqu'a 10 matchs) - mise conseillee: 1 EUR</h3>",
             "<div class='bet-list'>",
         ])
         if combos_a:
             for c in combos_a:
                 parts.append("<article class='bet-item'>")
                 legs = c.get("legs", [])
+                parts.append(f"<div class='bet-title'>Combine {len(legs)} matchs</div>")
                 for idx, leg in enumerate(legs, start=1):
                     parts.append(
-                        f"<div><strong>Sel. {idx}</strong>: {html.escape(leg['pick'])} ({html.escape(leg['home'])} vs {html.escape(leg['away'])}) - {round(leg['prob'] * 100)}%</div>"
+                        f"<div><strong>Selection {idx}</strong>: {html.escape(leg['pick'])} ({html.escape(leg['home'])} vs {html.escape(leg['away'])}) - {round(leg['prob'] * 100)}%</div>"
                     )
                 if c.get("combined_odds"):
                     parts.append(f"<div class='bet-meta'>Cote combinee: {c['combined_odds']:.2f} - retour brut potentiel: {c['combined_odds']:.2f} EUR</div>")
@@ -547,10 +840,10 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                 parts.append(f"<div class='bet-meta'>Probabilite combinee modele: {round(c['combined_prob'] * 100)}%</div>")
                 parts.append("</article>")
         else:
-            parts.append("<div class='muted'>Aucun combine Nutri A disponible actuellement.</div>")
+            parts.append("<div class='muted'>Pas assez de matchs pour construire un combine pour l'instant.</div>")
 
         if not recommendations.get("has_full_odds"):
-            parts.append("<div class='muted'>Astuce: ajoute un fichier de cotes pour des retours exacts.</div>")
+            parts.append("<div class='muted'>Ajoutez un fichier de cotes pour afficher les retours potentiels avec precision.</div>")
 
         parts.extend([
             "</div>",
@@ -574,55 +867,92 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
 
     if not shown_rows:
         if safe_tab == "passes":
-            parts.extend(["<div class='panel'><div class='muted'>Aucun match passe avec score final renseigne pour le moment.</div></div>"])
+            parts.extend(["<div class='panel'><div class='muted'>Aucun match joue avec score final disponible pour l'instant.</div></div>"])
         else:
-            parts.extend(["<div class='panel'><div class='muted'>Aucun match futur a afficher.</div></div>"])
+            parts.extend(["<div class='panel'><div class='muted'>Aucun match a venir a afficher pour ce filtre.</div></div>"])
 
-    for md, md_rows in grouped:
+    for day, md_rows in grouped:
+        day_label = _fr_date_label(day)
         parts.extend([
             "<section class='panel'>",
             "<div class='md-title'>",
-            f"<strong>Journee {md}</strong>",
+            f"<strong>{html.escape(day_label)}</strong>",
             f"<span class='tiny'>{len(md_rows)} matchs</span>",
             "</div>",
             "<table><thead><tr>",
-            "<th>Date</th><th>Match + Resultat + Nutri</th><th>Infos</th>",
+            "<th>Contexte</th><th>Pronostique</th><th>Match + Resultat + Nutri</th><th>Infos</th>",
             "</tr></thead><tbody>",
         ])
 
         for r in md_rows:
             est = " *" if r["est"] else ""
-            date_tag = r["date"][:10]
-            score_suffix = " (final)" if r["completed"] else f" ({r['score_conf']}%){est}"
             parts.append("<tr>")
             parts.append(
-                f"<td data-label='Date'><div class='tiny'>{html.escape(date_tag)}</div>"
-                f"<div class='tiny'>J{html.escape(str(r['matchday']))} · Groupe {html.escape(str(r['group']))} · {html.escape(str(r['id']))}</div></td>"
+                f"<td data-label='Contexte'><div class='tiny'>J{html.escape(str(r['matchday']))} · Groupe {html.escape(str(r['group']))}</div>"
+                f"<div class='tiny'>{html.escape(str(r['id']))}</div></td>"
             )
+            match_ref = f"{r['id']}|{r['home']}|{r['away']}|{r['date']}"
             parts.append(
-                f"<td data-label='Match + Resultat + Nutri'><div class='line-main'><div class='line-left'>"
-                f"<div class='matchline'><span class='flag'>{r['home_flag']}</span><strong>{html.escape(r['home'])}</strong>"
-                f"<span class='tiny'>vs</span><span class='flag'>{r['away_flag']}</span><strong>{html.escape(r['away'])}</strong></div>"
-                f"</div><div class='line-right'><span class='result-main'>{html.escape(r['score'])}"
-                f"{score_suffix}</span>"
-                f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}'>{html.escape(r['nutri'])}</span></div></div></td>"
-            )
-
-            parts.append("<td data-label='Infos'><details><summary>Infos importantes</summary><ul class='note-list'>")
-            parts.append(
-                f"<li>Probas 1X2 modele: 1={r['p_home']}% | N={r['p_draw']}% | 2={r['p_away']}%</li>"
-            )
-            parts.append(
-                f"<li>Pick principal: {html.escape(r['pick_label'])} ({round(r['pick_prob'] * 100)}%), Nutri {html.escape(r['nutri'])}</li>"
-            )
-            parts.append(
-                f"<li>Recommandation de pari: {html.escape(r['bet'])} ({r['bet_conf']}%{est})</li>"
+                f"<td data-label='Pronostique' class='done-cell'><input class='done-toggle' type='checkbox' aria-label='Marquer {html.escape(r['home'])} vs {html.escape(r['away'])} comme deja pronostique' data-match='{html.escape(match_ref)}'></td>"
             )
             if r["completed"]:
-                parts.append(f"<li>Score predit avant match: {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>")
+                score_block = (
+                    f"<span class='score-wrap score-dual'><span class='score-chip score-chip-real'>Reel {html.escape(r['actual_score'] or r['score'])}</span>"
+                    f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['predicted_score'])}</span>"
+                    f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}'>{html.escape(r['nutri'])}</span></span>"
+                )
+            else:
+                change_dot = ""
+                if r.get("prediction_changed"):
+                    change_tip = (
+                        f"Prono mis a jour apres une maj des donnees : "
+                        f"{r['predicted_score']} -> {r['predicted_score_live']}"
+                    )
+                    change_dot = (
+                        f"<span class='change-dot' role='img' tabindex='0' "
+                        f"aria-label='{html.escape(change_tip)}' "
+                        f"title='{html.escape(change_tip)}'></span>"
+                    )
+                score_block = (
+                    f"<span class='score-wrap'><span class='score-chip'>{html.escape(r['score'])}{change_dot}</span>"
+                    f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}'>{html.escape(r['nutri'])}</span></span>"
+                )
+            parts.append(
+                f"<td data-label='Match + Resultat + Nutri'><div class='line-main'>"
+                f"<div class='team-side'><span class='flag'>{r['home_flag']}</span><span class='team-name'>{html.escape(r['home'])}</span></div>"
+                f"<span class='vs-dot'>vs</span>"
+                f"{score_block}"
+                f"<div class='team-side right'><span class='team-name'>{html.escape(r['away'])}</span><span class='flag'>{r['away_flag']}</span></div>"
+                f"</div></td>"
+            )
+
+            parts.append("<td data-label='Infos'><details><summary>Infos utiles pour decider</summary><ul class='note-list'>")
+            parts.append(
+                f"<li>Probabilites 1N2 du modele: 1={r['p_home']}% | N={r['p_draw']}% | 2={r['p_away']}%</li>"
+            )
+            parts.append(
+                f"<li>Score exact le plus probable: {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
+            )
+            parts.append(
+                f"<li>Choix 1N2 le plus probable: {html.escape(r['pick_label'])} ({round(r['pick_prob'] * 100)}%), Nutri {html.escape(r['nutri'])}</li>"
+            )
+            parts.append(
+                f"<li>Recommandation de pari actuelle: {html.escape(r['bet'])} ({r['bet_conf']}%{est})</li>"
+            )
+            if r.get("prediction_changed"):
+                parts.append(
+                    f"<li><strong>● Prono mis a jour</strong> : le prono fige etait "
+                    f"{html.escape(r['predicted_score'])}, le modele estime maintenant "
+                    f"{html.escape(r['predicted_score_live'])} apres une maj des donnees "
+                    f"(ratings / forme / blessures / avantage hote / attaque-defense).</li>"
+                )
+            if r["completed"]:
+                parts.append(f"<li>Prono conserve: {html.escape(r['predicted_score'])}</li>")
+                if not r.get("prediction_saved"):
+                    parts.append(f"<li>Note: prono non fige (estimation actuelle: {html.escape(r['predicted_score_live'])}).</li>")
             if r["odds"]:
                 parts.append(
-                    f"<li>Cotes chargees: 1 {r['odds'][0]:.2f} / N {r['odds'][1]:.2f} / 2 {r['odds'][2]:.2f}</li>"
+                    f"<li>Cotes bookmaker chargees: 1 {r['odds'][0]:.2f} / N {r['odds'][1]:.2f} / 2 {r['odds'][2]:.2f}</li>"
                 )
             for vs in r["value_summaries"]:
                 parts.append(f"<li>{html.escape(vs)}</li>")
@@ -633,7 +963,32 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
 
         parts.extend(["</tbody></table>", "</section>"])
 
-    parts.extend(["</main></body></html>"])
+    parts.extend([
+        "<script>",
+        "(function(){",
+        "const key='wc2026_done_predictions_v1';",
+        "const countEl=document.getElementById('done-count');",
+        "const parse=()=>{try{return new Set(JSON.parse(localStorage.getItem(key)||'[]'));}catch(_){return new Set();}};",
+        "const save=(set)=>localStorage.setItem(key,JSON.stringify(Array.from(set)));",
+        "const refreshCount=(set)=>{if(countEl){countEl.textContent='Pronostics coches: '+set.size;}};",
+        "const done=parse();",
+        "const checks=document.querySelectorAll('.done-toggle');",
+        "checks.forEach((box)=>{",
+        "const id=box.getAttribute('data-match')||'';",
+        "if(done.has(id)){box.checked=true;}",
+        "const row=box.closest('tr');",
+        "if(row&&box.checked){row.classList.add('done-row');}",
+        "box.addEventListener('change',()=>{",
+        "if(box.checked){done.add(id);}else{done.delete(id);}",
+        "if(row){row.classList.toggle('done-row',box.checked);}",
+        "save(done);refreshCount(done);",
+        "});",
+        "});",
+        "refreshCount(done);",
+        "})();",
+        "</script>",
+        "</main></body></html>",
+    ])
     return "".join(parts).encode("utf-8")
 
 
@@ -658,23 +1013,36 @@ class Handler(BaseHTTPRequestHandler):
         applied_results = 0
         error = ""
         recommendations = None
+        health = None
+        solidity_report = None
+        data_info = None
 
         try:
+            autonomous.autonomous_refresh()
             fixtures = data.load_fixtures()
+            base_ratings = data.load_ratings()
             ratings = data.load_ratings()
+            team_status = data.load_team_status()
+            solidity_report = solidity.assess_model_solidity(fixtures, base_ratings)
             if not no_auto:
                 ratings, applied_results = updater.apply_completed_results(ratings, fixtures)
+            ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
+            health = data_quality.assess_data_health(fixtures, ratings, team_status)
+            data_info = _build_data_info(fixtures, ratings, team_status, health, odds_file)
 
             selected = _select_fixtures(fixtures, date_value, matchday)
             if not selected:
                 if date_value:
-                    error = f"Aucun match trouve pour la date {date_value}."
+                    error = f"Aucun match trouve pour le {date_value}. Verifiez le format YYYY-MM-DD ou choisissez une autre date."
                 else:
-                    error = f"Aucun match trouve pour la journee {matchday}."
+                    error = f"Aucun match trouve pour la journee {matchday}. Essayez une autre journee ou retirez le filtre."
             odds_board = _load_odds_board(odds_file)
-            rows = _analyse_rows(selected, ratings, odds_board)
+            rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
             if action == "reco":
-                recommendations = _build_recommendations(rows)
+                if (health or {}).get("level") == "critical":
+                    error = "Recommandations indisponibles: la qualite des donnees est critique. Mettez a jour fixtures, ratings et team_status puis reessayez."
+                else:
+                    recommendations = _build_recommendations(rows)
         except Exception as exc:
             error = str(exc)
 
@@ -689,6 +1057,9 @@ class Handler(BaseHTTPRequestHandler):
             recommendations,
             error,
             tab,
+            health,
+            solidity_report,
+            data_info,
         )
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")

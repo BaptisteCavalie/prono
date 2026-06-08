@@ -1,55 +1,344 @@
 {
   "scale": "elo",
-  "as_of": "2026-06-01",
-  "source": "World Football Elo (eloratings.net scale; top-19 via Wikipedia, 1 Jun 2026 = source 'live'). source=estimate -> Claude approximation on the Elo scale, ordered with the FOX 48-team power ranking and anchored to live values. Chosen over FIFA-points because Elo's RELATIVE ratings match the betting market (validated on Brazil-Morocco). Refresh by asking Claude.",
+  "as_of": "2026-06-07",
+  "source": "World Football Elo auto-refresh via eloratings.net TSV endpoints (last refresh 2026-06-08T09:44:01Z)",
   "teams": {
-    "Spain":               {"rating": 2165, "source": "live"},
-    "Argentina":           {"rating": 2113, "source": "live"},
-    "France":              {"rating": 2081, "source": "live"},
-    "England":             {"rating": 2020, "source": "live"},
-    "Brazil":              {"rating": 1988, "source": "live"},
-    "Portugal":            {"rating": 1984, "source": "live"},
-    "Colombia":            {"rating": 1977, "source": "live"},
-    "Netherlands":         {"rating": 1961, "source": "live"},
-    "Ecuador":             {"rating": 1935, "source": "live"},
-    "Croatia":             {"rating": 1930, "source": "live"},
-    "Germany":             {"rating": 1925, "source": "live"},
-    "Norway":              {"rating": 1917, "source": "live"},
-    "Türkiye":             {"rating": 1906, "source": "live"},
-    "Japan":               {"rating": 1906, "source": "live"},
-    "Switzerland":         {"rating": 1894, "source": "live"},
-    "Uruguay":             {"rating": 1892, "source": "live"},
-    "Mexico":              {"rating": 1868, "source": "live"},
-    "Belgium":             {"rating": 1866, "source": "live"},
-    "Senegal":             {"rating": 1866, "source": "live"},
-    "Morocco":             {"rating": 1865, "source": "estimate"},
-    "United States":       {"rating": 1800, "source": "estimate"},
-    "Iran":                {"rating": 1790, "source": "estimate"},
-    "Austria":             {"rating": 1790, "source": "estimate"},
-    "South Korea":         {"rating": 1788, "source": "estimate"},
-    "Ivory Coast":         {"rating": 1775, "source": "estimate"},
-    "Algeria":             {"rating": 1772, "source": "estimate"},
-    "Egypt":               {"rating": 1772, "source": "estimate"},
-    "Scotland":            {"rating": 1768, "source": "estimate"},
-    "Czechia":             {"rating": 1762, "source": "estimate"},
-    "Canada":              {"rating": 1758, "source": "estimate"},
-    "Sweden":              {"rating": 1745, "source": "estimate"},
-    "DR Congo":            {"rating": 1735, "source": "estimate"},
-    "Paraguay":            {"rating": 1730, "source": "estimate"},
-    "Bosnia-Herzegovina":  {"rating": 1722, "source": "estimate"},
-    "Australia":           {"rating": 1720, "source": "estimate"},
-    "Ghana":               {"rating": 1718, "source": "estimate"},
-    "Tunisia":             {"rating": 1715, "source": "estimate"},
-    "South Africa":        {"rating": 1700, "source": "estimate"},
-    "Uzbekistan":          {"rating": 1698, "source": "estimate"},
-    "Qatar":               {"rating": 1680, "source": "estimate"},
-    "Iraq":                {"rating": 1675, "source": "estimate"},
-    "Panama":              {"rating": 1665, "source": "estimate"},
-    "Saudi Arabia":        {"rating": 1660, "source": "estimate"},
-    "Cape Verde":          {"rating": 1650, "source": "estimate"},
-    "Jordan":              {"rating": 1620, "source": "estimate"},
-    "Haiti":               {"rating": 1570, "source": "estimate"},
-    "Curaçao":             {"rating": 1560, "source": "estimate"},
-    "New Zealand":         {"rating": 1505, "source": "estimate"}
-  }
+    "Spain": {
+      "rating": 2155,
+      "source": "live",
+      "goals_for_pg": 2.3,
+      "goals_against_pg": 0.6,
+      "scoring_source": "estimate"
+    },
+    "Argentina": {
+      "rating": 2114,
+      "source": "live",
+      "goals_for_pg": 1.9,
+      "goals_against_pg": 0.7,
+      "scoring_source": "estimate"
+    },
+    "France": {
+      "rating": 2062,
+      "source": "live",
+      "goals_for_pg": 2.1,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    },
+    "England": {
+      "rating": 2021,
+      "source": "live",
+      "goals_for_pg": 1.9,
+      "goals_against_pg": 0.7,
+      "scoring_source": "estimate"
+    },
+    "Brazil": {
+      "rating": 1991,
+      "source": "live",
+      "goals_for_pg": 1.7,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    },
+    "Portugal": {
+      "rating": 1986,
+      "source": "live",
+      "goals_for_pg": 2.2,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    },
+    "Colombia": {
+      "rating": 1982,
+      "source": "live",
+      "goals_for_pg": 1.5,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Netherlands": {
+      "rating": 1944,
+      "source": "live",
+      "goals_for_pg": 2.0,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Ecuador": {
+      "rating": 1938,
+      "source": "live",
+      "goals_for_pg": 1.3,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Croatia": {
+      "rating": 1911,
+      "source": "live",
+      "goals_for_pg": 1.6,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Germany": {
+      "rating": 1932,
+      "source": "live",
+      "goals_for_pg": 2.2,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Norway": {
+      "rating": 1914,
+      "source": "live",
+      "goals_for_pg": 2.1,
+      "goals_against_pg": 1.0,
+      "scoring_source": "estimate"
+    },
+    "Türkiye": {
+      "rating": 1911,
+      "source": "live",
+      "goals_for_pg": 1.8,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Japan": {
+      "rating": 1906,
+      "source": "live",
+      "goals_for_pg": 2.3,
+      "goals_against_pg": 0.7,
+      "scoring_source": "estimate"
+    },
+    "Switzerland": {
+      "rating": 1891,
+      "source": "live",
+      "goals_for_pg": 1.4,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Uruguay": {
+      "rating": 1892,
+      "source": "live",
+      "goals_for_pg": 1.6,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Mexico": {
+      "rating": 1875,
+      "source": "live",
+      "goals_for_pg": 1.7,
+      "goals_against_pg": 1.0,
+      "scoring_source": "estimate"
+    },
+    "Belgium": {
+      "rating": 1893,
+      "source": "live",
+      "goals_for_pg": 2.1,
+      "goals_against_pg": 1.0,
+      "scoring_source": "estimate"
+    },
+    "Senegal": {
+      "rating": 1867,
+      "source": "live",
+      "goals_for_pg": 1.6,
+      "goals_against_pg": 0.7,
+      "scoring_source": "estimate"
+    },
+    "Morocco": {
+      "rating": 1827,
+      "source": "live",
+      "goals_for_pg": 1.7,
+      "goals_against_pg": 0.6,
+      "scoring_source": "estimate"
+    },
+    "United States": {
+      "rating": 1726,
+      "source": "live",
+      "goals_for_pg": 1.7,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Iran": {
+      "rating": 1772,
+      "source": "live",
+      "goals_for_pg": 1.8,
+      "goals_against_pg": 0.6,
+      "scoring_source": "estimate"
+    },
+    "Austria": {
+      "rating": 1830,
+      "source": "live",
+      "goals_for_pg": 1.9,
+      "goals_against_pg": 1.0,
+      "scoring_source": "estimate"
+    },
+    "South Korea": {
+      "rating": 1758,
+      "source": "live",
+      "goals_for_pg": 1.9,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    },
+    "Ivory Coast": {
+      "rating": 1695,
+      "source": "live",
+      "goals_for_pg": 1.5,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Algeria": {
+      "rating": 1760,
+      "source": "live",
+      "goals_for_pg": 1.9,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    },
+    "Egypt": {
+      "rating": 1696,
+      "source": "live",
+      "goals_for_pg": 1.6,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    },
+    "Scotland": {
+      "rating": 1782,
+      "source": "live",
+      "goals_for_pg": 1.4,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Czechia": {
+      "rating": 1740,
+      "source": "live",
+      "goals_for_pg": 1.5,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Canada": {
+      "rating": 1788,
+      "source": "live",
+      "goals_for_pg": 1.6,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Sweden": {
+      "rating": 1712,
+      "source": "live",
+      "goals_for_pg": 1.6,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "DR Congo": {
+      "rating": 1207,
+      "source": "live",
+      "goals_for_pg": 1.2,
+      "goals_against_pg": 1.0,
+      "scoring_source": "estimate"
+    },
+    "Paraguay": {
+      "rating": 1833,
+      "source": "live",
+      "goals_for_pg": 1.1,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Bosnia-Herzegovina": {
+      "rating": 1595,
+      "source": "live",
+      "goals_for_pg": 1.5,
+      "goals_against_pg": 1.2,
+      "scoring_source": "estimate"
+    },
+    "Australia": {
+      "rating": 1777,
+      "source": "live",
+      "goals_for_pg": 1.7,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Ghana": {
+      "rating": 1510,
+      "source": "live",
+      "goals_for_pg": 1.4,
+      "goals_against_pg": 1.2,
+      "scoring_source": "estimate"
+    },
+    "Tunisia": {
+      "rating": 1628,
+      "source": "live",
+      "goals_for_pg": 1.3,
+      "goals_against_pg": 0.7,
+      "scoring_source": "estimate"
+    },
+    "South Africa": {
+      "rating": 1528,
+      "source": "live",
+      "goals_for_pg": 1.3,
+      "goals_against_pg": 1.0,
+      "scoring_source": "estimate"
+    },
+    "Uzbekistan": {
+      "rating": 1718,
+      "source": "live",
+      "goals_for_pg": 1.5,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    },
+    "Qatar": {
+      "rating": 1421,
+      "source": "live",
+      "goals_for_pg": 1.4,
+      "goals_against_pg": 1.3,
+      "scoring_source": "estimate"
+    },
+    "Iraq": {
+      "rating": 1618,
+      "source": "live",
+      "goals_for_pg": 1.3,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Panama": {
+      "rating": 1730,
+      "source": "live",
+      "goals_for_pg": 1.3,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Saudi Arabia": {
+      "rating": 1569,
+      "source": "live",
+      "goals_for_pg": 1.2,
+      "goals_against_pg": 1.1,
+      "scoring_source": "estimate"
+    },
+    "Cape Verde": {
+      "rating": 1578,
+      "source": "live",
+      "goals_for_pg": 1.3,
+      "goals_against_pg": 1.0,
+      "scoring_source": "estimate"
+    },
+    "Jordan": {
+      "rating": 1680,
+      "source": "live",
+      "goals_for_pg": 1.5,
+      "goals_against_pg": 0.9,
+      "scoring_source": "estimate"
+    },
+    "Haiti": {
+      "rating": 1548,
+      "source": "live",
+      "goals_for_pg": 1.2,
+      "goals_against_pg": 1.4,
+      "scoring_source": "estimate"
+    },
+    "Curaçao": {
+      "rating": 1434,
+      "source": "live",
+      "goals_for_pg": 1.3,
+      "goals_against_pg": 1.3,
+      "scoring_source": "estimate"
+    },
+    "New Zealand": {
+      "rating": 1562,
+      "source": "live",
+      "goals_for_pg": 1.8,
+      "goals_against_pg": 0.8,
+      "scoring_source": "estimate"
+    }
+  },
+  "scoring_as_of": "2026-06-08T09:58:48Z"
 }
