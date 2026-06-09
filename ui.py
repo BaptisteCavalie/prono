@@ -167,6 +167,23 @@ def _iso_to_flag(code: str) -> str:
     return chr(base + ord(code[0].upper())) + chr(base + ord(code[1].upper()))
 
 
+def _subdivision_flag(region: str) -> str:
+    """Emoji tag-sequence flag for a GB home nation (e.g. 'gbeng' -> England),
+    so England/Scotland show their own flag instead of the Union Jack. Falls
+    back to a plain black flag on renderers too old to support the sequence."""
+    tags = "".join(chr(0xE0000 + ord(c)) for c in region)
+    return "\U0001F3F4" + tags + "\U000E007F"
+
+
+# Home nations have no ISO 3166-1 code of their own; use the RGI subdivision
+# tag flags. Checked before TEAM_TO_ISO so they never fall through to "GB".
+_SUBDIVISION_FLAGS = {
+    "England": _subdivision_flag("gbeng"),
+    "Scotland": _subdivision_flag("gbsct"),
+    "Wales": _subdivision_flag("gbwls"),
+}
+
+
 TEAM_TO_ISO = {
     "Algeria": "DZ",
     "Argentina": "AR",
@@ -185,7 +202,6 @@ TEAM_TO_ISO = {
     "DR Congo": "CD",
     "Ecuador": "EC",
     "Egypt": "EG",
-    "England": "GB",
     "France": "FR",
     "Germany": "DE",
     "Ghana": "GH",
@@ -205,7 +221,6 @@ TEAM_TO_ISO = {
     "Portugal": "PT",
     "Qatar": "QA",
     "Saudi Arabia": "SA",
-    "Scotland": "GB",
     "Senegal": "SN",
     "South Africa": "ZA",
     "South Korea": "KR",
@@ -222,6 +237,8 @@ TEAM_TO_ISO = {
 
 
 def _team_flag(team: str) -> str:
+    if team in _SUBDIVISION_FLAGS:
+        return _SUBDIVISION_FLAGS[team]
     code = TEAM_TO_ISO.get(team)
     if not code:
         return "🏳"
