@@ -619,53 +619,44 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "<style>",
         ":root{--bg:#f6f4ec;--surface:#fffefa;--surface-2:#f2eee3;--text:#1f2430;--muted:#5d6679;--line:#d8deea;--line-2:#b8c2d9;--brand:#0f5c78;--brand-ink:#f4fbff;--accent:#f2a541;--ok:#257942;--alert:#8f2736}",
         "*{box-sizing:border-box}",
-        "body{font-family:'Trebuchet MS','Gill Sans','Avenir Next',sans-serif;margin:0;background:radial-gradient(circle at 12% 0%,#fefcf5 0,#f6f4ec 52%,#ebeff8 100%);color:var(--text)}",
+        "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:radial-gradient(circle at 12% 0%,#fefcf5 0,#f6f4ec 52%,#ebeff8 100%);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}",
         ".wrap{max-width:1320px;margin:0 auto;padding:22px 18px 34px}",
         ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}",
         "h1{margin:0;font-size:clamp(1.4rem,2.3vw,2rem);letter-spacing:.3px;line-height:1.08}",
         ".subtitle{margin:6px 0 0;color:var(--muted);font-size:.95rem;max-width:70ch}",
-        ".panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:0 14px 34px rgba(24,37,66,.08)}",
-        ".actions{display:flex;justify-content:flex-start;align-items:center;gap:8px}",
-        "button{width:auto;min-height:38px;padding:8px 14px;border-radius:10px;border:0;background:var(--brand);color:var(--brand-ink);font:700 .88rem/1 'Trebuchet MS','Gill Sans','Avenir Next',sans-serif;cursor:pointer}",
-        "button.alt{background:linear-gradient(135deg,#efb147,#d88421);color:#1e1406}",
-        "button:hover{filter:brightness(1.06)}",
-        ".btn-alt{display:inline-block;text-decoration:none;min-height:38px;padding:10px 14px;border-radius:10px;background:linear-gradient(135deg,#efb147,#d88421);color:#1e1406;font:700 .88rem/1.2 'Trebuchet MS','Gill Sans','Avenir Next',sans-serif;cursor:pointer}",
-        ".btn-alt:hover{filter:brightness(1.06)}",
-        ".btn-disabled{opacity:.55;cursor:not-allowed;background:#cbd3e0;color:#5d6679}",
+        ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,30,55,.05)}",
         ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px}",
         ".bet-card{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:linear-gradient(160deg,#fefcf6,#eef5ff)}",
         ".bet-card .bet-title{font-weight:800;font-size:.95rem;margin-bottom:4px}",
         ".bet-card .bet-sel{font-weight:700;color:#10384d}",
         ".bet-card .bet-meta{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.35}",
         ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:#168a3d;color:#fff;font-weight:800;font-size:.85rem}",
-        "input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 40%,white);outline-offset:2px}",
+        "a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
         ".stats{display:flex;gap:8px;flex-wrap:wrap}",
         ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
         "table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}",
         "th,td{padding:8px 10px;vertical-align:middle}",
         "thead th{text-align:left;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:2px}",
-        "tbody tr{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 12px rgba(15,30,55,.03)}",
+        "tbody tr{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 1px 3px rgba(15,30,55,.04)}",
         "tbody tr td:first-child{border-radius:12px 0 0 12px}",
         "tbody tr td:last-child{border-radius:0 12px 12px 0}",
         "td strong{font-weight:700}",
-        ".nutri{display:inline-block;min-width:26px;text-align:center;padding:4px 8px;border-radius:999px;font-weight:700;font-size:.74rem;color:#fff}",
-        ".nutri-a{background:#168a3d}",
-        ".nutri-b{background:#4ea93a}",
-        ".nutri-c{background:#d4a813}",
-        ".nutri-d{background:#d37a1c}",
-        ".nutri-e{background:#b33a2f}",
+        ".nutri{display:inline-block;min-width:24px;text-align:center;padding:4px 8px;border-radius:7px;font-weight:800;font-size:.74rem;color:#1c1407}",
+        ".nutri-a{background:#36b14f}",
+        ".nutri-b{background:#8cc152}",
+        ".nutri-c{background:#f0c000}",
+        ".nutri-d{background:#ea8c2e}",
+        ".nutri-e{background:#c0392b;color:#fff}",
         ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:2px 2px 6px}",
         ".line-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:14px;max-width:440px}",
         ".team-side{display:flex;align-items:center;gap:7px;min-width:0;justify-content:flex-end;text-align:right}",
         ".team-side.right{justify-content:flex-start;text-align:left}",
-        ".vs-dot{justify-self:center}",
         ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-        ".vs-dot{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
-        ".score-wrap{display:inline-flex;align-items:center;gap:8px;justify-self:center}",
+        ".vs-dot{justify-self:center;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
         ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,#0f5c78,#0a4a66);color:#f4fbff;font-weight:800;font-size:1rem;line-height:1}",
         ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff922b;margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(255,146,43,.6);animation:changePulse 1.8s infinite}",
         "@keyframes changePulse{0%{box-shadow:0 0 0 0 rgba(255,146,43,.55)}70%{box-shadow:0 0 0 7px rgba(255,146,43,0)}100%{box-shadow:0 0 0 0 rgba(255,146,43,0)}}",
-        "@media (prefers-reduced-motion:reduce){.change-dot{animation:none}}",
+        "@media (prefers-reduced-motion:reduce){.change-dot{animation:none}.tab,summary,.bet-card{transition:none}}",
         ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
         ".score-chip-real{background:linear-gradient(135deg,#1e6f3f,#155b31);font-size:.86rem;min-width:88px}",
         ".score-chip-prono{background:linear-gradient(135deg,#4f5e79,#38465f);font-size:.86rem;min-width:98px}",
@@ -680,30 +671,14 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".prob-legend strong{color:var(--text)}",
         ".flag{font-size:1.05rem}",
         ".tiny{font-size:.76rem;color:var(--muted)}",
-        ".result-main{font-weight:700}",
-        ".result-sub{font-size:.82rem;color:var(--muted)}",
         ".done-cell{white-space:nowrap}",
         ".done-toggle{width:18px;height:18px;accent-color:#0f5c78;cursor:pointer}",
         "tr.done-row{outline:2px solid #9ad0af;background:linear-gradient(180deg,#f6fff8,#ffffff)}",
         "details{border:0;background:transparent}",
-        "summary{cursor:pointer;font-size:.82rem;color:var(--brand);font-weight:700;display:inline-block;padding:7px 12px;border:1px solid var(--line);border-radius:999px;background:#f7fbff}",
+        "summary{cursor:pointer;font-size:.82rem;color:var(--brand);font-weight:700;display:inline-block;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:#f7fbff;transition:background .15s ease,border-color .15s ease}",
+        "summary:hover{background:#eef6fd;border-color:var(--line-2)}",
         "summary::marker{color:var(--brand)}",
         ".note-list{margin:8px 0 0;padding-left:16px;color:var(--muted);font-size:.8rem;line-height:1.3;background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding-top:8px;padding-bottom:8px;padding-right:8px}",
-        ".odds{font-size:.79rem;color:var(--muted)}",
-        ".reco-grid{display:grid;grid-template-columns:repeat(2,minmax(250px,1fr));gap:10px}",
-        ".reco-card{border:1px solid var(--line);border-radius:12px;padding:10px;background:linear-gradient(160deg,#fefcf6,#eef5ff)}",
-        ".reco-card h3{margin:0 0 8px;font-size:1rem}",
-        ".reco-line{margin:4px 0;font-size:.9rem}",
-        ".modal{position:fixed;inset:0;background:rgba(10,16,30,.42);display:none;align-items:center;justify-content:center;padding:16px;z-index:9999}",
-        ".modal.open{display:flex}",
-        ".modal-panel{width:min(1120px,96vw);max-height:90vh;overflow:auto;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 24px 70px rgba(8,20,40,.35)}",
-        ".modal-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}",
-        ".modal-close{width:auto;min-height:34px;padding:7px 10px;border-radius:8px;background:#d8e2f0;color:#10263a}",
-        ".modal-columns{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
-        ".bet-list{display:grid;gap:8px}",
-        ".bet-item{border:1px solid var(--line);border-radius:10px;padding:8px;background:#fbfdff}",
-        ".bet-title{font-weight:700;font-size:.92rem}",
-        ".bet-meta{font-size:.82rem;color:var(--muted)}",
         ".muted{color:var(--muted);font-size:.9rem}",
         ".err{background:var(--alert);color:#fff;padding:11px 12px;border-radius:10px;margin-bottom:10px}",
         ".legend{margin-top:8px;color:var(--muted);font-size:.82rem}",
@@ -716,7 +691,6 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".health-critical{background:#fdecec;color:#8f2736;border-color:#e4a7b1}",
         ".health-critical .health-dot{background:#b03346}",
         ".guard-msg{margin-top:10px;padding:9px 10px;border-radius:10px;border:1px dashed #c69d5a;background:#fff8e8;color:#704313;font-size:.84rem}",
-        "button[disabled]{opacity:.62;cursor:not-allowed;filter:none}",
         ".info-grid{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:10px;margin-top:8px}",
         ".info-card{border:1px solid var(--line);border-radius:10px;background:#fbfdff;padding:10px}",
         ".info-card h4{margin:0 0 6px;font-size:.88rem}",
@@ -724,16 +698,15 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".info-line{font-size:.82rem;color:var(--muted);margin:2px 0}",
         ".status-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
         ".status-caption{color:var(--muted);font-size:.82rem}",
-        ".tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:#f4f2ea;padding:8px 4px 0;margin:0 0 14px;border-bottom:1px solid var(--line)}",
-        ".tab{text-decoration:none;padding:9px 16px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:2px solid transparent;border-radius:9px 9px 0 0;line-height:1}",
+        ".tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:#f4f2ea;padding:8px 4px 0;margin:0 0 14px;border-bottom:1px solid var(--line);box-shadow:0 8px 12px -12px rgba(20,30,50,.5)}",
+        ".tab{text-decoration:none;padding:10px 16px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:2px solid transparent;border-radius:9px 9px 0 0;line-height:1;transition:color .15s ease,background .15s ease,border-color .15s ease}",
         ".tab:hover{color:var(--brand);background:#eaf2f8}",
         ".tab.active{color:var(--brand);border-bottom-color:var(--brand);background:var(--surface)}",
         ".diag-wrap{margin-top:20px}",
         ".diag-wrap>summary{font-size:.85rem}",
         ".diag-wrap[open]>summary{margin-bottom:10px}",
-        "@media (max-width:860px){.reco-grid{grid-template-columns:1fr}.modal-columns{grid-template-columns:1fr}}",
         "@media (max-width:860px){.info-grid{grid-template-columns:1fr}}",
-        "@media (max-width:760px){.wrap{padding:14px 10px 20px}.panel{padding:11px 10px}.tab{padding:9px 12px;font-size:.86rem}"
+        "@media (max-width:760px){.wrap{padding:14px 10px 20px}.panel{padding:11px 10px}.tab{padding:13px 16px;font-size:.92rem}"
         "table thead{display:none}table,tbody{display:block;width:100%}table{border-spacing:0}"
         "tr{display:block;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:var(--surface);box-shadow:0 4px 12px rgba(15,30,55,.04)}"
         "tbody tr td:first-child,tbody tr td:last-child{border-radius:0}"
@@ -742,6 +715,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "td[data-label='Match']::before,td[data-label='Pronostic']::before,td[data-label='Détails']::before{display:none}"
         ".line-main{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}"
         ".team-name{font-size:.98rem}.score-chip{min-width:64px}.prob-bar{max-width:none}.prono-line{margin-top:2px}"
+        ".done-toggle{width:24px;height:24px}summary{padding:11px 15px}"
         "td[data-label='Suivi'],td[data-label='Détails']{display:inline-block;width:auto;vertical-align:middle;margin-top:8px}"
         "td[data-label='Suivi']{margin-right:16px}"
         "td[data-label='Suivi']::before{display:inline;margin:0 8px 0 0}}",
@@ -764,15 +738,26 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
     if error:
         parts.append(f"<div class='err'>{html.escape(error)}</div>")
 
+    def _tab(key: str, label: str) -> str:
+        active = " active" if safe_tab == key else ""
+        current = " aria-current='page'" if safe_tab == key else ""
+        return f"<a href='/?tab={key}' class='tab{active}'{current}>{label}</a>"
+
     parts.extend([
-        "<nav class='tabbar'>",
-        f"<a href='/?tab=futurs' class='tab{' active' if safe_tab == 'futurs' else ''}'>Futurs</a>",
-        f"<a href='/?tab=passes' class='tab{' active' if safe_tab == 'passes' else ''}'>Passés</a>",
-        f"<a href='/?tab=paris' class='tab{' active' if safe_tab == 'paris' else ''}'>Paris</a>",
+        "<nav class='tabbar' aria-label='Sections'>",
+        _tab("futurs", "Futurs"),
+        _tab("passes", "Passés"),
+        _tab("paris", "Paris"),
         "</nav>",
     ])
     if (health or {}).get("level") != "good":
         parts.append(f"<div class='guard-msg' style='margin-top:0'>{html.escape(health_meta['message'])}</div>")
+    if safe_tab != "paris":
+        parts.append(
+            "<p class='legend' style='margin:0 0 12px'>Indice de confiance du pronostic : "
+            "<strong>A</strong> forte &rarr; <strong>E</strong> faible. La barre indique les "
+            "probabilités <strong>1</strong> (domicile) · <strong>N</strong> (nul) · <strong>2</strong> (extérieur).</p>"
+        )
 
     diag_start = len(parts)
     if health:
@@ -1022,7 +1007,11 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                 f"</div>"
                 f"<div class='prob-legend'><span>{leg_home}</span><span>{leg_draw}</span><span>{leg_away}</span></div>"
             )
-            nutri_chip = f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}'>{html.escape(r['nutri'])}</span>"
+            nutri_chip = (
+                f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}' "
+                f"title='Indice de confiance {html.escape(r['nutri'])} (A = forte, E = faible)' "
+                f"aria-label='Confiance {html.escape(r['nutri'])} sur A à E'>{html.escape(r['nutri'])}</span>"
+            )
 
             if r["completed"]:
                 score_block = (
