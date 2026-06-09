@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-09T06:58:19Z",
+  "as_of": "2026-06-09T10:04:40Z",
   "source": "autonomous_refresh",
   "teams": {
     "France": {
@@ -94,11 +94,11 @@
     },
     "Netherlands": {
       "form": 0.0,
-      "injury_impact": 0.0,
+      "injury_impact": 0.08,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
       "notes": [
-        "seeded default"
+        "Timber forfait, Verbruggen (gardien) incertain (via preview Wiloo)"
       ]
     },
     "Ecuador": {
@@ -148,11 +148,11 @@
     },
     "Japan": {
       "form": 0.0,
-      "injury_impact": 0.0,
+      "injury_impact": 0.12,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
       "notes": [
-        "seeded default"
+        "Mitoma et Minamino forfaits (via preview Wiloo, à confirmer)"
       ]
     },
     "Switzerland": {
@@ -220,11 +220,11 @@
     },
     "Austria": {
       "form": 0.0,
-      "injury_impact": 0.0,
+      "injury_impact": 0.2,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
       "notes": [
-        "seeded default"
+        "Baumgartner forfait — perte offensive majeure (via preview Wiloo)"
       ]
     },
     "Ivory Coast": {
@@ -265,11 +265,11 @@
     },
     "Canada": {
       "form": 0.0,
-      "injury_impact": 0.0,
+      "injury_impact": 0.06,
       "suspension_impact": 0.0,
-      "news_risk": 0.0,
+      "news_risk": 0.1,
       "notes": [
-        "seeded default"
+        "Alphonso Davies incertain, Bombito forfait (via preview Wiloo)"
       ]
     },
     "Sweden": {
@@ -292,11 +292,11 @@
     },
     "Paraguay": {
       "form": 0.0,
-      "injury_impact": 0.0,
+      "injury_impact": 0.15,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
       "notes": [
-        "seeded default"
+        "Meilleur joueur blessé, forfait probable au 1er match (via preview Wiloo)"
       ]
     },
     "Bosnia-Herzegovina": {

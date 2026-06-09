@@ -14,7 +14,7 @@ import sys
 from datetime import datetime
 from typing import Dict
 
-from engine import autonomous, data, data_quality, mpp, prediction, report, solidity, strategies, team_signals
+from engine import autonomous, data, data_quality, expert_signals, mpp, prediction, report, solidity, strategies, team_signals
 from engine import odds as oddsmod
 from engine import updater
 
@@ -356,6 +356,7 @@ def main(argv=None) -> int:
     if not args.no_auto_update:
         ratings, applied_results = updater.apply_completed_results(ratings, fixtures)
     ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
+    ratings = expert_signals.apply_expert_priors(ratings)
     health = data_quality.assess_data_health(fixtures, ratings, team_status)
 
     if args.health_report:

@@ -18,7 +18,7 @@ FIXTURES_PATH = ROOT / "data" / "fixtures.json"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import data, prediction, team_signals, updater
+from engine import data, expert_signals, prediction, team_signals, updater
 
 
 def _sort_key(match):
@@ -39,6 +39,7 @@ def main(argv=None) -> int:
     team_status = data.load_team_status()
     ratings, _ = updater.apply_completed_results(ratings, fixtures)
     ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
+    ratings = expert_signals.apply_expert_priors(ratings)
 
     updated = 0
     now_iso = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")

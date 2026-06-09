@@ -7,7 +7,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import autonomous, data, data_quality, live_ratings, odds_fetch, solidity, team_signals, updater
+from engine import autonomous, data, data_quality, expert_signals, live_ratings, odds_fetch, solidity, team_signals, updater
 import ui
 
 app = Flask(__name__)
@@ -53,6 +53,7 @@ def home():
         if not no_auto:
             ratings, applied_results = updater.apply_completed_results(ratings, fixtures)
         ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
+        ratings = expert_signals.apply_expert_priors(ratings)
         health = data_quality.assess_data_health(fixtures, ratings, team_status)
         data_info = ui._build_data_info(fixtures, ratings, team_status, health, odds_file)
 

@@ -1,0 +1,173 @@
+{
+  "source": "wiloo",
+  "label": "Wiloo — preview CDM 2026 (YouTube)",
+  "video_url": "",
+  "captured_at": "2026-06-09",
+  "trust": 1.0,
+  "cap_elo": 35.0,
+  "_doc": "Prior expert pondéré (cf. engine/expert_signals.py). lean dérivé du classement de groupe prédit par Wiloo vs l'ordre Elo effectif (bonus hôte +65 inclus): lean = clamp(rang_elo - rang_wiloo, -2, +2). confidence CALIBRÉE depuis le transcript de la vidéo (ton/conviction verbale: 'lock' ~0.65, standard ~0.5, 'pile ou face / pas confiant' ~0.4). delta = lean/2 * confidence * trust * cap_elo, borné a ±cap_elo. quote = son raisonnement (audit + affiché dans l'UI). group_standings = bracket de groupe; outrights = bracket KO complet jusqu'au sacre, gardés pour scorer sa réussite et recalibrer 'trust'. Noms = noms canoniques de data/ratings.json.",
+  "teams": {
+    "United States": {
+      "lean": 2,
+      "confidence": 0.4,
+      "stage_call": "Groupe D: 1er (Elo: 3e)",
+      "quote": "Pas méga confiant sur ce pick, mais portés par le public; haut du 11 très athlétique (Pulisic-Balogun). 1ers de leur groupe une seule fois (2010)."
+    },
+    "Czechia": {
+      "lean": 1,
+      "confidence": 0.5,
+      "stage_call": "Groupe A: 2e (Elo: 3e)",
+      "quote": "Nation européenne de 2e rang, un cran au-dessus de l'Afrique du Sud; Kuchta/Schick/Hlozek, mais 10 joueurs du Slavia."
+    },
+    "South Africa": {
+      "lean": 1,
+      "confidence": 0.5,
+      "stage_call": "Groupe A: 3e (Elo: 4e)",
+      "quote": "À la bataille; beau collectif vu à la CAN, Mokoena titré en Ligue des Champions africaine. Groupe très homogène."
+    },
+    "Australia": {
+      "lean": 1,
+      "confidence": 0.5,
+      "stage_call": "Groupe D: 3e (Elo: 4e)",
+      "quote": "Prend des points à tout le monde, jamais ridicule en CdM (8es 2006 & 2022); fort sur coups de pied arrêtés et puissance athlétique."
+    },
+    "Germany": {
+      "lean": 1,
+      "confidence": 0.55,
+      "stage_call": "Groupe E: 1er (Elo: 2e)",
+      "quote": "Les voit 1ers; surcharge de l'axe (joueurs de ballon), de la taille sur CPA. Pas excellent mais de quoi contrôler les matchs. Perte de Wirtz... regrettée."
+    },
+    "Ivory Coast": {
+      "lean": 1,
+      "confidence": 0.55,
+      "stage_call": "Groupe E: 2e (Elo: 3e)",
+      "quote": "Meilleure que l'Équateur selon lui; bon secteur offensif (Diomandé, Amad, Pépé) + base défensive correcte (Singo, Agbadou)."
+    },
+    "Japan": {
+      "lean": 1,
+      "confidence": 0.6,
+      "stage_call": "Groupe F: 1er (Elo: 2e)",
+      "quote": "6 victoires de suite (Brésil, Angleterre...), encaisse très peu; 'un tout supérieur à la somme des parties'. Peut battre les Pays-Bas, même sans Mitoma ni Minamino."
+    },
+    "Egypt": {
+      "lean": 1,
+      "confidence": 0.45,
+      "stage_call": "Groupe G: 2e (Elo: 3e)",
+      "quote": "2e 'sans beaucoup de confiance', surtout parce que l'Iran est faible; Salah en déclin mais bonne base (demi-finaliste dernière CAN)."
+    },
+    "Senegal": {
+      "lean": 1,
+      "confidence": 0.6,
+      "stage_call": "Groupe I: 2e (Elo: 3e)",
+      "quote": "2e devant la Norvège; 11 excellent, vraie équipe de CdM dure à jouer, a battu l'Angleterre en mars 2025. Il les voit aller loin (quart+)."
+    },
+    "Algeria": {
+      "lean": 1,
+      "confidence": 0.45,
+      "stage_call": "Groupe J: 2e (Elo: 3e)",
+      "quote": "Légèrement au-dessus de l'Autriche s'ils trouvent la formule (Mahrez en 10); 'serré'."
+    },
+    "DR Congo": {
+      "lean": 1,
+      "confidence": 0.4,
+      "stage_call": "Groupe K: 3e (Elo: 4e)",
+      "quote": "Bon morceau mais manque de vitamine offensive; partage probable des points avec l'Ouzbékistan en J3, possible double élimination."
+    },
+    "Ghana": {
+      "lean": 1,
+      "confidence": 0.55,
+      "stage_call": "Groupe L: 3e (Elo: 4e)",
+      "quote": "Se qualifie comme l'un des meilleurs 3es selon lui."
+    },
+    "Türkiye": {
+      "lean": -1,
+      "confidence": 0.5,
+      "stage_call": "Groupe D: 2e (Elo: 1e)",
+      "quote": "Vraie bataille pour la 1re place (peut finir 1er); mais manque un vrai n°9 et un cadre absent en début de tournoi. Match de la 3e journée décisif vs USA."
+    },
+    "Netherlands": {
+      "lean": -1,
+      "confidence": 0.6,
+      "stage_call": "Groupe F: 2e (Elo: 1e)",
+      "quote": "'Pas convaincu du tout'; attaque bancale (Malen finisseur médiocre), Timber et Verbruggen forfaits, mauvaise vibe (Koeman critique en public)."
+    },
+    "Iran": {
+      "lean": -1,
+      "confidence": 0.45,
+      "stage_call": "Groupe G: 3e (Elo: 2e)",
+      "quote": "Moins de talent individuel que l'Égypte; jouera pour quelque chose mais 3e."
+    },
+    "Norway": {
+      "lean": -1,
+      "confidence": 0.55,
+      "stage_call": "Groupe I: 3e (Elo: 2e)",
+      "quote": "'De moins en moins haut' sur eux; gros plafond offensif (Haaland, Sorloth, Strand Larsen) mais des questions (gardien, défense limitée)."
+    },
+    "Austria": {
+      "lean": 0,
+      "confidence": 0.45,
+      "stage_call": "Groupe J: 3e (Elo: 2e)",
+      "quote": "Football Red Bull (Rangnick), souvent au-dessus de la somme des parties, mais perte énorme de Baumgartner. Lean ramené à 0 : le malus Baumgartner est désormais porté objectivement par team_status (anti double comptage)."
+    },
+    "Uzbekistan": {
+      "lean": -1,
+      "confidence": 0.4,
+      "stage_call": "Groupe K: 4e (Elo: 3e)",
+      "quote": "Première CdM de l'histoire; match couperet vs RDC en J3, possible double élimination."
+    },
+    "Panama": {
+      "lean": -1,
+      "confidence": 0.5,
+      "stage_call": "Groupe L: 4e (Elo: 3e)",
+      "quote": "En dessous dans le groupe L."
+    },
+    "Ecuador": {
+      "lean": -2,
+      "confidence": 0.4,
+      "stage_call": "Groupe E: 3e (Elo: 1e)",
+      "quote": "Défense de fer (5 buts encaissés en 18) mais il préfère la Côte d'Ivoire; duel CIV-ECU = vrai pile ou face ('la lave ou la glace')."
+    },
+    "Paraguay": {
+      "lean": -2,
+      "confidence": 0.5,
+      "stage_call": "Groupe D: 4e (Elo: 2e)",
+      "quote": "Moins bonne nation sud-américaine qualifiée selon lui; base pas excellente. Confidence abaissée 0.65->0.5 car la blessure du cadre est désormais portée par team_status (anti double comptage)."
+    },
+    "South Korea": {
+      "lean": -2,
+      "confidence": 0.65,
+      "stage_call": "Groupe A: 4e (Elo: 2e)",
+      "quote": "Niveau en baisse (Kim, Kang-in Lee, Son sous leur sommet); gifles en prépa (0-5 Brésil, 0-4 Côte d'Ivoire). Tous leurs matchs au Mexique."
+    }
+  },
+  "group_standings": {
+    "A": ["Mexico", "Czechia", "South Africa", "South Korea"],
+    "B": ["Switzerland", "Canada", "Bosnia-Herzegovina", "Qatar"],
+    "C": ["Brazil", "Morocco", "Scotland", "Haiti"],
+    "D": ["United States", "Türkiye", "Australia", "Paraguay"],
+    "E": ["Germany", "Ivory Coast", "Ecuador", "Curaçao"],
+    "F": ["Japan", "Netherlands", "Sweden", "Tunisia"],
+    "G": ["Belgium", "Egypt", "Iran", "New Zealand"],
+    "H": ["Spain", "Uruguay", "Cape Verde", "Saudi Arabia"],
+    "I": ["France", "Senegal", "Norway", "Iraq"],
+    "J": ["Argentina", "Algeria", "Austria", "Jordan"],
+    "K": ["Portugal", "Colombia", "DR Congo", "Uzbekistan"],
+    "L": ["England", "Croatia", "Ghana", "Panama"]
+  },
+  "outrights": {
+    "winner": "England",
+    "runner_up": "Spain",
+    "finalists": ["England", "Spain"],
+    "semifinalists": ["England", "Spain", "France", "Portugal"],
+    "quarterfinalists": ["England", "Spain", "France", "Portugal", "Japan", "Belgium", "Senegal", "Argentina"],
+    "dark_horses": ["Belgium", "Japan", "Senegal", "Morocco", "Colombia", "Croatia"],
+    "disappointments": ["Brazil", "Netherlands", "Mexico", "Uruguay", "Norway", "South Korea"],
+    "notes": [
+      "Vainqueur England avec faible conviction assumée (~2-3/10, vs 4/10 pour l'Espagne à l'Euro 2024).",
+      "N'exclut pas du tout une 'folie' / 1er sacre d'une nation (Japon, Sénégal, Maroc, Colombie, Croatie) — tournoi jugé très dur à lire (chaleur, pelouses).",
+      "Belgique boostée (qualif quart de finale) — 'bon petit feeling'.",
+      "Brésil: vend du rêve puis tombe sur un bloc organisé; sort en 8e vs Sénégal selon lui.",
+      "Demi-finales: Espagne bat France, Angleterre bat Portugal. Finale: Angleterre bat Espagne."
+    ]
+  }
+}

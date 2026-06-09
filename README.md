@@ -80,6 +80,24 @@ Controls in the page:
 | `data/ratings.json` | team Elo ratings | **ask Claude** to update with live numbers |
 | `data/fixtures.json` | 72 group matches (generated) | `python3 tools/build_fixtures.py` |
 | `data/team_status.json` | injuries/suspensions/form/news signals | update frequently (manual/Claude/automation) |
+| `data/expert_sources/*.json` | trusted pundit priors (e.g. Wiloo) | edit by hand or ask Claude with the pundit's calls |
+
+### Expert sources (pundit priors)
+A trusted human forecaster (e.g. the YouTuber **Wiloo**) is folded in as a
+small, **bounded, auditable** prior — never an override (he has no crystal
+ball). Each source is one JSON file in `data/expert_sources/`, with a per-team
+`lean` (-2..+2 vs the team's Elo), `confidence` (0..1) and audit fields
+(`stage_call`, `quote`). `engine/expert_signals.py` converts that into a capped
+Elo nudge applied right after team-status signals:
+
+```
+delta = lean/2 * confidence * trust * cap_elo   (bounded to ±cap_elo, default ±35)
+```
+
+`trust` (0..1, per source) is the recalibration dial: log the source's
+outright/stage calls, score them after the group stage, and raise/lower `trust`
+based on how right they were — the same "prove the edge is real" logic as the
+CLV tracker. An empty `teams: {}` block is a no-op.
 
 ### Autonomous mode (no manual data edits)
 - By default, `predict.py`, `ui.py`, and `api/index.py` run an autonomous refresh step before predictions.

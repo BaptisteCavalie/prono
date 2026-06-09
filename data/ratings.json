@@ -1,10 +1,10 @@
 {
   "scale": "elo",
-  "as_of": "2026-06-08",
-  "source": "World Football Elo auto-refresh via eloratings.net TSV endpoints (last refresh 2026-06-09T06:58:19Z)",
+  "as_of": "2026-06-09",
+  "source": "World Football Elo auto-refresh via eloratings.net TSV endpoints (last refresh 2026-06-09T10:04:40Z)",
   "teams": {
     "Spain": {
-      "rating": 2155,
+      "rating": 2157,
       "source": "live",
       "goals_for_pg": 2.3,
       "goals_against_pg": 0.6,

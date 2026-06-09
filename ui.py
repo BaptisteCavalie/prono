@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, data, data_quality, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -275,6 +275,7 @@ def _best_selection(home: str, away: str, out: Dict):
 def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, List[float]],
                   team_status: Optional[Dict] = None):
     rows = []
+    expert_sources = expert_signals.load_sources()
     for m in fixtures:
         home = m["home"]
         away = m["away"]
@@ -349,6 +350,12 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
                 notes.append(f"Signal terrain {team} : {sign}{delta:.1f} Elo (forme/blessures/cartons/news)")
             for n in team_signals.status_notes(team, team_status or {}):
                 notes.append(f"{team} : {n}")
+            edelta = float(row.get("expert_delta", 0.0) or 0.0)
+            if abs(edelta) >= 0.5:
+                sign = "+" if edelta > 0 else ""
+                notes.append(f"Signal expert {team} : {sign}{edelta:.1f} Elo")
+            for n in expert_signals.expert_notes(team, expert_sources):
+                notes.append(n)
         if est:
             notes.append("Au moins une cote Elo est estimée. La confiance peut changer après mise à jour des ratings live.")
         if not odds:
@@ -1188,6 +1195,7 @@ class Handler(BaseHTTPRequestHandler):
             if not no_auto:
                 ratings, applied_results = updater.apply_completed_results(ratings, fixtures)
             ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
+            ratings = expert_signals.apply_expert_priors(ratings)
             health = data_quality.assess_data_health(fixtures, ratings, team_status)
             data_info = _build_data_info(fixtures, ratings, team_status, health, odds_file)
 
