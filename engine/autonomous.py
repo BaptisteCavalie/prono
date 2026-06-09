@@ -8,14 +8,15 @@ Best-effort updater that can run on each CLI/UI/API call:
 """
 from __future__ import annotations
 
+import copy
 import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from urllib.request import urlopen
 
-from engine import data, model, mpp
+from engine import data, prediction, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -167,29 +168,33 @@ def _refresh_team_status_coverage(status_payload: Dict, ratings_payload: Dict) -
     return added
 
 
-def _refresh_prediction_snapshots(fixtures_payload: Dict, ratings_payload: Dict) -> int:
+def _refresh_prediction_snapshots(fixtures_payload: Dict, ratings_payload: Dict,
+                                  status_payload: Optional[Dict] = None) -> int:
     updated = 0
     now_iso = _iso_now()
-    teams = ratings_payload.get("teams", {})
-    for m in fixtures_payload.get("matches", []):
+    matches = fixtures_payload.get("matches", [])
+
+    # Freeze from the SAME ratings the UI computes its live prono from: a copy
+    # with completed-result and team-signal adjustments applied (never baked back
+    # into ratings.json). The scoreline itself goes through the one shared helper
+    # (engine/prediction.py) so the frozen prono and the displayed prono can't
+    # drift apart and fire a spurious "Prono mis a jour" flag on the UI.
+    ratings_for_pred = copy.deepcopy(ratings_payload)
+    ratings_for_pred, _ = updater.apply_completed_results(ratings_for_pred, matches)
+    if status_payload is not None:
+        ratings_for_pred = team_signals.adjust_ratings_with_status(ratings_for_pred, status_payload)
+
+    for m in matches:
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
             continue
-        home = m.get("home")
-        away = m.get("away")
-        if home not in teams or away not in teams:
+        sl = prediction.scoreline(m, ratings_for_pred)
+        if sl is None:
             continue
+        ph, pa = sl
 
-        rh = float(teams[home].get("rating", 0.0))
-        ra = float(teams[away].get("rating", 0.0))
-        home_adv = float(m.get("home_adv", 0.0) or 0.0)
-        out = model.analyse(rh, ra, home_adv=home_adv)
-        ph, pa = mpp.recommend(out)["score"]  # freeze the MPP-optimal prono
-
-        old_h = m.get("predicted_home")
-        old_a = m.get("predicted_away")
-        if old_h != int(ph) or old_a != int(pa):
-            m["predicted_home"] = int(ph)
-            m["predicted_away"] = int(pa)
+        if m.get("predicted_home") != ph or m.get("predicted_away") != pa:
+            m["predicted_home"] = ph
+            m["predicted_away"] = pa
             m["predicted_at"] = now_iso
             updated += 1
     return updated
@@ -279,7 +284,7 @@ def autonomous_refresh(force: bool = False, cooldown_minutes: int = 180) -> Dict
         report["errors"].append(f"team_status_refresh_failed: {exc}")
 
     try:
-        report["predictions_updated"] = _refresh_prediction_snapshots(fixtures_payload, ratings_payload)
+        report["predictions_updated"] = _refresh_prediction_snapshots(fixtures_payload, ratings_payload, status_payload)
     except Exception as exc:
         report["errors"].append(f"prediction_refresh_failed: {exc}")
 

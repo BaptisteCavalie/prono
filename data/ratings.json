@@ -1,7 +1,7 @@
 {
   "scale": "elo",
   "as_of": "2026-06-08",
-  "source": "World Football Elo auto-refresh via eloratings.net TSV endpoints (last refresh 2026-06-08T19:57:20Z)",
+  "source": "World Football Elo auto-refresh via eloratings.net TSV endpoints (last refresh 2026-06-09T06:58:19Z)",
   "teams": {
     "Spain": {
       "rating": 2155,
@@ -18,7 +18,7 @@
       "scoring_source": "estimate"
     },
     "France": {
-      "rating": 2062,
+      "rating": 2063,
       "source": "live",
       "goals_for_pg": 2.1,
       "goals_against_pg": 0.8,
@@ -53,7 +53,7 @@
       "scoring_source": "estimate"
     },
     "Netherlands": {
-      "rating": 1944,
+      "rating": 1948,
       "source": "live",
       "goals_for_pg": 2.0,
       "goals_against_pg": 0.9,
@@ -270,7 +270,7 @@
       "scoring_source": "estimate"
     },
     "Uzbekistan": {
-      "rating": 1718,
+      "rating": 1714,
       "source": "live",
       "goals_for_pg": 1.5,
       "goals_against_pg": 0.8,

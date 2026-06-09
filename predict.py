@@ -14,7 +14,7 @@ import sys
 from datetime import datetime
 from typing import Dict
 
-from engine import autonomous, data, data_quality, model, mpp, report, solidity, strategies, team_signals
+from engine import autonomous, data, data_quality, mpp, prediction, report, solidity, strategies, team_signals
 from engine import odds as oddsmod
 from engine import updater
 
@@ -30,8 +30,7 @@ def _split_match(s: str):
 def _emit(ratings, home, away, match, show_brief, odds=None, simple=False):
     rh = ratings["teams"][home]
     ra = ratings["teams"][away]
-    out = model.analyse(rh["rating"], ra["rating"], home_adv=match.get("home_adv", 0.0),
-                        ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
+    out = prediction.analyse_match(match, ratings)
     if simple:
         rows = oddsmod.value_1x2(out, odds[0], odds[1], odds[2]) if odds else None
         print(report.simple(match, home, away, rh, ra, out, rows))
@@ -89,8 +88,7 @@ def _analyse_match(ratings, match):
     home, away = match["home"], match["away"]
     rh = ratings["teams"][home]
     ra = ratings["teams"][away]
-    out = model.analyse(rh["rating"], ra["rating"], home_adv=match.get("home_adv", 0.0),
-                        ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
+    out = prediction.analyse_match(match, ratings)
     return home, away, rh, ra, out
 
 
@@ -152,7 +150,7 @@ def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
             "values": values,
             "review_reasons": review_reasons,
             "review_priority": review_priority,
-            "rec": mpp.recommend(out, odds),
+            "rec": mpp.recommend(out),  # model-only prono (see engine/prediction.py)
         })
 
     ranked = sorted(rows, key=lambda r: (-r["pick_prob"], -r["out"]["top_scores"][0][1]))

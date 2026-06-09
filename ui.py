@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, data, data_quality, live_ratings, model, mpp, odds as oddsmod, odds_fetch, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, data, data_quality, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -263,8 +263,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         away = m["away"]
         rh = ratings["teams"][home]
         ra = ratings["teams"][away]
-        out = model.analyse(rh["rating"], ra["rating"], home_adv=m.get("home_adv", 0.0),
-                            ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
+        out = prediction.analyse_match(m, ratings)
         pick_sel, pick_label, pick_prob = _best_selection(home, away, out)
 
         (si, sj), sp = out["top_scores"][0]  # modal score (kept for the note below)
@@ -278,8 +277,10 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
 
         # MPP-optimal prono: the scoreline that maximises expected Mon Petit Prono
         # points (consistent with the favoured 1N2, then rarity-bonus aware), not
-        # just the single most-likely scoreline.
-        rec = mpp.recommend(out, odds)
+        # just the single most-likely scoreline. Model-only on purpose (see
+        # engine/prediction.py): the calendar prono must match the frozen one,
+        # and odds-driven betting lives on the Paris tab, not here.
+        rec = mpp.recommend(out)
         rsi, rsj = rec["score"]
         live_predicted_score = f"{rsi}-{rsj}"
         frozen_home = _as_int(m.get("predicted_home"))

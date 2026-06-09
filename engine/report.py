@@ -1,5 +1,5 @@
 """Render model output as a human-readable prediction card + Claude brief."""
-from typing import Dict, List, Optional
+from typing import Dict
 
 from engine import mpp
 
@@ -10,15 +10,6 @@ def _pct(x: float) -> str:
 
 def _scores(top) -> str:
     return "   ".join(f"{i}-{j} {_pct(p)}" for (i, j), p in top[:4])
-
-
-def _odds_from_value_rows(value_rows) -> Optional[List[float]]:
-    """Rebuild a [home, draw, away] decimal triple from value_1x2 rows."""
-    if not value_rows:
-        return None
-    by_sel = {r["sel"]: r.get("odds") for r in value_rows}
-    triple = [by_sel.get("home"), by_sel.get("draw"), by_sel.get("away")]
-    return triple if all(isinstance(x, (int, float)) for x in triple) else None
 
 
 def confidence(out: Dict, both_live: bool) -> str:
@@ -103,7 +94,7 @@ def render_value(home: str, away: str, rows) -> str:
 
 def simple(match: Dict, home: str, away: str,
            r_home: Dict, r_away: Dict, out: Dict, value_rows=None) -> str:
-    rec = mpp.recommend(out, _odds_from_value_rows(value_rows))
+    rec = mpp.recommend(out)  # model-only prono (see engine/prediction.py); odds drive the value table below, not the scoreline
     i, j = rec["score"]
     sp = rec["p_exact"]
     mi, mj = rec["modal_score"]
