@@ -641,7 +641,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 40%,white);outline-offset:2px}",
         ".stats{display:flex;gap:8px;flex-wrap:wrap}",
         ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
-        "table{width:100%;border-collapse:separate;border-spacing:0 8px}",
+        "table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}",
         "th,td{padding:8px 10px;vertical-align:middle}",
         "thead th{text-align:left;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:2px}",
         "tbody tr{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 4px 12px rgba(15,30,55,.03)}",
@@ -655,9 +655,10 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".nutri-d{background:#d37a1c}",
         ".nutri-e{background:#b33a2f}",
         ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:2px 2px 6px}",
-        ".line-main{display:grid;grid-template-columns:minmax(100px,1fr) auto minmax(100px,1fr);align-items:center;gap:8px}",
-        ".team-side{display:flex;align-items:center;gap:6px;min-width:0}",
-        ".team-side.right{justify-content:flex-end}",
+        ".line-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:14px;max-width:440px}",
+        ".team-side{display:flex;align-items:center;gap:7px;min-width:0;justify-content:flex-end;text-align:right}",
+        ".team-side.right{justify-content:flex-start;text-align:left}",
+        ".vs-dot{justify-self:center}",
         ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
         ".vs-dot{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
         ".score-wrap{display:inline-flex;align-items:center;gap:8px;justify-self:center}",
@@ -721,23 +722,41 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".info-card h4{margin:0 0 6px;font-size:.88rem}",
         ".info-list{margin:0;padding-left:17px;color:var(--muted);font-size:.82rem;line-height:1.35}",
         ".info-line{font-size:.82rem;color:var(--muted);margin:2px 0}",
+        ".status-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
+        ".status-caption{color:var(--muted);font-size:.82rem}",
+        ".tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:#f4f2ea;padding:8px 4px 0;margin:0 0 14px;border-bottom:1px solid var(--line)}",
+        ".tab{text-decoration:none;padding:9px 16px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:2px solid transparent;border-radius:9px 9px 0 0;line-height:1}",
+        ".tab:hover{color:var(--brand);background:#eaf2f8}",
+        ".tab.active{color:var(--brand);border-bottom-color:var(--brand);background:var(--surface)}",
+        ".diag-wrap{margin-top:20px}",
+        ".diag-wrap>summary{font-size:.85rem}",
+        ".diag-wrap[open]>summary{margin-bottom:10px}",
         "@media (max-width:860px){.reco-grid{grid-template-columns:1fr}.modal-columns{grid-template-columns:1fr}}",
         "@media (max-width:860px){.info-grid{grid-template-columns:1fr}}",
-        "@media (max-width:760px){.wrap{padding:14px 10px 20px}.panel{padding:11px 10px}.actions{margin-top:2px}.actions button{width:100%}.line-main{grid-template-columns:1fr;gap:6px}.team-side.right{justify-content:flex-start}.score-wrap{justify-self:start}.score-chip{min-width:64px;font-size:.95rem;padding:6px 9px}table thead{display:none}table,tbody,tr,td{display:block;width:100%}table{border-spacing:0 10px}tr{border:1px solid var(--line);border-radius:12px;padding:8px 9px;margin-bottom:8px;background:var(--surface)}tbody tr td:first-child,tbody tr td:last-child{border-radius:0}td{border:0;padding:4px 0}td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}}",
+        "@media (max-width:760px){.wrap{padding:14px 10px 20px}.panel{padding:11px 10px}.tab{padding:9px 12px;font-size:.86rem}"
+        "table thead{display:none}table,tbody{display:block;width:100%}table{border-spacing:0}"
+        "tr{display:block;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:var(--surface);box-shadow:0 4px 12px rgba(15,30,55,.04)}"
+        "tbody tr td:first-child,tbody tr td:last-child{border-radius:0}"
+        "td{display:block;border:0;padding:3px 0}"
+        "td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}"
+        "td[data-label='Match']::before,td[data-label='Pronostic']::before,td[data-label='Détails']::before{display:none}"
+        ".line-main{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}"
+        ".team-name{font-size:.98rem}.score-chip{min-width:64px}.prob-bar{max-width:none}.prono-line{margin-top:2px}"
+        "td[data-label='Suivi'],td[data-label='Détails']{display:inline-block;width:auto;vertical-align:middle;margin-top:8px}"
+        "td[data-label='Suivi']{margin-right:16px}"
+        "td[data-label='Suivi']::before{display:inline;margin:0 8px 0 0}}",
         "</style></head><body><main class='wrap'>",
         "<header class='mast'>",
         "<div>",
         f"<h1>WC2026 Calendrier Pronos - {html.escape(title_tag)}</h1>",
         "<p class='subtitle'>Vue calendrier rapide : ouvrez un match pour voir les explications utiles à la décision.</p>",
         "</div>",
-        "<div class='stats'>",
-        f"<div class='stamp'>Résultats intégrés automatiquement : {applied_results}</div>",
-        f"<div class='stamp'>Matchs à venir : {len(future_rows)}</div>",
-        f"<div class='stamp'>Matchs joués : {len(past_rows)}</div>",
-        "<div class='stamp' id='done-count'>Pronostics cochés : 0</div>",
-        f"<div class='stamp'>Qualité des données : {(health or {}).get('score', 'n/a')}/100</div>",
-        f"<div class='stamp'>Solidité modèle : {((solidity_report or {}).get('score') if (solidity_report or {}).get('score') is not None else 'n/a')}/100</div>",
-        f"<div class='health-pill {health_meta['class']}'><span class='health-dot'></span>Feu data: {health_meta['label']} ({health_meta['state']})</div>",
+        "<div class='status-line'>",
+        f"<div class='health-pill {health_meta['class']}'><span class='health-dot'></span>Feu data : {health_meta['label']} ({health_meta['state']})</div>",
+        f"<span class='status-caption'>Qualité {(health or {}).get('score', 'n/a')}/100"
+        f" · Solidité {((solidity_report or {}).get('score') if (solidity_report or {}).get('score') is not None else 'n/a')}/100"
+        f" · À venir {len(future_rows)} · Joués {len(past_rows)}"
+        " · <span id='done-count'>Pronostics cochés : 0</span></span>",
         "</div>",
         "</header>",
     ]
@@ -746,22 +765,16 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         parts.append(f"<div class='err'>{html.escape(error)}</div>")
 
     parts.extend([
-        "<div class='panel'>",
-        (
-            "<div class='actions'><a class='btn-alt' href='/?tab=paris'>Voir les recommandations de paris</a></div>"
-            if not bet_blocked
-            else "<div class='actions'><span class='btn-alt btn-disabled'>Recommandations indisponibles (qualité critique)</span></div>"
-        ),
-        "<div class='actions' style='justify-content:flex-start;gap:8px;margin-top:10px'>",
-        f"<a href='/?tab=futurs' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'futurs' else '')}'>Futurs</a>",
-        f"<a href='/?tab=passes' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'passes' else '')}'>Passes</a>",
-        f"<a href='/?tab=paris' class='stamp' style='text-decoration:none;{('background:#d9f0ff;border-color:#8db8d1;color:#11384d' if safe_tab == 'paris' else '')}'>Paris</a>",
-        "</div>",
-        f"<div class='guard-msg'>{html.escape(health_meta['message'])}</div>",
-        "<div class='legend'>Chaque match affiche une date. Si vous voyez une incohérence, mettez à jour data/fixtures.json.</div>",
-        "</div>",
+        "<nav class='tabbar'>",
+        f"<a href='/?tab=futurs' class='tab{' active' if safe_tab == 'futurs' else ''}'>Futurs</a>",
+        f"<a href='/?tab=passes' class='tab{' active' if safe_tab == 'passes' else ''}'>Passés</a>",
+        f"<a href='/?tab=paris' class='tab{' active' if safe_tab == 'paris' else ''}'>Paris</a>",
+        "</nav>",
     ])
+    if (health or {}).get("level") != "good":
+        parts.append(f"<div class='guard-msg' style='margin-top:0'>{html.escape(health_meta['message'])}</div>")
 
+    diag_start = len(parts)
     if health:
         level_label = {
             "good": "Bon",
@@ -878,6 +891,9 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             parts.append(f"<li>{html.escape(a)}</li>")
         parts.extend(["</ul></details>", "</div>"])
 
+    diag_chunk = parts[diag_start:]
+    del parts[diag_start:]
+
     if safe_tab == "paris":
         rec = recommendations
         bk = (rec.get("bankroll") if rec else bankroll) or bankroll
@@ -985,7 +1001,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             f"<span class='tiny'>{len(md_rows)} matchs</span>",
             "</div>",
             "<table><thead><tr>",
-            "<th>Match</th><th>Pronostic</th><th>Suivi</th><th>Détails</th>",
+            "<th style='width:40%'>Match</th><th style='width:27%'>Pronostic</th><th style='width:9%'>Suivi</th><th style='width:24%'>Détails</th>",
             "</tr></thead><tbody>",
         ])
 
@@ -1085,6 +1101,11 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             parts.append("</tr>")
 
         parts.extend(["</tbody></table>", "</section>"])
+
+    if diag_chunk:
+        parts.append("<details class='diag-wrap'><summary>Diagnostics — qualité des données &amp; solidité du modèle</summary>")
+        parts.extend(diag_chunk)
+        parts.append("</details>")
 
     parts.extend([
         "<script>",
