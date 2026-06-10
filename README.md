@@ -100,11 +100,13 @@ outright/stage calls, score them after the group stage, and raise/lower `trust`
 based on how right they were — the same "prove the edge is real" logic as the
 CLV tracker. An empty `teams: {}` block is a no-op.
 
-Two sources ship today: `wiloo_wc2026.json` (trust 1.0) and
-`mpp_strategy_2026.json` (a friend's MPP playbook PDF, trust 0.7 until his
-group-stage calls are scored). Overlapping leans (USA, Türkiye, Japan,
-Netherlands) stack by design — independent experts agreeing against the Elo is
-a stronger prior — and the sum stays bounded by `GLOBAL_CAP_ELO`.
+One source is active today: `wiloo_wc2026.json` (trust 1.0).
+`_mpp_strategy_2026.json` (a friend's MPP playbook PDF) is kept **archived**
+(the `_` prefix means the loader never reads it): it was captured to benchmark
+the engine against his strategy, not to feed predictions. Drop the prefix to
+activate it. If several sources are ever active, overlapping leans stack by
+design — and the sum stays bounded by `GLOBAL_CAP_ELO` — but beware that
+pundits watching the same games are *correlated*, not independent evidence.
 
 ### MPP meta-game (x2 + league position + knockouts)
 
