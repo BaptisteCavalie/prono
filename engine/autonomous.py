@@ -144,9 +144,16 @@ def _refresh_live_ratings(ratings_payload: Dict) -> Tuple[int, int, str]:
 
 
 def _refresh_home_adv(fixtures_payload: Dict) -> int:
+    # home_adv is added to the HOME side's rating (engine/model.py), so a host
+    # listed as the away team gets its boost as a NEGATIVE home_adv. Two hosts
+    # facing each other cancel out to 0.
     updated = 0
     for m in fixtures_payload.get("matches", []):
-        target = HOST_HOME_ADV if m.get("home") in HOSTS else DEFAULT_HOME_ADV
+        target = DEFAULT_HOME_ADV
+        if m.get("home") in HOSTS:
+            target += HOST_HOME_ADV
+        if m.get("away") in HOSTS:
+            target -= HOST_HOME_ADV
         current = float(m.get("home_adv", 0.0) or 0.0)
         if current != target:
             m["home_adv"] = target

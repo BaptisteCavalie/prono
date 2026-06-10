@@ -1,5 +1,24 @@
 # Project Work Log
 
+## 2026-06-10
+
+### Summary
+- Compared the engine against a friend's MPP strategy PDF and ported the meta-game layer it exposed:
+  - `engine/x2.py`: x2 bonus policy — best target of a slate (highest E[MPP] = the doubler's marginal gain) + codified timing tree (never MD1, group comeback at 80+ behind, R32 standout only, R16 optimal window, QF last call, leaders hold as insurance). Surfaced in `--loop`.
+  - League-position modes in `mpp.recommend(mode=...)`: `ev` / `protect` (leader: modal pick, no rarity chasing) / `chase` (trailing: >= "tres rare" bonus only). CLI `--mpp-mode`, `--rank`, `--league-size`, `--points-behind`, `--leading`.
+  - Knockout 120' scoring in `mpp.recommend(knockout=True)`: MPP counts extra time (never pens); 90' draws are convolved with a tempo-damped 30' Poisson. Wired through `engine/prediction.py` (display + freeze stay identical) and `--match ... --knockout`.
+- New expert source `data/expert_sources/mpp_strategy_2026.json` (trust 0.7): the friend's group-standings leans (USA +2, Paraguay -2, Japan +1, Netherlands -1, ...), outrights (France / Mbappé), audit quotes.
+- Bug fixes:
+  - `predict.py --match` crashed (`TypeError` in report.confidence): the what-if match dict was missing `home`/`away` keys, so `prediction.analyse_match` returned None.
+  - Host nations listed as the *away* team silently lost their +65 home boost (`autonomous._refresh_home_adv` only checked the home side). Hosts away now get a negative `home_adv`; G05/G11/G23 fixed in fixtures.json and snapshots refrozen.
+- New tests: `tests/test_mpp_x2.py` (knockout distribution, modes, x2 policy, both bug regressions). Suite: 31 tests OK.
+
+### Key Files Added/Updated
+- engine/x2.py (new), engine/mpp.py, engine/prediction.py, engine/report.py, engine/autonomous.py
+- predict.py, ui.py, README.md
+- data/expert_sources/mpp_strategy_2026.json (new), data/fixtures.json
+- tests/test_mpp_x2.py (new)
+
 ## 2026-06-05
 
 ### Summary
