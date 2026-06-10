@@ -61,34 +61,13 @@ def _effective_date(match: Dict) -> Optional[str]:
 def _load_odds_board(path: Optional[str]) -> Dict[str, List[float]]:
     if not path:
         return {}
-
     resolved = (ROOT / path).resolve()
     if not resolved.is_relative_to(ROOT):
         raise ValueError(f"odds file outside allowed directory: {path}")
     if not resolved.is_file():
         raise ValueError(f"odds file not found: {path}")
-
     with open(resolved, encoding="utf-8") as f:
-        raw = json.load(f)
-
-    board = {}
-    for key, triple in raw.items():
-        if (not isinstance(triple, list) or len(triple) != 3
-                or not all(isinstance(x, (int, float)) for x in triple)):
-            raise ValueError(f"invalid odds for {key!r}; expected [home, draw, away]")
-
-        if key.lower().startswith("g"):
-            board[key.upper()] = [float(x) for x in triple]
-            continue
-
-        pair = _split_match(key)
-        if pair:
-            board[f"{pair[0].lower()}|{pair[1].lower()}"] = [float(x) for x in triple]
-            continue
-
-        raise ValueError(f"invalid odds key {key!r}; use fixture id or 'Home vs Away'")
-
-    return board
+        return odds_fetch._norm_board(json.load(f))
 
 
 def _default_odds_file() -> str:
@@ -247,20 +226,22 @@ def _team_flag(team: str) -> str:
     return _iso_to_flag(code)
 
 
+_FR_STRATEGY_MAPPING = [
+    ("DRAW lean", "Tendance NUL"),
+    ("group draws are historically underpriced", "les nuls de phase de groupes sont historiquement sous-cotés"),
+    ("check the draw price", "vérifie la cote du nul"),
+    ("model draw", "modèle nul"),
+    ("UNDER 2.5 lean", "Tendance UNDER 2.5"),
+    ("knockouts run low-scoring", "les matchs à élimination directe sont souvent fermés"),
+    ("model U2.5", "modèle U2.5"),
+    ("HOST", "PAYS HÔTE"),
+    ("on home soil; hosts overperform their price", "à domicile : les pays hôtes surperforment souvent leur cote"),
+]
+
+
 def _fr_strategy_flag(text: str) -> str:
-    mapping = [
-        ("DRAW lean", "Tendance NUL"),
-        ("group draws are historically underpriced", "les nuls de phase de groupes sont historiquement sous-cotés"),
-        ("check the draw price", "vérifie la cote du nul"),
-        ("model draw", "modèle nul"),
-        ("UNDER 2.5 lean", "Tendance UNDER 2.5"),
-        ("knockouts run low-scoring", "les matchs à élimination directe sont souvent fermés"),
-        ("model U2.5", "modèle U2.5"),
-        ("HOST", "PAYS HÔTE"),
-        ("on home soil; hosts overperform their price", "à domicile : les pays hôtes surperforment souvent leur cote"),
-    ]
     out = text
-    for src, dst in mapping:
+    for src, dst in _FR_STRATEGY_MAPPING:
         out = out.replace(src, dst)
     return out
 
