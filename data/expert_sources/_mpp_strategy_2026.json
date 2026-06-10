@@ -5,7 +5,7 @@
   "captured_at": "2026-06-10",
   "trust": 0.7,
   "cap_elo": 35.0,
-  "_doc": "Prior expert pondéré (cf. engine/expert_signals.py), extrait du PDF 'MPP Strategy — FIFA World Cup 2026' d'un ami de Baptiste. lean dérivé de ses classements de groupe prédits vs l'ordre Elo effectif (bonus hôte +65 inclus): lean = clamp(rang_elo - rang_ami, -2, +2). confidence calibrée sur le ton du document (conviction affichée ~0.55-0.6, standard ~0.5, raisonnement mince ~0.4-0.45). trust 0.7 (< wiloo 1.0): source non éprouvée — scorer ses calls après la phase de groupes et recalibrer. Recouvrement assumé avec wiloo (USA, Türkiye, Japon, Pays-Bas): deux experts indépendants qui divergent de l'Elo dans le même sens = prior plus fort, le cumul reste borné par GLOBAL_CAP_ELO. Groupes A/B/C/I/J/L: aucune divergence vs l'ordre Elo, donc aucun lean (no-op).",
+  "_doc": "ARCHIVE (prefixe '_' = jamais charge par engine/expert_signals.py, decision Baptiste 2026-06-10): ce doc servait a comparer la solidite du moteur vs la strategie d'un ami, pas a alimenter les predictions. Conserve pour audit et pour scorer ses calls apres la phase de groupes. Pour le reactiver: retirer le prefixe '_'. Methodologie d'origine: lean derive de ses classements de groupe predits vs l'ordre Elo effectif (bonus hote +65 inclus): lean = clamp(rang_elo - rang_ami, -2, +2); confidence calibree sur le ton du document; trust 0.7 (source non eprouvee).",
   "teams": {
     "United States": {
       "lean": 2,
@@ -93,25 +93,91 @@
     }
   },
   "group_standings": {
-    "A": ["Mexico", "South Korea", "Czechia", "South Africa"],
-    "B": ["Switzerland", "Canada", "Bosnia-Herzegovina", "Qatar"],
-    "C": ["Brazil", "Morocco", "Scotland", "Haiti"],
-    "D": ["United States", "Türkiye", "Australia", "Paraguay"],
-    "E": ["Germany", "Ecuador", "Ivory Coast", "Curaçao"],
-    "F": ["Japan", "Netherlands", "Sweden", "Tunisia"],
-    "G": ["Belgium", "Egypt", "Iran", "New Zealand"],
-    "H": ["Spain", "Uruguay", "Saudi Arabia", "Cape Verde"],
-    "I": ["France", "Norway", "Senegal", "Iraq"],
-    "J": ["Argentina", "Austria", "Algeria", "Jordan"],
-    "K": ["Portugal", "Colombia", "DR Congo", "Uzbekistan"],
-    "L": ["England", "Croatia", "Panama", "Ghana"]
+    "A": [
+      "Mexico",
+      "South Korea",
+      "Czechia",
+      "South Africa"
+    ],
+    "B": [
+      "Switzerland",
+      "Canada",
+      "Bosnia-Herzegovina",
+      "Qatar"
+    ],
+    "C": [
+      "Brazil",
+      "Morocco",
+      "Scotland",
+      "Haiti"
+    ],
+    "D": [
+      "United States",
+      "Türkiye",
+      "Australia",
+      "Paraguay"
+    ],
+    "E": [
+      "Germany",
+      "Ecuador",
+      "Ivory Coast",
+      "Curaçao"
+    ],
+    "F": [
+      "Japan",
+      "Netherlands",
+      "Sweden",
+      "Tunisia"
+    ],
+    "G": [
+      "Belgium",
+      "Egypt",
+      "Iran",
+      "New Zealand"
+    ],
+    "H": [
+      "Spain",
+      "Uruguay",
+      "Saudi Arabia",
+      "Cape Verde"
+    ],
+    "I": [
+      "France",
+      "Norway",
+      "Senegal",
+      "Iraq"
+    ],
+    "J": [
+      "Argentina",
+      "Austria",
+      "Algeria",
+      "Jordan"
+    ],
+    "K": [
+      "Portugal",
+      "Colombia",
+      "DR Congo",
+      "Uzbekistan"
+    ],
+    "L": [
+      "England",
+      "Croatia",
+      "Panama",
+      "Ghana"
+    ]
   },
   "outrights": {
     "winner": "France",
     "runner_up": "Argentina",
-    "finalists": ["France", "Argentina"],
+    "finalists": [
+      "France",
+      "Argentina"
+    ],
     "top_scorer": "Kylian Mbappé (projection 8-9 buts)",
-    "dark_horses": ["Japan", "Türkiye"],
+    "dark_horses": [
+      "Japan",
+      "Türkiye"
+    ],
     "disappointments": [],
     "notes": [
       "Bracket France: R32 vs 3e (Iran/Saoudite) 3-0, R16 vs Autriche/Colombie 2-1, QF vs Espagne 1-0, SF vs Angleterre/Allemagne 2-1, finale vs Argentine 2-1.",

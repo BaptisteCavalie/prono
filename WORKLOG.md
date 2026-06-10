@@ -11,6 +11,7 @@
 - Bug fixes:
   - `predict.py --match` crashed (`TypeError` in report.confidence): the what-if match dict was missing `home`/`away` keys, so `prediction.analyse_match` returned None.
   - Host nations listed as the *away* team silently lost their +65 home boost (`autonomous._refresh_home_adv` only checked the home side). Hosts away now get a negative `home_adv`; G05/G11/G23 fixed in fixtures.json and snapshots refrozen.
+- Follow-up (same day): the friend's expert source is **archived** (renamed `_mpp_strategy_2026.json`, never loaded) — it was captured to benchmark the engine vs his strategy, not to feed predictions. Snapshots refrozen on maths + Wiloo only (G19 1-0, G31 2-0, G36 2-0 reverted; G23 keeps the host-fix 2-0).
 - New tests: `tests/test_mpp_x2.py` (knockout distribution, modes, x2 policy, both bug regressions). Suite: 31 tests OK.
 
 ### Key Files Added/Updated
