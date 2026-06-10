@@ -10,6 +10,7 @@ No install needed — system Python 3.9+ only (pure stdlib).
 
 ```bash
 python3 predict.py --match "France vs Senegal"   # any two teams (also what-if / knockout)
+python3 predict.py --match "France vs Croatia" --knockout  # scored on the 120' result (MPP rule)
 python3 predict.py --group I                      # a whole group
 python3 predict.py --matchday 1                   # every matchday-1 game
 python3 predict.py --matchday 1 --sheet          # one-page daily card (score + bet with %)
@@ -98,6 +99,37 @@ delta = lean/2 * confidence * trust * cap_elo   (bounded to ±cap_elo, default �
 outright/stage calls, score them after the group stage, and raise/lower `trust`
 based on how right they were — the same "prove the edge is real" logic as the
 CLV tracker. An empty `teams: {}` block is a no-op.
+
+Two sources ship today: `wiloo_wc2026.json` (trust 1.0) and
+`mpp_strategy_2026.json` (a friend's MPP playbook PDF, trust 0.7 until his
+group-stage calls are scored). Overlapping leans (USA, Türkiye, Japan,
+Netherlands) stack by design — independent experts agreeing against the Elo is
+a stronger prior — and the sum stays bounded by `GLOBAL_CAP_ELO`.
+
+### MPP meta-game (x2 + league position + knockouts)
+
+MPP is a *ranking* game against other humans, so expected points is not always
+the right target. Three tools cover the meta layer:
+
+- **x2 bonus** (`engine/x2.py`): the one-per-tournament doubler. `--loop` now
+  prints the best target of the slate (highest E[MPP] = the x2's marginal
+  gain) plus timing advice — never on MD1, comeback weapon in the groups when
+  trailing 80+, R32 only on a standout, **R16 = the optimal window**, QF = last
+  call, leaders hold it as late insurance. Override the stage with
+  `--x2-stage r16`, feed your position with `--points-behind 120` / `--leading`.
+- **League-position modes** (`mpp.recommend(mode=...)`): `ev` (default,
+  maximise expected points), `protect` (leading: most likely outcome + most
+  likely exact score, no rarity chasing), `chase` (trailing: only scorelines
+  carrying a >= "tres rare" bonus — maximise the big-haul tail, not the mean).
+  CLI: `--mpp-mode protect|ev|chase`, or `--mpp-mode auto --rank 12
+  --league-size 20 --points-behind 90` to derive it.
+- **Knockout (120') scoring** (`mpp.recommend(knockout=True)`): MPP counts
+  extra time and never penalties, while the Poisson model describes 90
+  minutes. For knockout fixtures every 90' draw is convolved with a
+  tempo-damped 30' Poisson before optimising, so "1-1 then an ET winner"
+  is priced as the 2-1 it ends as. Wired automatically through
+  `engine/prediction.py` (display + freeze) once knockout fixtures exist;
+  available today via `--match ... --knockout`.
 
 ### Autonomous mode (no manual data edits)
 - By default, `predict.py`, `ui.py`, and `api/index.py` run an autonomous refresh step before predictions.

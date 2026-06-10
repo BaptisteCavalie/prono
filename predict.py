@@ -14,7 +14,7 @@ import sys
 from datetime import datetime
 from typing import Dict
 
-from engine import autonomous, data, data_quality, expert_signals, mpp, prediction, report, solidity, strategies, team_signals
+from engine import autonomous, data, data_quality, expert_signals, mpp, prediction, report, solidity, strategies, team_signals, x2
 from engine import odds as oddsmod
 from engine import updater
 
@@ -27,15 +27,15 @@ def _split_match(s: str):
     return None
 
 
-def _emit(ratings, home, away, match, show_brief, odds=None, simple=False):
+def _emit(ratings, home, away, match, show_brief, odds=None, simple=False, mode="ev"):
     rh = ratings["teams"][home]
     ra = ratings["teams"][away]
     out = prediction.analyse_match(match, ratings)
     if simple:
         rows = oddsmod.value_1x2(out, odds[0], odds[1], odds[2]) if odds else None
-        print(report.simple(match, home, away, rh, ra, out, rows))
+        print(report.simple(match, home, away, rh, ra, out, rows, mode=mode))
         return
-    print(report.card(match, home, away, rh, ra, out))
+    print(report.card(match, home, away, rh, ra, out, mode=mode))
     leans = strategies.flags(match, home, away, rh, ra, out)
     if leans:
         print(report.render_flags(leans))
@@ -92,7 +92,7 @@ def _analyse_match(ratings, match):
     return home, away, rh, ra, out
 
 
-def _sheet(ratings, fixtures, odds_board):
+def _sheet(ratings, fixtures, odds_board, mode="ev"):
     md = fixtures[0].get("matchday") if fixtures else "?"
     date_value = fixtures[0].get("date") if fixtures and fixtures[0].get("date") else None
     tag = date_value[:10] if date_value else f"MD{md}"
@@ -102,11 +102,24 @@ def _sheet(ratings, fixtures, odds_board):
         home, away, rh, ra, out = _analyse_match(ratings, match)
         odds = _find_match_odds(match, odds_board)
         rows = oddsmod.value_1x2(out, odds[0], odds[1], odds[2]) if odds else None
-        print(report.simple(match, home, away, rh, ra, out, rows))
+        print(report.simple(match, home, away, rh, ra, out, rows, mode=mode))
         print()
 
 
-def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
+def _infer_x2_stage(fixtures):
+    """Best-effort tournament stage of a slate for the x2 timing policy."""
+    stages = {str(m.get("stage") or "group") for m in fixtures}
+    if stages == {"group"}:
+        matchdays = {m.get("matchday") for m in fixtures}
+        return "group_md1" if matchdays == {1} else "group"
+    for s in ("final", "sf", "qf", "r16", "r32"):
+        if s in stages:
+            return s
+    return "group"
+
+
+def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0,
+          mode="ev", x2_stage=None, points_behind=0.0, leading=False):
     rows = []
     for m in fixtures:
         home, away, rh, ra, out = _analyse_match(ratings, m)
@@ -150,7 +163,8 @@ def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
             "values": values,
             "review_reasons": review_reasons,
             "review_priority": review_priority,
-            "rec": mpp.recommend(out),  # model-only prono (see engine/prediction.py)
+            # model-only prono (see engine/prediction.py)
+            "rec": mpp.recommend(out, knockout=mpp.is_knockout(m), mode=mode),
         })
 
     ranked = sorted(rows, key=lambda r: (-r["pick_prob"], -r["out"]["top_scores"][0][1]))
@@ -164,6 +178,10 @@ def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
     md = fixtures[0].get("matchday") if fixtures else "?"
     print(f"MATCHDAY LOOP · MD{md}")
     print("=" * 64)
+    if mode != "ev":
+        print(f"MPP mode: {mode} "
+              f"({'protection du classement' if mode == 'protect' else 'remontada — gros bonus uniquement'})")
+        print()
     print("Ranked by confidence")
     if not ranked:
         print(" - no matches after filtering")
@@ -181,15 +199,20 @@ def _loop(ratings, fixtures, odds_board, min_pick_prob=0.0, review_top=0):
         )
 
     print()
-    print("MPP X2 boost candidate (highest expected points)")
-    x2 = max(rows, key=lambda r: r["rec"]["exp_points"])
-    xr = x2["rec"]
-    xi, xj = xr["score"]
-    print(
-        f" - {x2['home']} vs {x2['away']}: {xi}-{xj} "
-        f"(+{xr['bonus']} {xr['tier']}, E[MPP] {xr['exp_points']:.1f}) "
-        f"-> double it with your one X2"
-    )
+    print("MPP X2 (one per tournament)")
+    best = x2.best_candidate(rows)
+    stage = x2_stage or _infer_x2_stage(fixtures)
+    advice = x2.advise(stage, points_behind=points_behind, leading=leading,
+                       best_exp=best["rec"]["exp_points"] if best else None)
+    if best:
+        xr = best["rec"]
+        xi, xj = xr["score"]
+        print(
+            f" - best target today: {best['home']} vs {best['away']}: {xi}-{xj} "
+            f"(+{xr['bonus']} {xr['tier']}, E[MPP] {xr['exp_points']:.1f}, "
+            f"x2 gain ~+{best['x2_gain']:.1f} pts)"
+        )
+    print(f" - timing [{stage}]: {advice['action'].upper()} — {advice['reason']}")
 
     print()
     print("Value flags")
@@ -296,6 +319,8 @@ def _print_coverage_report(health: Dict, fixture_count: int) -> None:
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="WC2026 prediction engine")
     p.add_argument("--match", help='two teams, e.g. "France vs Senegal"')
+    p.add_argument("--knockout", action="store_true",
+                   help="score --match as a knockout tie (MPP counts the 120' result)")
     p.add_argument("--group", help="group letter A-L")
     p.add_argument("--matchday", type=int, choices=[1, 2, 3])
     p.add_argument("--date", help="fixture date (YYYY-MM-DD) for date-based loop selection")
@@ -314,6 +339,19 @@ def main(argv=None) -> int:
                    help="limit Claude review queue to top N items (0 = all)")
     p.add_argument("--min-pick-prob", type=float, default=0.0,
                    help="hide ranked picks below this probability (0.0-1.0)")
+    p.add_argument("--mpp-mode", choices=["auto"] + list(mpp.MODES), default="ev",
+                   help="pick policy vs league position: ev (default), protect (leader), "
+                        "chase (trailing); auto derives it from --rank/--points-behind")
+    p.add_argument("--rank", type=int, default=None,
+                   help="your current MPP league rank (for --mpp-mode auto)")
+    p.add_argument("--league-size", type=int, default=None,
+                   help="number of players in your MPP league (for --mpp-mode auto)")
+    p.add_argument("--points-behind", type=float, default=0.0,
+                   help="points behind the league leader (x2 policy + --mpp-mode auto)")
+    p.add_argument("--leading", action="store_true",
+                   help="you lead your MPP league (x2 policy: save it as insurance)")
+    p.add_argument("--x2-stage", choices=list(x2.STAGES), default=None,
+                   help="override the tournament stage for the x2 timing advice")
     p.add_argument("--no-auto-update", action="store_true",
                    help="disable automatic rating updates from completed fixtures")
     p.add_argument("--no-auto-refresh", action="store_true",
@@ -427,6 +465,11 @@ def main(argv=None) -> int:
             print(f"Group {g}: " + ", ".join(teams))
         return 0
 
+    mode = args.mpp_mode
+    if mode == "auto":
+        mode = mpp.mode_for_position(rank=args.rank, total=args.league_size,
+                                     points_behind=args.points_behind or None)
+
     if args.match:
         pair = _split_match(args.match)
         if not pair:
@@ -446,7 +489,13 @@ def main(argv=None) -> int:
             except (ValueError, AssertionError):
                 print('--odds needs 3 decimals "home,draw,away"', file=sys.stderr)
                 return 2
-        _emit(ratings, home, away, {"venue": "neutral"}, args.brief, odds, args.simple)
+        what_if = {
+            "home": home,
+            "away": away,
+            "venue": "neutral",
+            "stage": "knockout" if args.knockout else "group",
+        }
+        _emit(ratings, home, away, what_if, args.brief, odds, args.simple, mode=mode)
         return 0
 
     if not (args.group or args.matchday or args.date or args.all):
@@ -484,7 +533,7 @@ def main(argv=None) -> int:
         except (OSError, json.JSONDecodeError, ValueError) as e:
             print(f"Unable to load --odds-file: {e}", file=sys.stderr)
             return 2
-        _sheet(ratings, sel, odds_board)
+        _sheet(ratings, sel, odds_board, mode=mode)
         if applied_results:
             print(f"Applied {applied_results} completed result(s) to ratings before prediction.")
         return 0
@@ -503,13 +552,17 @@ def main(argv=None) -> int:
             odds_board,
             min_pick_prob=args.min_pick_prob,
             review_top=args.review_top,
+            mode=mode,
+            x2_stage=args.x2_stage,
+            points_behind=args.points_behind,
+            leading=args.leading,
         )
         if applied_results:
             print()
             print(f"Applied {applied_results} completed result(s) to ratings before prediction.")
         return 0
     for m in sel:
-        _emit(ratings, m["home"], m["away"], m, args.brief, simple=args.simple)
+        _emit(ratings, m["home"], m["away"], m, args.brief, simple=args.simple, mode=mode)
     return 0
 
 
