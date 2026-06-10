@@ -95,12 +95,15 @@ def home():
         data_info,
         bankroll,
     )
-    return Response(body, mimetype="text/html; charset=utf-8")
+    resp = Response(body, mimetype="text/html; charset=utf-8")
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    return resp
 
 
 @app.get("/<path:_rest>")
 def fallback(_rest: str):
-    return home()
+    return Response("Not found", status=404)
 
 
 # Vercel entrypoint

@@ -63,6 +63,8 @@ def _load_odds_board(path: Optional[str]) -> Dict[str, List[float]]:
         return {}
 
     resolved = (ROOT / path).resolve()
+    if not resolved.is_relative_to(ROOT):
+        raise ValueError(f"odds file outside allowed directory: {path}")
     if not resolved.is_file():
         raise ValueError(f"odds file not found: {path}")
 
@@ -644,19 +646,21 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "<style>",
         ":root{--bg:#f6f4ec;--surface:#fffefa;--surface-2:#f2eee3;--text:#1f2430;--muted:#5d6679;--line:#d8deea;--line-2:#b8c2d9;--brand:#0f5c78;--brand-ink:#f4fbff;--accent:#f2a541;--ok:#257942;--alert:#8f2736}",
         "*{box-sizing:border-box}",
-        "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:radial-gradient(circle at 12% 0%,#fefcf5 0,#f6f4ec 52%,#ebeff8 100%);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}",
+        "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}",
         ".wrap{max-width:1320px;margin:0 auto;padding:22px 18px 34px}",
         ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}",
         "h1{margin:0;font-size:clamp(1.4rem,2.3vw,2rem);letter-spacing:.3px;line-height:1.08}",
         ".subtitle{margin:6px 0 0;color:var(--muted);font-size:.95rem;max-width:70ch}",
         ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,30,55,.05)}",
         ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px}",
-        ".bet-card{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:linear-gradient(160deg,#fefcf6,#eef5ff)}",
+        ".bet-card{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--surface)}",
         ".bet-card .bet-title{font-weight:800;font-size:.95rem;margin-bottom:4px}",
         ".bet-card .bet-sel{font-weight:700;color:#10384d}",
         ".bet-card .bet-meta{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.35}",
         ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:#168a3d;color:#fff;font-weight:800;font-size:.85rem}",
-        "a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
+        "a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid #0f5c78;outline-offset:2px;border-radius:6px}",
+        "@supports (color: color-mix(in srgb, red, blue)){a:focus-visible,summary:focus-visible,input:focus-visible{outline-color:color-mix(in srgb,var(--brand) 45%,white)}}",
+        "tbody tr:hover{background:var(--surface-2)}",
         ".stats{display:flex;gap:8px;flex-wrap:wrap}",
         ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
         "table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}",
@@ -669,8 +673,8 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".nutri{display:inline-block;min-width:24px;text-align:center;padding:4px 8px;border-radius:7px;font-weight:800;font-size:.74rem;color:#1c1407}",
         ".nutri-a{background:#36b14f}",
         ".nutri-b{background:#8cc152}",
-        ".nutri-c{background:#f0c000}",
-        ".nutri-d{background:#ea8c2e}",
+        ".nutri-c{background:#c89b00}",
+        ".nutri-d{background:#c96a10;color:#fff}",
         ".nutri-e{background:#c0392b;color:#fff}",
         ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:2px 2px 6px}",
         ".line-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:14px;max-width:440px}",
@@ -679,7 +683,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
         ".vs-dot{justify-self:center;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
         ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,#0f5c78,#0a4a66);color:#f4fbff;font-weight:800;font-size:1rem;line-height:1}",
-        ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff922b;margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(255,146,43,.6);animation:changePulse 1.8s infinite}",
+        ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff922b;margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(255,146,43,.6);animation:changePulse 1.8s 3}",
         "@keyframes changePulse{0%{box-shadow:0 0 0 0 rgba(255,146,43,.55)}70%{box-shadow:0 0 0 7px rgba(255,146,43,0)}100%{box-shadow:0 0 0 0 rgba(255,146,43,0)}}",
         "@media (prefers-reduced-motion:reduce){.change-dot{animation:none}.tab,summary,.bet-card{transition:none}}",
         ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
@@ -690,15 +694,16 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         ".prob-bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:#e7ebf3;margin:2px 0 3px;min-width:140px;max-width:240px}",
         ".prob-seg{display:block;height:100%}",
         ".prob-seg.home{background:#0f5c78}",
-        ".prob-seg.draw{background:#c2c8d4}",
+        ".prob-seg.draw{background:#8a94a8}",
         ".prob-seg.away{background:#e0892b}",
         ".prob-legend{display:flex;gap:12px;font-size:.74rem;color:var(--muted)}",
         ".prob-legend strong{color:var(--text)}",
         ".flag{font-size:1.05rem}",
         ".tiny{font-size:.76rem;color:var(--muted)}",
         ".done-cell{white-space:nowrap}",
-        ".done-toggle{width:18px;height:18px;accent-color:#0f5c78;cursor:pointer}",
-        "tr.done-row{outline:2px solid #9ad0af;background:linear-gradient(180deg,#f6fff8,#ffffff)}",
+        ".done-toggle{width:24px;height:24px;accent-color:#0f5c78;cursor:pointer}",
+        ".done-cell label{display:inline-flex;align-items:center;justify-content:center;padding:10px;cursor:pointer}",
+        "tr.done-row{outline:2px solid #9ad0af;background:#f6fff8}",
         "details{border:0;background:transparent}",
         "summary{cursor:pointer;font-size:.82rem;color:var(--brand);font-weight:700;display:inline-block;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:#f7fbff;transition:background .15s ease,border-color .15s ease}",
         "summary:hover{background:#eef6fd;border-color:var(--line-2)}",
@@ -747,7 +752,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "</style></head><body><main class='wrap'>",
         "<header class='mast'>",
         "<div>",
-        f"<h1>WC2026 Calendrier Pronos - {html.escape(title_tag)}</h1>",
+        "<h1>WC2026 · Pronos</h1>",
         "<p class='subtitle'>Vue calendrier rapide : ouvrez un match pour voir les explications utiles à la décision.</p>",
         "</div>",
         "<div class='status-line'>",
@@ -951,7 +956,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                     parts.extend([
                         "<article class='bet-card'>",
                         f"<div class='bet-title'>{html.escape(s['label'])}</div>",
-                        (f"<div class='bet-meta'>🗓 {html.escape(s['when'])}</div>" if s.get("when") else ""),
+                        (f"<div class='bet-meta'><span aria-hidden='true'>🗓</span> {html.escape(s['when'])}</div>" if s.get("when") else ""),
                         f"<div class='bet-sel'>{html.escape(sel)} @ {b['odds']:.2f}</div>",
                         f"<div class='bet-meta'>Modèle {round(b['model']*100)}% &rarr; ajusté {round(b['shrunk']*100)}% "
                         f"(juste marché {round(b['fair']*100)}%)<br>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</div>",
@@ -1065,7 +1070,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             parts.append(
                 f"<td data-label='Match'>"
                 f"<div class='tiny'>J{html.escape(str(r['matchday']))} · Groupe {html.escape(str(r['group']))} · {html.escape(str(r['id']))}"
-                + (f" · 🗓 {html.escape(r['kickoff_paris'])} (FR)" if r.get('kickoff_paris') else "")
+                + (f" · <span aria-hidden='true'>🗓</span> {html.escape(r['kickoff_paris'])} (FR)" if r.get('kickoff_paris') else "")
                 + "</div>"
                 f"<div class='line-main'>"
                 f"<div class='team-side'><span class='flag'>{r['home_flag']}</span><span class='team-name'>{html.escape(r['home'])}</span></div>"
@@ -1079,7 +1084,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                 f"{prob_block}</td>"
             )
             parts.append(
-                f"<td data-label='Suivi' class='done-cell'><input class='done-toggle' type='checkbox' aria-label='Marquer {html.escape(r['home'])} vs {html.escape(r['away'])} comme déjà pronostiqué' data-match='{html.escape(match_ref)}'></td>"
+                f"<td data-label='Suivi' class='done-cell'><label><input class='done-toggle' type='checkbox' aria-label='Marquer {html.escape(r['home'])} vs {html.escape(r['away'])} comme déjà pronostiqué' data-match='{html.escape(match_ref)}'></label></td>"
             )
 
             parts.append("<td data-label='Détails'><details><summary>Infos utiles pour décider</summary><ul class='note-list'>")
@@ -1184,7 +1189,10 @@ class Handler(BaseHTTPRequestHandler):
         data_info = None
 
         try:
-            autonomous.autonomous_refresh()
+            try:
+                autonomous.autonomous_refresh()
+            except Exception:
+                pass
             fixtures = data.load_fixtures()
             _apply_paris_kickoffs(fixtures)   # show France (Europe/Paris) dates, not US dates
             base_ratings = data.load_ratings()
@@ -1239,6 +1247,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
+        self.send_header("X-Frame-Options", "DENY")
+        self.send_header("X-Content-Type-Options", "nosniff")
         self.end_headers()
         self.wfile.write(body)
 
