@@ -82,6 +82,19 @@ Controls in the page:
 | `data/team_status.json` | injuries/suspensions/form/news signals | update frequently (manual/Claude/automation) |
 | `data/expert_sources/*.json` | trusted pundit priors (e.g. Wiloo) | edit by hand or ask Claude with the pundit's calls |
 
+### Cotes (The Odds API)
+L'onglet Paris et l'analyse value ont besoin de cotes bookmaker. Deux options :
+
+- **Cotes auto (recommandé)** : créez une clé gratuite sur
+  [the-odds-api.com](https://the-odds-api.com), puis exposez-la via la variable
+  d'environnement `ODDS_API_KEY` (ou `odds_api_key`), ou collez-la dans le
+  fichier `data/odds_api_key.txt`. Les cotes se chargent ensuite toutes seules
+  au chargement de l'onglet Paris (avec cooldown pour économiser les crédits).
+- **Fichier manuel (avancé)** : générez un gabarit avec
+  `python3 tools/build_odds_template.py --matchday 1 --out data/odds_md1.json`,
+  remplissez les cotes décimales `[domicile, nul, extérieur]`, puis passez
+  `?odds_file=data/odds_md1.json` dans l'URL (ou `--odds-file` en CLI).
+
 ### Expert sources (pundit priors)
 A trusted human forecaster (e.g. the YouTuber **Wiloo**) is folded in as a
 small, **bounded, auditable** prior — never an override (he has no crystal

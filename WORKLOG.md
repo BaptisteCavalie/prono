@@ -1,5 +1,24 @@
 # Project Work Log
 
+## 2026-06-10
+
+### Summary
+- Audit complet (/critique) par design-critic + code-reviewer, puis correction des majors et minors retenus :
+  - Sécurité : le paramètre `?odds_file=` est désormais confiné sous la racine du projet (path traversal bloqué), erreurs sans écho de chemin.
+  - Déduplication : l'orchestration web vit dans `ui.build_page(params)`, partagée par le serveur local et `api/index.py` (adaptateur Flask minimal) ; helpers communs (`split_match`, `match_key`, `find_match_odds`, `parse_date`, `load_odds_board`) centralisés dans `engine/common.py` pour la CLI et le web.
+  - Erreurs : messages FR actionnables (`UserFacingError`) pour cotes/date invalides ; les exceptions inattendues sont loggées côté serveur et remplacées par un message générique.
+  - Code mort : `_default_odds_file`, paramètres `action`/`applied_results` de `_render_page`, variable `eb` (mpp), import `Tuple` (expert_signals), f-string sans placeholder (bet.py).
+  - Robustesse : `bankroll=nan/inf` rejeté (`math.isfinite`), `mimetype` Flask remplacé par `content_type`.
+  - Design : focus clavier en `--brand` plein (3:1+), palette entièrement tokenisée dans `:root` (`--accent` mort supprimé), badge « Miser » en `--ok-strong` (AA), segment Nul assombri, graisses normalisées 400/700, `.legend` limité à 75ch, dates de journée en `<h2>`, summary « Détails » allégé, pastille de maj non focusable.
+  - Copy : onglet Paris avec sous-titre dédié et état vide unique quand aucune cote n'est chargée (plus de « Aucune value détectée » mensonger ni de stats à zéro), guidance cotes canonique (clé The Odds API, documentée dans le README), jargon CLI retiré de l'UI, « Solidité n/a/100 » remplacé par un libellé propre.
+- Bug préexistant repéré (non corrigé, hors scope) : `python3 predict.py --match "A vs B"` crashe (`prediction.analyse_match` renvoie None pour un match hors calendrier, `report.confidence` déréférence). Présent sur HEAD avant ces changements.
+
+### Key Files Added/Updated
+- engine/common.py (nouveau)
+- ui.py, api/index.py, predict.py, bet.py
+- engine/mpp.py, engine/expert_signals.py
+- README.md (section « Cotes (The Odds API) »)
+
 ## 2026-06-05
 
 ### Summary

@@ -11,20 +11,18 @@ Examples:
 import argparse
 import json
 import sys
-from datetime import datetime
 from typing import Dict
 
-from engine import autonomous, data, data_quality, expert_signals, mpp, prediction, report, solidity, strategies, team_signals
+from engine import autonomous, common, data, data_quality, expert_signals, mpp, prediction, report, solidity, strategies, team_signals
 from engine import odds as oddsmod
 from engine import updater
 
-
-def _split_match(s: str):
-    for sep in (" vs ", " VS ", " v ", "/", " - "):
-        if sep in s:
-            a, b = s.split(sep, 1)
-            return a.strip(), b.strip()
-    return None
+# Shared with ui.py; bet.py imports them from here.
+_split_match = common.split_match
+_match_key = common.match_key
+_load_odds_board = common.load_odds_board
+_find_match_odds = common.find_match_odds
+_parse_date = common.parse_date
 
 
 def _emit(ratings, home, away, match, show_brief, odds=None, simple=False):
@@ -45,43 +43,6 @@ def _emit(ratings, home, away, match, show_brief, odds=None, simple=False):
     if show_brief:
         print()
         print(report.brief(match, home, away, rh, ra, out))
-
-
-def _match_key(match):
-    return f"{match['home'].lower()}|{match['away'].lower()}"
-
-
-def _load_odds_board(path):
-    if not path:
-        return {}
-    with open(path, encoding="utf-8") as f:
-        raw = json.load(f)
-    board = {}
-    for key, triple in raw.items():
-        if (not isinstance(triple, list) or len(triple) != 3
-                or not all(isinstance(x, (int, float)) for x in triple)):
-            raise ValueError(
-                f"invalid odds for {key!r}; expected [home, draw, away] decimals")
-        if key.lower().startswith("g"):
-            board[key.upper()] = [float(x) for x in triple]
-            continue
-        pair = _split_match(key)
-        if pair:
-            board[f"{pair[0].strip().lower()}|{pair[1].strip().lower()}"] = [float(x) for x in triple]
-            continue
-        raise ValueError(
-            f"invalid key {key!r}; use fixture id like 'G01' or 'Home vs Away'")
-    return board
-
-
-def _find_match_odds(match, board):
-    if not board:
-        return None
-    return board.get(str(match.get("id", "")).upper()) or board.get(_match_key(match))
-
-
-def _parse_date(s):
-    return datetime.strptime(s[:10], "%Y-%m-%d").date()
 
 
 def _analyse_match(ratings, match):

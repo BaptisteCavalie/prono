@@ -4,28 +4,20 @@ from __future__ import annotations
 
 import argparse
 import html
-import json
-from datetime import date, datetime, timedelta
+import logging
+import math
+from datetime import date, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Dict, List, Optional
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
-
-def _split_match(s: str):
-    for sep in (" vs ", " VS ", " v ", "/", " - "):
-        if sep in s:
-            a, b = s.split(sep, 1)
-            return a.strip(), b.strip()
-    return None
-
-
-def _parse_date(s: str):
-    return datetime.strptime(s[:10], "%Y-%m-%d").date()
+_split_match = common.split_match
+_parse_date = common.parse_date
 
 
 def _as_int(value):
@@ -58,46 +50,6 @@ def _effective_date(match: Dict) -> Optional[str]:
     return d.isoformat()
 
 
-def _load_odds_board(path: Optional[str]) -> Dict[str, List[float]]:
-    if not path:
-        return {}
-
-    resolved = (ROOT / path).resolve()
-    if not resolved.is_file():
-        raise ValueError(f"odds file not found: {path}")
-
-    with open(resolved, encoding="utf-8") as f:
-        raw = json.load(f)
-
-    board = {}
-    for key, triple in raw.items():
-        if (not isinstance(triple, list) or len(triple) != 3
-                or not all(isinstance(x, (int, float)) for x in triple)):
-            raise ValueError(f"invalid odds for {key!r}; expected [home, draw, away]")
-
-        if key.lower().startswith("g"):
-            board[key.upper()] = [float(x) for x in triple]
-            continue
-
-        pair = _split_match(key)
-        if pair:
-            board[f"{pair[0].lower()}|{pair[1].lower()}"] = [float(x) for x in triple]
-            continue
-
-        raise ValueError(f"invalid odds key {key!r}; use fixture id or 'Home vs Away'")
-
-    return board
-
-
-def _default_odds_file() -> str:
-    """Auto-fetched odds first, then an optional manual file. No demo data, so the
-    Paris page only ever shows odds that are really there."""
-    for cand in ("data/odds.json", "data/odds_md1.json"):
-        if (ROOT / cand).is_file():
-            return cand
-    return ""
-
-
 def _apply_paris_kickoffs(fixtures: List[Dict]) -> None:
     """Rewrite each fixture's date to its Europe/Paris (France) calendar date using
     the kickoff time captured from the odds feed — the jetlag fix, so a US-evening
@@ -116,12 +68,7 @@ def _apply_paris_kickoffs(fixtures: List[Dict]) -> None:
             m["kickoff_paris"] = t
 
 
-def _match_key(match: Dict) -> str:
-    return f"{match['home'].lower()}|{match['away'].lower()}"
-
-
-def _find_match_odds(match: Dict, board: Dict[str, List[float]]):
-    return board.get(str(match.get("id", "")).upper()) or board.get(_match_key(match))
+_find_match_odds = common.find_match_odds
 
 
 def _select_fixtures(fixtures: List[Dict], date_value: str, matchday: str) -> List[Dict]:
@@ -129,7 +76,12 @@ def _select_fixtures(fixtures: List[Dict], date_value: str, matchday: str) -> Li
         return (_effective_date(m) or "9999-99-99", m.get("matchday") or 99, m.get("id") or "")
 
     if date_value:
-        target = _parse_date(date_value)
+        try:
+            target = _parse_date(date_value)
+        except ValueError as exc:
+            raise common.UserFacingError(
+                f"Date invalide « {date_value} » : format attendu YYYY-MM-DD."
+            ) from exc
         selected = [m for m in fixtures if _effective_date(m) and _parse_date(_effective_date(m)) == target]
         return sorted(selected, key=sort_key)
 
@@ -359,7 +311,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         if est:
             notes.append("Au moins une cote Elo est estimée. La confiance peut changer après mise à jour des ratings live.")
         if not odds:
-            notes.append("Aucune cote bookmaker chargée. Ajoutez un fichier JSON de cotes pour activer la comparaison modèle vs marché.")
+            notes.append("Aucune cote bookmaker chargée. Configurez les cotes depuis l'onglet Paris pour activer la comparaison modèle vs marché.")
         elif not value_summaries:
             notes.append("Pas d'opportunité de value détectée avec les cotes actuelles.")
 
@@ -380,7 +332,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             if preserved_predicted_score:
                 notes.append("Prono conservé avant match : comparaison réel vs prono disponible directement.")
             else:
-                notes.append("Prono non figé : lance 'python3 tools/snapshot_predictions.py' pour conserver les pronos avant les matchs.")
+                notes.append("Prono non figé : figez les pronos avant les matchs pour garder la comparaison réel vs prono (outil de snapshot, voir le README).")
 
         rows.append({
             "id": m.get("id", ""),
@@ -537,8 +489,8 @@ def _paris_odds_status() -> str:
     """One-line note on where the odds come from + remaining API credits."""
     if not odds_fetch.has_key():
         return ("<div class='legend'>Cotes auto <strong>non configurées</strong> : ajoutez une clé gratuite "
-                "The Odds API (env <code>ODDS_API_KEY</code> / <code>odds_api_key</code> ou fichier "
-                "<code>data/odds_api_key.txt</code>). Sans cotes, aucune value n'est calculable.</div>")
+                "The Odds API pour activer l'analyse (mise en place décrite dans le README, section cotes). "
+                "Sans cotes, aucune value n'est calculable.</div>")
     state = odds_fetch.read_state()
     rem = state.get("remaining_credits")
     credits = f" · crédits restants : {rem}" if isinstance(rem, int) else ""
@@ -622,12 +574,15 @@ def _build_data_info(fixtures: List[Dict], ratings: Dict, team_status: Dict,
 
 
 def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
-                 rows: List[Dict], applied_results: int, action: str,
+                 rows: List[Dict],
                  recommendations: Optional[Dict], error: str = "", tab: str = "futurs",
                  health: Optional[Dict] = None, solidity_report: Optional[Dict] = None,
                  data_info: Optional[Dict] = None, bankroll: float = 50.0) -> bytes:
     safe_tab = tab if tab in ("futurs", "passes", "paris") else "futurs"
     title_tag = "Paris" if safe_tab == "paris" else "Calendrier"
+    subtitle = ("Plan de paris prudent calculé à partir des cotes et du modèle."
+                if safe_tab == "paris"
+                else "Vue calendrier rapide : ouvrez un match pour voir les explications utiles à la décision.")
 
     past_rows = [r for r in rows if r.get("completed")]
     future_rows = [r for r in rows if not r.get("completed")]
@@ -635,6 +590,9 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
     grouped = _group_rows_by_matchday(shown_rows)
     health_meta = _health_level_ui(str((health or {}).get("level", "")))
     bet_blocked = health_meta["can_bet"] != "1"
+    solidity_score = (solidity_report or {}).get("score")
+    solidity_caption = (f"Solidité {solidity_score}/100" if solidity_score is not None
+                        else "Solidité : pas encore évaluable")
 
     parts = [
         "<!doctype html>",
@@ -642,21 +600,21 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "<meta name='viewport' content='width=device-width, initial-scale=1'>",
         "<title>WC2026 Calendrier Pronos</title>",
         "<style>",
-        ":root{--bg:#f6f4ec;--surface:#fffefa;--surface-2:#f2eee3;--text:#1f2430;--muted:#5d6679;--line:#d8deea;--line-2:#b8c2d9;--brand:#0f5c78;--brand-ink:#f4fbff;--accent:#f2a541;--ok:#257942;--alert:#8f2736}",
+        ":root{--bg:#f6f4ec;--bg-glow:#fefcf5;--bg-cool:#ebeff8;--surface:#fffefa;--surface-2:#f2eee3;--tint:#f7fbff;--tint-hover:#eef6fd;--text:#1f2430;--ink-dark:#1c1407;--muted:#5d6679;--line:#d8deea;--line-2:#b8c2d9;--track:#e7ebf3;--brand:#0f5c78;--brand-dark:#0a4a66;--brand-deep:#10384d;--brand-ink:#f4fbff;--ok:#257942;--ok-strong:#11733a;--ok-soft:#9ad0af;--ok-bg:#f6fff8;--warn:#ff922b;--away:#e0892b;--draw:#8d97ab;--alert:#8f2736;--chip-real-from:#1e6f3f;--chip-real-to:#155b31;--chip-prono-from:#4f5e79;--chip-prono-to:#38465f;--nutri-a:#36b14f;--nutri-b:#8cc152;--nutri-c:#f0c000;--nutri-d:#ea8c2e;--nutri-e:#c0392b;--health-good-bg:#edf8f1;--health-good-ink:#1f6e3a;--health-good-dot:#1f9d50;--health-warn-bg:#fff6e7;--health-warn-ink:#7c4b10;--health-warn-line:#f1cd8b;--health-warn-dot:#cc8a20;--health-crit-bg:#fdecec;--health-crit-line:#e4a7b1;--health-crit-dot:#b03346;--guard-bg:#fff8e8;--guard-ink:#704313;--guard-line:#c69d5a}",
         "*{box-sizing:border-box}",
-        "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:radial-gradient(circle at 12% 0%,#fefcf5 0,#f6f4ec 52%,#ebeff8 100%);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}",
+        "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:radial-gradient(circle at 12% 0%,var(--bg-glow) 0,var(--bg) 52%,var(--bg-cool) 100%);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}",
         ".wrap{max-width:1320px;margin:0 auto;padding:22px 18px 34px}",
         ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}",
         "h1{margin:0;font-size:clamp(1.4rem,2.3vw,2rem);letter-spacing:.3px;line-height:1.08}",
         ".subtitle{margin:6px 0 0;color:var(--muted);font-size:.95rem;max-width:70ch}",
         ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,30,55,.05)}",
         ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px}",
-        ".bet-card{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:linear-gradient(160deg,#fefcf6,#eef5ff)}",
-        ".bet-card .bet-title{font-weight:800;font-size:.95rem;margin-bottom:4px}",
-        ".bet-card .bet-sel{font-weight:700;color:#10384d}",
+        ".bet-card{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:linear-gradient(160deg,var(--surface),var(--tint))}",
+        ".bet-card .bet-title{font-weight:700;font-size:.95rem;margin-bottom:4px}",
+        ".bet-card .bet-sel{font-weight:700;color:var(--brand-deep)}",
         ".bet-card .bet-meta{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.35}",
-        ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:#168a3d;color:#fff;font-weight:800;font-size:.85rem}",
-        "a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
+        ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:var(--ok-strong);color:#fff;font-weight:700;font-size:.85rem}",
+        "a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid var(--brand);outline-offset:2px;border-radius:6px}",
         ".stats{display:flex;gap:8px;flex-wrap:wrap}",
         ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
         "table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}",
@@ -666,66 +624,67 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "tbody tr td:first-child{border-radius:12px 0 0 12px}",
         "tbody tr td:last-child{border-radius:0 12px 12px 0}",
         "td strong{font-weight:700}",
-        ".nutri{display:inline-block;min-width:24px;text-align:center;padding:4px 8px;border-radius:7px;font-weight:800;font-size:.74rem;color:#1c1407}",
-        ".nutri-a{background:#36b14f}",
-        ".nutri-b{background:#8cc152}",
-        ".nutri-c{background:#f0c000}",
-        ".nutri-d{background:#ea8c2e}",
-        ".nutri-e{background:#c0392b;color:#fff}",
+        ".nutri{display:inline-block;min-width:24px;text-align:center;padding:4px 8px;border-radius:7px;font-weight:700;font-size:.74rem;color:var(--ink-dark)}",
+        ".nutri-a{background:var(--nutri-a)}",
+        ".nutri-b{background:var(--nutri-b)}",
+        ".nutri-c{background:var(--nutri-c)}",
+        ".nutri-d{background:var(--nutri-d)}",
+        ".nutri-e{background:var(--nutri-e);color:#fff}",
         ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:2px 2px 6px}",
+        ".md-title h2{margin:0;font-size:1rem;font-weight:700}",
         ".line-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:14px;max-width:440px}",
         ".team-side{display:flex;align-items:center;gap:7px;min-width:0;justify-content:flex-end;text-align:right}",
         ".team-side.right{justify-content:flex-start;text-align:left}",
         ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
         ".vs-dot{justify-self:center;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
-        ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,#0f5c78,#0a4a66);color:#f4fbff;font-weight:800;font-size:1rem;line-height:1}",
-        ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#ff922b;margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(255,146,43,.6);animation:changePulse 1.8s infinite}",
+        ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:linear-gradient(135deg,var(--brand),var(--brand-dark));color:var(--brand-ink);font-weight:700;font-size:1rem;line-height:1}",
+        ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--warn);margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(255,146,43,.6);animation:changePulse 1.8s infinite}",
         "@keyframes changePulse{0%{box-shadow:0 0 0 0 rgba(255,146,43,.55)}70%{box-shadow:0 0 0 7px rgba(255,146,43,0)}100%{box-shadow:0 0 0 0 rgba(255,146,43,0)}}",
         "@media (prefers-reduced-motion:reduce){.change-dot{animation:none}.tab,summary,.bet-card{transition:none}}",
         ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
-        ".score-chip-real{background:linear-gradient(135deg,#1e6f3f,#155b31);font-size:.86rem;min-width:88px}",
-        ".score-chip-prono{background:linear-gradient(135deg,#4f5e79,#38465f);font-size:.86rem;min-width:98px}",
+        ".score-chip-real{background:linear-gradient(135deg,var(--chip-real-from),var(--chip-real-to));font-size:.86rem;min-width:88px}",
+        ".score-chip-prono{background:linear-gradient(135deg,var(--chip-prono-from),var(--chip-prono-to));font-size:.86rem;min-width:98px}",
         ".prob-cell{min-width:160px}",
         ".prono-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}",
-        ".prob-bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:#e7ebf3;margin:2px 0 3px;min-width:140px;max-width:240px}",
+        ".prob-bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:var(--track);margin:2px 0 3px;min-width:140px;max-width:240px}",
         ".prob-seg{display:block;height:100%}",
-        ".prob-seg.home{background:#0f5c78}",
-        ".prob-seg.draw{background:#c2c8d4}",
-        ".prob-seg.away{background:#e0892b}",
+        ".prob-seg.home{background:var(--brand)}",
+        ".prob-seg.draw{background:var(--draw)}",
+        ".prob-seg.away{background:var(--away)}",
         ".prob-legend{display:flex;gap:12px;font-size:.74rem;color:var(--muted)}",
         ".prob-legend strong{color:var(--text)}",
         ".flag{font-size:1.05rem}",
         ".tiny{font-size:.76rem;color:var(--muted)}",
         ".done-cell{white-space:nowrap}",
-        ".done-toggle{width:18px;height:18px;accent-color:#0f5c78;cursor:pointer}",
-        "tr.done-row{outline:2px solid #9ad0af;background:linear-gradient(180deg,#f6fff8,#ffffff)}",
+        ".done-toggle{width:18px;height:18px;accent-color:var(--brand);cursor:pointer}",
+        "tr.done-row{outline:2px solid var(--ok-soft);background:linear-gradient(180deg,var(--ok-bg),var(--surface))}",
         "details{border:0;background:transparent}",
-        "summary{cursor:pointer;font-size:.82rem;color:var(--brand);font-weight:700;display:inline-block;padding:7px 12px;border:1px solid var(--line);border-radius:10px;background:#f7fbff;transition:background .15s ease,border-color .15s ease}",
-        "summary:hover{background:#eef6fd;border-color:var(--line-2)}",
+        "summary{cursor:pointer;font-size:.82rem;color:var(--brand);font-weight:700;display:inline-block;padding:6px 2px}",
+        "summary:hover{text-decoration:underline}",
         "summary::marker{color:var(--brand)}",
-        ".note-list{margin:8px 0 0;padding-left:16px;color:var(--muted);font-size:.8rem;line-height:1.3;background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding-top:8px;padding-bottom:8px;padding-right:8px}",
+        ".note-list{margin:8px 0 0;padding-left:16px;color:var(--muted);font-size:.8rem;line-height:1.3;background:var(--tint);border:1px solid var(--line);border-radius:10px;padding-top:8px;padding-bottom:8px;padding-right:8px}",
         ".muted{color:var(--muted);font-size:.9rem}",
         ".err{background:var(--alert);color:#fff;padding:11px 12px;border-radius:10px;margin-bottom:10px}",
-        ".legend{margin-top:8px;color:var(--muted);font-size:.82rem}",
+        ".legend{margin-top:8px;color:var(--muted);font-size:.82rem;max-width:75ch}",
         ".health-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:700;border:1px solid transparent}",
         ".health-dot{display:inline-block;width:8px;height:8px;border-radius:50%}",
-        ".health-good{background:#edf8f1;color:#1f6e3a;border-color:#9ad0af}",
-        ".health-good .health-dot{background:#1f9d50}",
-        ".health-warning{background:#fff6e7;color:#7c4b10;border-color:#f1cd8b}",
-        ".health-warning .health-dot{background:#cc8a20}",
-        ".health-critical{background:#fdecec;color:#8f2736;border-color:#e4a7b1}",
-        ".health-critical .health-dot{background:#b03346}",
-        ".guard-msg{margin-top:10px;padding:9px 10px;border-radius:10px;border:1px dashed #c69d5a;background:#fff8e8;color:#704313;font-size:.84rem}",
+        ".health-good{background:var(--health-good-bg);color:var(--health-good-ink);border-color:var(--ok-soft)}",
+        ".health-good .health-dot{background:var(--health-good-dot)}",
+        ".health-warning{background:var(--health-warn-bg);color:var(--health-warn-ink);border-color:var(--health-warn-line)}",
+        ".health-warning .health-dot{background:var(--health-warn-dot)}",
+        ".health-critical{background:var(--health-crit-bg);color:var(--alert);border-color:var(--health-crit-line)}",
+        ".health-critical .health-dot{background:var(--health-crit-dot)}",
+        ".guard-msg{margin-top:10px;padding:9px 10px;border-radius:10px;border:1px dashed var(--guard-line);background:var(--guard-bg);color:var(--guard-ink);font-size:.84rem}",
         ".info-grid{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:10px;margin-top:8px}",
-        ".info-card{border:1px solid var(--line);border-radius:10px;background:#fbfdff;padding:10px}",
+        ".info-card{border:1px solid var(--line);border-radius:10px;background:var(--tint);padding:10px}",
         ".info-card h4{margin:0 0 6px;font-size:.88rem}",
         ".info-list{margin:0;padding-left:17px;color:var(--muted);font-size:.82rem;line-height:1.35}",
         ".info-line{font-size:.82rem;color:var(--muted);margin:2px 0}",
         ".status-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
         ".status-caption{color:var(--muted);font-size:.82rem}",
-        ".tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:#f4f2ea;padding:8px 4px 0;margin:0 0 14px;border-bottom:1px solid var(--line);box-shadow:0 8px 12px -12px rgba(20,30,50,.5)}",
+        ".tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:var(--surface-2);padding:8px 4px 0;margin:0 0 14px;border-bottom:1px solid var(--line);box-shadow:0 8px 12px -12px rgba(20,30,50,.5)}",
         ".tab{text-decoration:none;padding:10px 16px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:2px solid transparent;border-radius:9px 9px 0 0;line-height:1;transition:color .15s ease,background .15s ease,border-color .15s ease}",
-        ".tab:hover{color:var(--brand);background:#eaf2f8}",
+        ".tab:hover{color:var(--brand);background:var(--tint-hover)}",
         ".tab.active{color:var(--brand);border-bottom-color:var(--brand);background:var(--surface)}",
         ".diag-wrap{margin-top:20px}",
         ".diag-wrap>summary{font-size:.85rem}",
@@ -740,7 +699,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "td[data-label='Match']::before,td[data-label='Pronostic']::before,td[data-label='Détails']::before{display:none}"
         ".line-main{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}"
         ".team-name{font-size:.98rem}.score-chip{min-width:64px}.prob-bar{max-width:none}.prono-line{margin-top:2px}"
-        ".done-toggle{width:24px;height:24px}summary{padding:11px 15px}"
+        ".done-toggle{width:24px;height:24px}summary{padding:10px 2px}"
         "td[data-label='Suivi'],td[data-label='Détails']{display:inline-block;width:auto;vertical-align:middle;margin-top:8px}"
         "td[data-label='Suivi']{margin-right:16px}"
         "td[data-label='Suivi']::before{display:inline;margin:0 8px 0 0}}",
@@ -748,12 +707,12 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         "<header class='mast'>",
         "<div>",
         f"<h1>WC2026 Calendrier Pronos - {html.escape(title_tag)}</h1>",
-        "<p class='subtitle'>Vue calendrier rapide : ouvrez un match pour voir les explications utiles à la décision.</p>",
+        f"<p class='subtitle'>{subtitle}</p>",
         "</div>",
         "<div class='status-line'>",
         f"<div class='health-pill {health_meta['class']}'><span class='health-dot'></span>Feu data : {health_meta['label']} ({health_meta['state']})</div>",
         f"<span class='status-caption'>Qualité {(health or {}).get('score', 'n/a')}/100"
-        f" · Solidité {((solidity_report or {}).get('score') if (solidity_report or {}).get('score') is not None else 'n/a')}/100"
+        f" · {solidity_caption}"
         f" · À venir {len(future_rows)} · Joués {len(past_rows)}"
         " · <span id='done-count'>Pronostics cochés : 0</span></span>",
         "</div>",
@@ -922,6 +881,11 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
             parts.append("<div class='panel'><div class='muted'>Recommandations indisponibles : qualité des données critique. Mettez à jour fixtures, ratings et team_status.</div></div>")
         elif not rec:
             parts.append("<div class='panel'><div class='muted'>Aucun match à venir pour ce filtre.</div></div>")
+        elif not rec["has_full_odds"]:
+            parts.append(
+                "<div class='panel'><div class='muted'>Aucune cote chargée : impossible de chercher de la value. "
+                "Configurez les cotes (encart ci-dessus) puis rechargez la page.</div></div>"
+            )
         else:
             parts.extend([
                 "<div class='panel'>",
@@ -993,9 +957,6 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                 parts.append("<div class='muted'>Aucun combiné ne passe le filtre prudent — sautez les combinés (ils ont perdu ~69% au backtest WC2022).</div>")
             parts.extend(["</div>", "</section>"])
 
-            if not rec["has_full_odds"]:
-                parts.append("<div class='panel'><div class='muted'>Aucune cote chargée : renseignez un fichier de cotes pour activer la comparaison modèle vs marché.</div></div>")
-
     if not shown_rows and safe_tab != "paris":
         if safe_tab == "passes":
             parts.extend(["<div class='panel'><div class='muted'>Aucun match joué avec score final disponible pour l'instant.</div></div>"])
@@ -1007,7 +968,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
         parts.extend([
             "<section class='panel'>",
             "<div class='md-title'>",
-            f"<strong>{html.escape(day_label)}</strong>",
+            f"<h2>{html.escape(day_label)}</h2>",
             f"<span class='tiny'>{len(md_rows)} matchs</span>",
             "</div>",
             "<table><thead><tr>",
@@ -1053,7 +1014,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                         f"{r['predicted_score']} -> {r['predicted_score_live']}"
                     )
                     change_dot = (
-                        f"<span class='change-dot' role='img' tabindex='0' "
+                        f"<span class='change-dot' role='img' "
                         f"aria-label='{html.escape(change_tip)}' "
                         f"title='{html.escape(change_tip)}'></span>"
                     )
@@ -1082,7 +1043,7 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
                 f"<td data-label='Suivi' class='done-cell'><input class='done-toggle' type='checkbox' aria-label='Marquer {html.escape(r['home'])} vs {html.escape(r['away'])} comme déjà pronostiqué' data-match='{html.escape(match_ref)}'></td>"
             )
 
-            parts.append("<td data-label='Détails'><details><summary>Infos utiles pour décider</summary><ul class='note-list'>")
+            parts.append("<td data-label='Détails'><details><summary>Détails</summary><ul class='note-list'>")
             parts.append(
                 f"<li>Score exact le plus probable : {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
             )
@@ -1150,6 +1111,98 @@ def _render_page(matchday: str, date_value: str, odds_file: str, no_auto: bool,
     return "".join(parts).encode("utf-8")
 
 
+def build_page(params: Dict[str, List[str]]) -> bytes:
+    """Single web entrypoint: query params (dict of lists, as produced by
+    parse_qs or Flask's request.args.to_dict(flat=False)) -> page HTML.
+    Shared by the local server below and the Vercel app (api/index.py)."""
+    def first(key: str, default: str = "") -> str:
+        values = params.get(key) or []
+        return (values[0] if values else default) or default
+
+    matchday = first("matchday").strip()
+    date_value = first("date").strip()
+    odds_file = first("odds_file").strip()
+    actions = params.get("action") or []
+    action = ((actions[-1] if actions else "refresh") or "refresh").strip().lower()
+    tab = first("tab", "futurs").strip().lower()
+    if action == "reco":          # back-compat: old reco button -> Paris page
+        tab = "paris"
+    no_auto = first("no_auto") in ("1", "on", "true")
+    try:
+        bankroll = float(first("bankroll", "50").strip())
+    except ValueError:
+        bankroll = 50.0
+    if not math.isfinite(bankroll) or bankroll <= 0:
+        bankroll = 50.0
+
+    rows: List[Dict] = []
+    error = ""
+    recommendations = None
+    health = None
+    solidity_report = None
+    data_info = None
+
+    try:
+        try:
+            autonomous.autonomous_refresh()
+        except Exception:
+            logging.exception("autonomous refresh failed (page still rendered)")
+        fixtures = data.load_fixtures()
+        _apply_paris_kickoffs(fixtures)   # show France (Europe/Paris) dates, not US dates
+        # Two loads on purpose: solidity is scored against the raw snapshot,
+        # while the working copy gets the live/status/expert adjustments below.
+        base_ratings = data.load_ratings()
+        ratings = data.load_ratings()
+        ratings, _ = live_ratings.ensure(ratings)   # keep Elo fresh on read-only hosts (Vercel)
+        team_status = data.load_team_status()
+        solidity_report = solidity.assess_model_solidity(fixtures, base_ratings)
+        if not no_auto:
+            ratings, _ = updater.apply_completed_results(ratings, fixtures)
+        ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
+        ratings = expert_signals.apply_expert_priors(ratings)
+        health = data_quality.assess_data_health(fixtures, ratings, team_status)
+        data_info = _build_data_info(fixtures, ratings, team_status, health, odds_file)
+
+        selected = _select_fixtures(fixtures, date_value, matchday)
+        if not selected:
+            if date_value:
+                error = f"Aucun match trouvé pour le {date_value}. Vérifiez le format YYYY-MM-DD ou choisissez une autre date."
+            else:
+                error = f"Aucun match trouvé pour la journée {matchday}. Essayez une autre journée ou retirez le filtre."
+        if odds_file:                                  # manual override (advanced)
+            odds_board = common.load_odds_board(odds_file, root=ROOT)
+        elif tab == "paris":                           # betting page: auto-fetch (cooldown + credit-capped)
+            odds_board = odds_fetch.ensure_board(ratings, fixtures)
+        else:                                          # other tabs: read cache only, never spend credits
+            odds_board = odds_fetch.load_cached_board()
+        rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
+        if tab == "paris":
+            if (health or {}).get("level") == "critical":
+                error = "Recommandations indisponibles : la qualité des données est critique. Mettez à jour fixtures, ratings et team_status puis réessayez."
+            else:
+                recommendations = _build_recommendations(rows, bankroll=bankroll)
+    except common.UserFacingError as exc:
+        error = str(exc)
+    except Exception:
+        logging.exception("page build failed")
+        error = "Erreur interne lors de la préparation de la page. Réessayez ; le détail est dans les logs du serveur."
+
+    return _render_page(
+        matchday,
+        date_value,
+        odds_file,
+        no_auto,
+        rows,
+        recommendations,
+        error,
+        tab,
+        health,
+        solidity_report,
+        data_info,
+        bankroll,
+    )
+
+
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -1159,83 +1212,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(b"Not found")
             return
 
-        params = parse_qs(parsed.query)
-        matchday = (params.get("matchday", [""])[0] or "").strip()
-        date_value = (params.get("date", [""])[0] or "").strip()
-        odds_file = (params.get("odds_file", [""])[0] or "").strip()
-        action = (params.get("action", ["refresh"])[-1] or "refresh").strip().lower()
-        tab = (params.get("tab", ["futurs"])[0] or "futurs").strip().lower()
-        if action == "reco":          # back-compat: old reco button -> Paris page
-            tab = "paris"
-        no_auto = (params.get("no_auto", [""])[0] or "") in ("1", "on", "true")
-        try:
-            bankroll = float((params.get("bankroll", ["50"])[0] or "50").strip())
-        except ValueError:
-            bankroll = 50.0
-        if bankroll <= 0:
-            bankroll = 50.0
-
-        rows = []
-        applied_results = 0
-        error = ""
-        recommendations = None
-        health = None
-        solidity_report = None
-        data_info = None
-
-        try:
-            autonomous.autonomous_refresh()
-            fixtures = data.load_fixtures()
-            _apply_paris_kickoffs(fixtures)   # show France (Europe/Paris) dates, not US dates
-            base_ratings = data.load_ratings()
-            ratings = data.load_ratings()
-            ratings, _ = live_ratings.ensure(ratings)   # keep Elo fresh on read-only hosts (Vercel)
-            team_status = data.load_team_status()
-            solidity_report = solidity.assess_model_solidity(fixtures, base_ratings)
-            if not no_auto:
-                ratings, applied_results = updater.apply_completed_results(ratings, fixtures)
-            ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
-            ratings = expert_signals.apply_expert_priors(ratings)
-            health = data_quality.assess_data_health(fixtures, ratings, team_status)
-            data_info = _build_data_info(fixtures, ratings, team_status, health, odds_file)
-
-            selected = _select_fixtures(fixtures, date_value, matchday)
-            if not selected:
-                if date_value:
-                    error = f"Aucun match trouvé pour le {date_value}. Vérifiez le format YYYY-MM-DD ou choisissez une autre date."
-                else:
-                    error = f"Aucun match trouvé pour la journée {matchday}. Essayez une autre journée ou retirez le filtre."
-            if odds_file:                                  # manual override (advanced)
-                odds_board = _load_odds_board(odds_file)
-            elif tab == "paris":                           # betting page: auto-fetch (cooldown + credit-capped)
-                odds_board = odds_fetch.ensure_board(ratings, fixtures)
-            else:                                          # other tabs: read cache only, never spend credits
-                odds_board = odds_fetch.load_cached_board()
-            rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
-            if tab == "paris":
-                if (health or {}).get("level") == "critical":
-                    error = "Recommandations indisponibles : la qualité des données est critique. Mettez à jour fixtures, ratings et team_status puis réessayez."
-                else:
-                    recommendations = _build_recommendations(rows, bankroll=bankroll)
-        except Exception as exc:
-            error = str(exc)
-
-        body = _render_page(
-            matchday,
-            date_value,
-            odds_file,
-            no_auto,
-            rows,
-            applied_results,
-            action,
-            recommendations,
-            error,
-            tab,
-            health,
-            solidity_report,
-            data_info,
-            bankroll,
-        )
+        body = build_page(parse_qs(parsed.query))
         self.send_response(200)
         self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
