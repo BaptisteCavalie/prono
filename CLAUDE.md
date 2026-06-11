@@ -2,6 +2,16 @@
 
 Moteur de prédiction Coupe du Monde 2026. UI web générée en Python pur
 (`ui.py`, stdlib), servie en local ou via Flask/Vercel (`api/index.py`).
+Construit avec le plugin `product-builder` (voir `.claude/settings.json`).
+
+## Domaine
+
+Domaine actif : paris-sportifs
+Utilisateurs : Baptiste (usage perso) — pronostics WC 2026 et décisions de
+pari, consultation rapide avant les matchs, desktop et mobile.
+Spécificités : sortie = distribution de probabilités calibrée, jamais un
+score sec présenté comme certitude ; transparence du modèle (Elo, forme,
+prior expert) ; aucune incitation à parier.
 
 ## Règles de session (ajoutées par /retro)
 
