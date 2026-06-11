@@ -17,6 +17,18 @@ Spécificités : sortie = distribution de probabilités calibrée, jamais un
 score sec présenté comme certitude ; transparence du modèle (Elo, forme,
 prior expert) ; aucune incitation à parier.
 
+## Kit
+
+Kit : repo `BaptisteCavalie/product-builder` (public, marketplace
+`product-builder-kit`). En session cloud, les amendements /retro s'écrivent
+dans un clone GitHub du kit — jamais dans le cache du plugin — et le push
+revient à Baptiste tant que la session n'a pas l'accès en écriture à ce repo.
+
+## Déploiement
+
+Push sur `main` = déploiement Vercel automatique (intégration Git, entrypoint
+`api/index.py`). URL de prod : à compléter par Baptiste.
+
 ## Règles de session (ajoutées par /retro)
 
 - **Effets de bord `data/`** : lancer `ui.py` (ou toute requête sur l'UI)
