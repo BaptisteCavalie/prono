@@ -62,9 +62,11 @@ du data-journalism. La lisibilité prime sur tout effet.
   flottants éventuels.
 
 ## Motion
-Fonctionnelle uniquement — l'unique animation est le pulse du change-dot
-(prono modifié par l'update des data) : c'est un signal de travail, pas un
-décor. Rien d'autre ne bouge.
+Fonctionnelle uniquement — rien ne bouge. Le « prono modifié » est un état
+persistant (badge avec delta ancien → nouveau), pas une animation : un signal
+qui doit survivre au rechargement est un état. <!-- amendé 2026-06-11,
+pattern liste-matchs-dense : remplace le pulse du change-dot -->
+
 
 ## L'élément signature
 Le **verdict Nutri-prono** — la pastille A–E qui note chaque pari, empruntée

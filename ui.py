@@ -697,53 +697,60 @@ _CSS = "".join([
     "--alert:#8f2736;--alert-bg:#fdecec;--alert-line:#e4a7b1;"
     "--neutral:#64748b;--slate:#44536e;--away:#b45309;"
     "--nutri-a:#36b14f;--nutri-b:#8cc152;--nutri-c:#f0c000;--nutri-d:#ea8c2e;--nutri-e:#c0392b;--nutri-ink:#1c1407;"
-    "--font-mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace}",
+    "--font-mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;"
+    "--shadow-floating:0 4px 16px rgb(0 0 0 / 0.10)}",
     "*{box-sizing:border-box}",
     "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums}",
-    ".wrap{max-width:1320px;margin:0 auto;padding:22px 18px 34px}",
-    ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}",
-    "h1{margin:0;font-size:clamp(1.4rem,2.3vw,2rem);letter-spacing:.3px;line-height:1.08}",
-    ".subtitle{margin:6px 0 0;color:var(--muted);font-size:.95rem;max-width:70ch}",
+    ".wrap{max-width:1240px;margin:0 auto;padding:20px 18px 34px}",
+    ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:12px}",
+    "h1{margin:0;font-size:clamp(1.3rem,2vw,1.7rem);letter-spacing:.2px;line-height:1.1}",
+    ".subtitle{margin:5px 0 0;color:var(--muted);font-size:.9rem;max-width:70ch}",
     ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:14px}",
-    ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;margin-top:10px}",
-    ".bet-card{border:1px solid var(--line);border-radius:12px;padding:11px 12px;background:var(--surface-3)}",
-    ".bet-card .bet-title{font-weight:700;font-size:.95rem;margin-bottom:4px}",
-    ".bet-card .bet-sel{font-weight:700;color:var(--brand-dark)}",
-    ".bet-card .bet-meta{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.35}",
-    ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:var(--ok);color:#fff;font-weight:700;font-size:.85rem;font-family:var(--font-mono)}",
+    ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:10px}",
+    ".bet-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-3)}",
+    ".bet-sel-line{font-size:1.02rem;font-weight:700;line-height:1.3}",
+    ".bet-odds{font-family:var(--font-mono);color:var(--brand-dark);white-space:nowrap}",
+    ".bet-context{font-size:.8rem;color:var(--muted);margin-top:3px;line-height:1.35}",
+    ".bet-card .bet-meta{font-size:.8rem;color:var(--muted);margin-top:4px;line-height:1.35}",
+    ".bet-stake-line{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap}",
+    ".bet-stake{display:inline-block;padding:6px 11px;border-radius:999px;background:var(--ok);color:#fff;font-weight:700;font-size:.92rem;font-family:var(--font-mono)}",
+    ".bet-return{font-size:.8rem;color:var(--muted)}",
+    ".bet-why{margin-top:7px}",
+    ".bet-why summary{font-size:.78rem;padding:3px 2px}",
     "a:focus-visible,summary:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
     ".stats{display:flex;gap:8px;flex-wrap:wrap}",
     ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
-    "table{width:100%;border-collapse:separate;border-spacing:0 8px;table-layout:fixed}",
-    "th,td{padding:8px 10px;vertical-align:middle}",
-    "thead th{text-align:left;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:2px}",
-    "tbody tr{background:var(--surface);border:1px solid var(--line);border-radius:12px}",
-    "tbody tr td:first-child{border-radius:12px 0 0 12px}",
-    "tbody tr td:last-child{border-radius:0 12px 12px 0}",
+    ".stamp-warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-text);font-weight:700}",
+    "table{width:100%;border-collapse:collapse;table-layout:fixed}",
+    "th,td{padding:9px 8px;vertical-align:middle}",
+    "thead th{text-align:left;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:4px}",
+    "tbody tr{border-top:1px solid var(--line)}",
+    "tbody tr:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
     "td strong{font-weight:700}",
-    ".nutri{display:inline-block;min-width:24px;text-align:center;padding:4px 8px;border-radius:7px;font-weight:700;font-size:.74rem;color:var(--nutri-ink)}",
+    ".nutri{display:inline-block;min-width:30px;text-align:center;padding:6px 0;border-radius:8px;font-weight:700;font-size:.88rem;color:var(--nutri-ink)}",
     ".nutri-a{background:var(--nutri-a)}",
     ".nutri-b{background:var(--nutri-b)}",
     ".nutri-c{background:var(--nutri-c)}",
     ".nutri-d{background:var(--nutri-d)}",
     ".nutri-e{background:var(--nutri-e);color:#fff}",
-    ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin:2px 2px 6px}",
+    ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;position:sticky;top:44px;z-index:5;background:var(--surface);margin:-14px -14px 4px;padding:12px 14px 8px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}",
     ".md-title h2{margin:0;font-size:1rem;font-weight:700}",
-    ".line-main{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;column-gap:14px}",
-    ".team-side{display:flex;align-items:center;gap:7px;min-width:0;justify-content:flex-end;text-align:right}",
-    ".team-side.right{justify-content:flex-start;text-align:left}",
-    ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-    ".vs-dot{justify-self:center;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
+    ".day-saisis{font-family:var(--font-mono)}",
+    ".cell-meta .kick{display:block;font-family:var(--font-mono);font-weight:700;font-size:.95rem;line-height:1.2}",
+    ".cell-meta .kick-tbd{color:var(--muted);font-weight:400}",
+    ".meta-sub{display:block;font-size:.72rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    ".cell-teams{font-size:.98rem;line-height:1.35}",
+    ".team-name{display:inline}",
+    ".team-sep{color:var(--muted);margin:0 7px}",
     ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:1rem;line-height:1;font-family:var(--font-mono)}",
-    ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--warn);margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(232,89,12,.6);animation:changePulse 1.8s infinite}",
-    "@keyframes changePulse{0%{box-shadow:0 0 0 0 rgba(232,89,12,.55)}70%{box-shadow:0 0 0 7px rgba(232,89,12,0)}100%{box-shadow:0 0 0 0 rgba(232,89,12,0)}}",
-    "@media (prefers-reduced-motion:reduce){.change-dot{animation:none}.tab,summary,.bet-card{transition:none}}",
+    ".delta{display:flex;width:max-content;align-items:center;gap:6px;margin-top:5px;padding:3px 8px;border-radius:6px;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-text);font-size:.76rem;font-weight:700;white-space:nowrap}",
+    ".delta::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}",
+    ".delta .delta-scores{font-family:var(--font-mono)}",
+    "@media (prefers-reduced-motion:reduce){.tab,summary,.bet-card{transition:none}}",
     ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
     ".score-chip-real{background:var(--ok);font-size:.86rem;min-width:88px}",
     ".score-chip-prono{background:var(--slate);font-size:.86rem;min-width:98px}",
-    ".prob-cell{min-width:160px}",
-    ".prono-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px}",
-    ".prob-bar{display:flex;height:8px;border-radius:999px;overflow:hidden;background:var(--track);margin:2px 0 3px;min-width:140px;max-width:240px}",
+    ".prob-bar{display:flex;height:6px;border-radius:999px;overflow:hidden;background:var(--track);margin:2px 0 4px}",
     ".prob-seg{display:block;height:100%}",
     ".prob-seg+.prob-seg{border-left:1px solid var(--surface)}",
     ".prob-seg.home{background:var(--brand)}",
@@ -753,14 +760,16 @@ _CSS = "".join([
     ".prob-legend strong{color:var(--text);font-family:var(--font-mono)}",
     ".flag{font-size:1.05rem}",
     ".tiny{font-size:.76rem;color:var(--muted)}",
-    ".done-cell{white-space:nowrap}",
+    ".cell-saisi{white-space:nowrap;text-align:center}",
     ".done-toggle{width:22px;height:22px;accent-color:var(--brand);cursor:pointer}",
-    "tr.done-row{outline:2px solid var(--ok-line);background:var(--ok-bg)}",
+    "tr.done-row .cell-meta,tr.done-row .cell-teams,tr.done-row .cell-prono,tr.done-row .cell-nutri,tr.done-row .cell-prob{opacity:.45}",
     "details{border:0;background:transparent}",
     "summary{cursor:pointer;font-size:.84rem;color:var(--brand);font-weight:700;display:inline-block;padding:6px 4px;border-radius:6px}",
     "summary:hover{text-decoration:underline}",
     "summary::marker{color:var(--brand)}",
     ".note-list{margin:8px 0 0;padding:8px 10px 8px 24px;color:var(--muted);font-size:.8rem;line-height:1.3;background:var(--surface-3);border:1px solid var(--line);border-radius:10px}",
+    ".cell-details{position:relative}",
+    ".cell-details details[open] .note-list{position:absolute;right:4px;top:calc(100% - 6px);width:560px;max-width:72vw;z-index:30;background:var(--surface);box-shadow:var(--shadow-floating)}",
     ".muted{color:var(--muted);font-size:.9rem}",
     ".err{background:var(--alert);color:#fff;padding:11px 12px;border-radius:10px;margin-bottom:10px}",
     ".err a{color:#fff;font-weight:700}",
@@ -796,23 +805,26 @@ _CSS = "".join([
     ".diag-wrap[open]>summary{margin-bottom:10px}",
     "@media (max-width:860px){.info-grid{grid-template-columns:1fr}}",
     "@media (max-width:760px){.wrap{padding:14px 10px 20px}.panel{padding:11px 10px}.tab{padding:13px 16px;font-size:.92rem}"
-    "table thead{display:none}table,tbody{display:block;width:100%}table{border-spacing:0}"
-    "tr{display:block;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;background:var(--surface)}"
-    "tbody tr td:first-child,tbody tr td:last-child{border-radius:0}"
-    "td{display:block;border:0;padding:3px 0}"
-    "td::before{content:attr(data-label);display:block;color:var(--muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}"
-    "td[data-label='Match']::before,td[data-label='Pronostic']::before,td[data-label='Détails']::before{display:none}"
-    ".line-main{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px}"
-    ".team-name{white-space:normal;font-size:.95rem;line-height:1.2}.score-chip{min-width:64px}.prob-bar{max-width:none}.prono-line{margin-top:2px}"
-    ".done-toggle{width:24px;height:24px}summary{padding:10px 4px}"
-    "td[data-label='Saisi'],td[data-label='Détails']{display:inline-block;width:auto;vertical-align:middle;margin-top:8px}"
-    "td[data-label='Saisi']{margin-right:16px}"
-    "td[data-label='Saisi']::before{display:inline;margin:0 8px 0 0}}",
+    ".md-title{position:static;margin:-11px -10px 4px;padding:10px 10px 8px}"
+    "table,tbody{display:block;width:100%}thead{display:none}"
+    "tr{display:block;border-top:1px solid var(--line);padding:10px 2px}"
+    "td{display:block;border:0;padding:2px 0;width:auto}"
+    ".cell-meta{display:flex;align-items:baseline;gap:8px}"
+    ".cell-meta .kick{display:inline}"
+    ".meta-sub{display:inline;margin:0;white-space:normal}"
+    ".cell-teams{font-size:.95rem}"
+    ".cell-prono,.cell-nutri{display:inline-block;vertical-align:middle;margin:4px 10px 0 0}"
+    ".cell-prob{margin-top:4px}"
+    ".cell-saisi{display:inline-block;vertical-align:middle;margin:8px 16px 0 0;text-align:left}"
+    ".cell-saisi::before{content:'Saisi';color:var(--muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;margin-right:8px}"
+    ".cell-details{display:inline-block;vertical-align:middle;margin-top:8px}"
+    ".cell-details details[open] .note-list{position:static;width:auto;max-width:none;box-shadow:none}"
+    ".done-toggle{width:24px;height:24px}summary{padding:10px 4px}}",
 ])
 
 
 def _render_header(safe_tab: str, health: Optional[Dict], health_meta: Dict[str, str],
-                   n_future: int, n_past: int) -> List[str]:
+                   n_future: int, n_past: int, n_changed: int = 0) -> List[str]:
     subtitle = ("Recommandations prudentes calculées à partir du modèle et des cotes bookmaker."
                 if safe_tab == "paris"
                 else "Vue calendrier rapide : ouvrez un match pour voir les explications utiles à la décision.")
@@ -832,8 +844,18 @@ def _render_header(safe_tab: str, health: Optional[Dict], health_meta: Dict[str,
             f"Feu data : {health_meta['label']} ({health_meta['state']})</div>"
         )
     parts.extend([
-        f"<span class='status-caption'>Futurs {n_future} · Passés {n_past}"
-        " · <span id='done-count' aria-live='polite'>Saisis : 0</span></span>",
+        "<div class='stats'>",
+        f"<span class='stamp'>Futurs {n_future}</span>",
+        f"<span class='stamp'>Passés {n_past}</span>",
+        "<span class='stamp' id='done-count' aria-live='polite'>Saisis : 0</span>",
+    ])
+    if n_changed:
+        parts.append(
+            f"<span class='stamp stamp-warn' title='Pronos recalculés après mise à jour des données — repérez les badges Modifié'>"
+            f"Modifiés : {n_changed}</span>"
+        )
+    parts.extend([
+        "</div>",
         "</div>",
         "</header>",
     ])
@@ -1030,15 +1052,21 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
             b = s["bet"]
             sel = _sel_fr(b["sel"], s["home"], s["away"])
             ret = s["stake"] * b["odds"]
+            # Ordre du ticket Winamax : sélection + cote, contexte, mise, retour
+            # — la recopie se fait position à position, le calcul passe en détail.
             parts.extend([
                 "<article class='bet-card'>",
-                f"<div class='bet-title'>{html.escape(s['label'])}</div>",
-                (f"<div class='bet-meta'>{html.escape(s['when'])}</div>" if s.get("when") else ""),
-                f"<div class='bet-sel'>{html.escape(sel)} @ {b['odds']:.2f}</div>",
-                f"<div class='bet-meta'>Modèle {round(b['model']*100)}% &rarr; ajusté {round(b['shrunk']*100)}% "
-                f"(juste marché {round(b['fair']*100)}%)<br>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</div>",
-                f"<div><span class='bet-stake'>Miser {_eur(s['stake'], 2)}</span> "
-                f"<span class='bet-meta'>retour si gagné ~{_eur(ret, 2)}</span></div>",
+                f"<div class='bet-sel-line'>{html.escape(sel)} <span class='bet-odds'>@ {b['odds']:.2f}</span></div>",
+                f"<div class='bet-context'>1N2 &middot; {html.escape(s['label'])}"
+                + (f" &middot; {html.escape(s['when'])}" if s.get("when") else "")
+                + "</div>",
+                f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(s['stake'], 2)}</span> "
+                f"<span class='bet-return'>retour si gagné ~{_eur(ret, 2)}</span></div>",
+                "<details class='bet-why'><summary>Détail du calcul</summary><ul class='note-list'>",
+                f"<li>Modèle {round(b['model']*100)}% &rarr; ajusté {round(b['shrunk']*100)}% "
+                f"(juste marché {round(b['fair']*100)}%)</li>",
+                f"<li>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</li>",
+                "</ul></details>",
                 "</article>",
             ])
     else:
@@ -1054,21 +1082,25 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
         for c in rec["combos"]:
             ret = c["stake"] * c["combined_odds"]
             parts.append("<article class='bet-card'>")
-            parts.append(f"<div class='bet-title'>Combiné {len(c['legs'])} sélections</div>")
+            parts.append(
+                f"<div class='bet-sel-line'>Combiné {len(c['legs'])} sélections "
+                f"<span class='bet-odds'>@ {c['combined_odds']:.2f}</span></div>"
+            )
             for idx, leg in enumerate(c["legs"], start=1):
                 pair = _split_match(leg["label"]) or (leg["label"], "")
                 sel_txt = _sel_fr(leg["sel"], pair[0], pair[1])
                 parts.append(
-                    f"<div class='bet-sel'>{idx}. {html.escape(sel_txt)} @ {leg['odds']:.2f}</div>"
-                    f"<div class='bet-meta'>{html.escape(leg['label'])}</div>"
+                    f"<div class='bet-context'>{idx}. <strong>{html.escape(sel_txt)}</strong> "
+                    f"<span class='bet-odds'>@ {leg['odds']:.2f}</span> &middot; {html.escape(leg['label'])}</div>"
                 )
             parts.append(
-                f"<div class='bet-meta'>Cote combinée {c['combined_odds']:.2f} &middot; "
-                f"EV {c['ev']*100:+.1f}% &middot; proba modèle {round(c['combined_prob']*100)}%</div>"
+                f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(c['stake'], 2)}</span> "
+                f"<span class='bet-return'>retour si gagné ~{_eur(ret, 2)}</span></div>"
             )
             parts.append(
-                f"<div><span class='bet-stake'>Miser {_eur(c['stake'], 2)}</span> "
-                f"<span class='bet-meta'>retour si gagné ~{_eur(ret, 2)}</span></div>"
+                "<details class='bet-why'><summary>Détail du calcul</summary><ul class='note-list'>"
+                f"<li>EV {c['ev']*100:+.1f}% &middot; proba modèle {round(c['combined_prob']*100)}%</li>"
+                "</ul></details>"
             )
             parts.append("</article>")
     else:
@@ -1103,6 +1135,14 @@ def _render_row(r: Dict) -> List[str]:
         f"aria-label='Confiance {html.escape(r['nutri'])} sur A à E'>{html.escape(r['nutri'])}</span>"
     )
 
+    delta_badge = ""
+    if not r["completed"] and r.get("prediction_changed"):
+        delta_badge = (
+            f"<span class='delta' role='status' "
+            f"title='Prono recalculé après une maj des données — la coche Saisi vaut acquittement'>"
+            f"Modifié <span class='delta-scores'>{html.escape(r['predicted_score'])} &rarr; "
+            f"{html.escape(r['predicted_score_live'])}</span></span>"
+        )
     if r["completed"]:
         score_block = (
             f"<span class='score-dual'>"
@@ -1111,46 +1151,37 @@ def _render_row(r: Dict) -> List[str]:
             f"</span>"
         )
     else:
-        change_dot = ""
-        if r.get("prediction_changed"):
-            change_tip = (
-                f"Prono mis à jour après une maj des données : "
-                f"{r['predicted_score']} -> {r['predicted_score_live']}"
-            )
-            change_dot = (
-                f"<span class='change-dot' role='img' tabindex='0' "
-                f"aria-label='{html.escape(change_tip)}' "
-                f"title='{html.escape(change_tip)}'></span>"
-            )
+        # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul.
         score_block = (
-            f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['score'])}{change_dot}</span>"
+            f"<span class='score-chip score-chip-prono'>{html.escape(r['score'])}</span>"
         )
 
+    kick = r.get("kickoff_paris") or ""
+    kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
+                 else "<span class='kick kick-tbd'>&mdash;</span>")
+    meta_sub = (f"J{html.escape(str(r['matchday']))} · Gr. {html.escape(str(r['group']))}"
+                f" · {html.escape(str(r['id']))}")
+
     parts = ["<tr>"]
+    parts.append(f"<td class='cell-meta'>{kick_html}<span class='meta-sub'>{meta_sub}</span></td>")
     parts.append(
-        f"<td data-label='Match'>"
-        f"<div class='tiny'>J{html.escape(str(r['matchday']))} · Groupe {html.escape(str(r['group']))} · {html.escape(str(r['id']))}"
-        + (f" · {html.escape(r['kickoff_paris'])} (heure FR)" if r.get('kickoff_paris') else "")
-        + "</div>"
-        f"<div class='line-main'>"
-        f"<div class='team-side'><span class='flag'>{r['home_flag']}</span><span class='team-name'>{html.escape(home_label)}</span></div>"
-        f"<span class='vs-dot'>vs</span>"
-        f"<div class='team-side right'><span class='team-name'>{html.escape(away_label)}</span><span class='flag'>{r['away_flag']}</span></div>"
-        f"</div></td>"
+        f"<td class='cell-teams'>"
+        f"<span class='flag'>{r['home_flag']}</span> <span class='team-name'>{html.escape(home_label)}</span>"
+        f"<span class='team-sep'>&ndash;</span>"
+        f"<span class='team-name'>{html.escape(away_label)}</span> <span class='flag'>{r['away_flag']}</span>"
+        f"</td>"
     )
+    parts.append(f"<td class='cell-prono'>{score_block}{delta_badge}</td>")
+    parts.append(f"<td class='cell-nutri'>{nutri_chip}</td>")
+    parts.append(f"<td class='cell-prob'>{prob_block}</td>")
     parts.append(
-        f"<td data-label='Pronostic' class='prob-cell'>"
-        f"<div class='prono-line'>{score_block}{nutri_chip}</div>"
-        f"{prob_block}</td>"
-    )
-    parts.append(
-        f"<td data-label='Saisi' class='done-cell'><input class='done-toggle' type='checkbox' "
+        f"<td class='cell-saisi'><input class='done-toggle' type='checkbox' "
         f"aria-label='Marquer {html.escape(home_label)} vs {html.escape(away_label)} comme saisi sur Mon Petit Prono' "
         f"title='Cochez quand vous avez saisi ce prono sur Mon Petit Prono' "
         f"data-match='{html.escape(match_ref)}'></td>"
     )
 
-    parts.append("<td data-label='Détails'><details><summary>Détails</summary><ul class='note-list'>")
+    parts.append("<td class='cell-details'><details><summary>Détails</summary><ul class='note-list'>")
     parts.append(
         f"<li>Prono recommandé (optimise les points Mon Petit Prono) : {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
     )
@@ -1210,7 +1241,8 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         _CSS,
         "</style></head><body><main class='wrap'>",
     ]
-    parts.extend(_render_header(safe_tab, health, health_meta, len(future_rows), len(past_rows)))
+    n_changed = sum(1 for r in future_rows if r.get("prediction_changed"))
+    parts.extend(_render_header(safe_tab, health, health_meta, len(future_rows), len(past_rows), n_changed))
 
     if error:
         parts.append(
@@ -1236,7 +1268,9 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         parts.append(
             "<p class='legend' style='margin:0 0 12px'>Indice de confiance du pronostic : "
             "<strong>A</strong> forte &rarr; <strong>E</strong> faible. La barre indique les "
-            "probabilités <strong>1</strong> (domicile) · <strong>N</strong> (nul) · <strong>2</strong> (extérieur).</p>"
+            "probabilités <strong>1</strong> (domicile) · <strong>N</strong> (nul) · <strong>2</strong> (extérieur). "
+            "Un badge <strong>Modifié</strong> signale un prono recalculé après mise à jour des données — "
+            "cocher Saisi vaut acquittement.</p>"
         )
 
     if safe_tab == "paris":
@@ -1257,14 +1291,22 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
 
     for day, md_rows in grouped:
         day_label = _fr_date_label(day)
+        if safe_tab == "futurs":
+            day_count = (f"<span class='tiny'>{len(md_rows)} matchs · "
+                         f"<span class='day-saisis'>0/{len(md_rows)} saisis</span></span>")
+        else:
+            day_count = f"<span class='tiny'>{len(md_rows)} matchs</span>"
         parts.extend([
             "<section class='panel'>",
             "<div class='md-title'>",
             f"<h2>{html.escape(day_label)}</h2>",
-            f"<span class='tiny'>{len(md_rows)} matchs</span>",
+            day_count,
             "</div>",
             "<table><thead><tr>",
-            "<th style='width:40%'>Match</th><th style='width:27%'>Pronostic</th><th style='width:9%'>Saisi</th><th style='width:24%'>Détails</th>",
+            "<th style='width:11%'>Heure (FR)</th><th style='width:28%'>Match</th>"
+            "<th style='width:16%'>Pronostic</th><th style='width:6%'>Conf.</th>"
+            "<th style='width:20%'>Probabilités 1 · N · 2</th><th style='width:7%'>Saisi</th>"
+            "<th style='width:12%'>Détails</th>",
             "</tr></thead><tbody>",
         ])
         for r in md_rows:
@@ -1285,6 +1327,11 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         "const parse=()=>{try{return new Set(JSON.parse(localStorage.getItem(key)||'[]'));}catch(_){return new Set();}};",
         "const save=(set)=>localStorage.setItem(key,JSON.stringify(Array.from(set)));",
         "const refreshCount=(set)=>{if(countEl){countEl.textContent='Saisis : '+set.size;}};",
+        "const refreshDays=()=>{document.querySelectorAll('.day-saisis').forEach((el)=>{",
+        "const sec=el.closest('section');if(!sec){return;}",
+        "const boxes=sec.querySelectorAll('.done-toggle');let n=0;",
+        "boxes.forEach((b)=>{if(b.checked){n++;}});",
+        "el.textContent=n+'/'+boxes.length+' saisis';});};",
         "const done=parse();",
         "const checks=document.querySelectorAll('.done-toggle');",
         "checks.forEach((box)=>{",
@@ -1295,10 +1342,10 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         "box.addEventListener('change',()=>{",
         "if(box.checked){done.add(id);}else{done.delete(id);}",
         "if(row){row.classList.toggle('done-row',box.checked);}",
-        "save(done);refreshCount(done);",
+        "save(done);refreshCount(done);refreshDays();",
         "});",
         "});",
-        "refreshCount(done);",
+        "refreshCount(done);refreshDays();",
         "})();",
         "</script>",
         "</main></body></html>",
