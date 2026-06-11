@@ -7,8 +7,12 @@ Construit avec le plugin `product-builder` (voir `.claude/settings.json`).
 ## Domaine
 
 Domaine actif : paris-sportifs
-Utilisateurs : Baptiste (usage perso) — pronostics WC 2026 et décisions de
-pari, consultation rapide avant les matchs, desktop et mobile.
+Utilisateurs : Baptiste, seul utilisateur — pronostics WC 2026 et décisions
+de pari, consultation rapide avant les matchs, desktop et mobile.
+Priorités d'usage : lisibilité avant tout ; voir d'un coup d'œil un prono
+qui a changé après update des data ; ordre chronologique clair pour
+reporter les pronos dans MPP ; paris lisibles tels quels pour les saisir
+dans Winamax.
 Spécificités : sortie = distribution de probabilités calibrée, jamais un
 score sec présenté comme certitude ; transparence du modèle (Elo, forme,
 prior expert) ; aucune incitation à parier.

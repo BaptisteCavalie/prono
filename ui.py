@@ -696,9 +696,10 @@ _CSS = "".join([
     "--warn:#e8590c;--warn-text:#7c4b10;--warn-bg:#fff6e7;--warn-line:#f1cd8b;"
     "--alert:#8f2736;--alert-bg:#fdecec;--alert-line:#e4a7b1;"
     "--neutral:#64748b;--slate:#44536e;--away:#b45309;"
-    "--nutri-a:#36b14f;--nutri-b:#8cc152;--nutri-c:#f0c000;--nutri-d:#ea8c2e;--nutri-e:#c0392b;--nutri-ink:#1c1407}",
+    "--nutri-a:#36b14f;--nutri-b:#8cc152;--nutri-c:#f0c000;--nutri-d:#ea8c2e;--nutri-e:#c0392b;--nutri-ink:#1c1407;"
+    "--font-mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace}",
     "*{box-sizing:border-box}",
-    "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}",
+    "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums}",
     ".wrap{max-width:1320px;margin:0 auto;padding:22px 18px 34px}",
     ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:14px}",
     "h1{margin:0;font-size:clamp(1.4rem,2.3vw,2rem);letter-spacing:.3px;line-height:1.08}",
@@ -709,7 +710,7 @@ _CSS = "".join([
     ".bet-card .bet-title{font-weight:700;font-size:.95rem;margin-bottom:4px}",
     ".bet-card .bet-sel{font-weight:700;color:var(--brand-dark)}",
     ".bet-card .bet-meta{font-size:.82rem;color:var(--muted);margin-top:4px;line-height:1.35}",
-    ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:var(--ok);color:#fff;font-weight:700;font-size:.85rem}",
+    ".bet-stake{display:inline-block;margin-top:6px;padding:5px 10px;border-radius:999px;background:var(--ok);color:#fff;font-weight:700;font-size:.85rem;font-family:var(--font-mono)}",
     "a:focus-visible,summary:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
     ".stats{display:flex;gap:8px;flex-wrap:wrap}",
     ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
@@ -733,7 +734,7 @@ _CSS = "".join([
     ".team-side.right{justify-content:flex-start;text-align:left}",
     ".team-name{font-size:1rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     ".vs-dot{justify-self:center;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}",
-    ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:1rem;line-height:1}",
+    ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:1rem;line-height:1;font-family:var(--font-mono)}",
     ".change-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--warn);margin-left:7px;vertical-align:middle;cursor:help;box-shadow:0 0 0 0 rgba(232,89,12,.6);animation:changePulse 1.8s infinite}",
     "@keyframes changePulse{0%{box-shadow:0 0 0 0 rgba(232,89,12,.55)}70%{box-shadow:0 0 0 7px rgba(232,89,12,0)}100%{box-shadow:0 0 0 0 rgba(232,89,12,0)}}",
     "@media (prefers-reduced-motion:reduce){.change-dot{animation:none}.tab,summary,.bet-card{transition:none}}",
@@ -749,7 +750,7 @@ _CSS = "".join([
     ".prob-seg.draw{background:var(--neutral)}",
     ".prob-seg.away{background:var(--away)}",
     ".prob-legend{display:flex;gap:12px;font-size:.74rem;color:var(--muted)}",
-    ".prob-legend strong{color:var(--text)}",
+    ".prob-legend strong{color:var(--text);font-family:var(--font-mono)}",
     ".flag{font-size:1.05rem}",
     ".tiny{font-size:.76rem;color:var(--muted)}",
     ".done-cell{white-space:nowrap}",
