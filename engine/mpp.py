@@ -258,7 +258,6 @@ def recommend(out: Dict, odds: Optional[List[float]] = None,
 def line(rec: Dict) -> str:
     """One-line human summary of a recommendation."""
     i, j = rec["score"]
-    eb = f"{rec['exp_bonus']:.1f}"
     base_str = (f", base ~{rec['base_points']}" if rec["base_points"] is not None
                 else "")
     tail = "" if not rec["differs"] else f"  (model top {rec['modal_score'][0]}-{rec['modal_score'][1]})"
