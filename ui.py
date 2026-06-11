@@ -711,9 +711,8 @@ _CSS = "".join([
     ".bet-sel-line{font-size:1.02rem;font-weight:700;line-height:1.3}",
     ".bet-odds{font-family:var(--font-mono);color:var(--brand-dark);white-space:nowrap}",
     ".bet-context{font-size:.8rem;color:var(--muted);margin-top:3px;line-height:1.35}",
-    ".bet-card .bet-meta{font-size:.8rem;color:var(--muted);margin-top:4px;line-height:1.35}",
     ".bet-stake-line{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap}",
-    ".bet-stake{display:inline-block;padding:6px 11px;border-radius:999px;background:var(--ok);color:#fff;font-weight:700;font-size:.92rem;font-family:var(--font-mono)}",
+    ".bet-stake{display:inline-block;padding:6px 11px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--line-2);font-weight:700;font-size:.92rem;font-family:var(--font-mono)}",
     ".bet-return{font-size:.8rem;color:var(--muted)}",
     ".bet-why{margin-top:7px}",
     ".bet-why summary{font-size:.78rem;padding:3px 2px}",
@@ -725,7 +724,7 @@ _CSS = "".join([
     "th,td{padding:9px 8px;vertical-align:middle}",
     "thead th{text-align:left;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:4px}",
     "tbody tr{border-top:1px solid var(--line)}",
-    "tbody tr:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
+    "tbody tr.match-row:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
     "td strong{font-weight:700}",
     ".nutri{display:inline-block;min-width:30px;text-align:center;padding:6px 0;border-radius:8px;font-weight:700;font-size:.88rem;color:var(--nutri-ink)}",
     ".nutri-a{background:var(--nutri-a)}",
@@ -733,23 +732,26 @@ _CSS = "".join([
     ".nutri-c{background:var(--nutri-c)}",
     ".nutri-d{background:var(--nutri-d)}",
     ".nutri-e{background:var(--nutri-e);color:#fff}",
+    # top:44px = hauteur de .tabbar sticky — garder synchro si padding ou
+    # taille de police du tabbar change.
     ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;position:sticky;top:44px;z-index:5;background:var(--surface);margin:-14px -14px 4px;padding:12px 14px 8px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}",
     ".md-title h2{margin:0;font-size:1rem;font-weight:700}",
     ".day-saisis{font-family:var(--font-mono)}",
+    ".day-mod{color:var(--warn-text);font-weight:700}",
     ".cell-meta .kick{display:block;font-family:var(--font-mono);font-weight:700;font-size:.95rem;line-height:1.2}",
     ".cell-meta .kick-tbd{color:var(--muted);font-weight:400}",
     ".meta-sub{display:block;font-size:.72rem;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     ".cell-teams{font-size:.98rem;line-height:1.35}",
     ".team-name{display:inline}",
     ".team-sep{color:var(--muted);margin:0 7px}",
-    ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:72px;padding:7px 10px;border-radius:999px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:1rem;line-height:1;font-family:var(--font-mono)}",
+    ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:6px 10px;border-radius:999px;background:var(--surface-2);color:var(--text);border:1px solid var(--line-2);font-weight:700;font-size:.95rem;line-height:1;font-family:var(--font-mono)}",
     ".delta{display:flex;width:max-content;align-items:center;gap:6px;margin-top:5px;padding:3px 8px;border-radius:6px;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-text);font-size:.76rem;font-weight:700;white-space:nowrap}",
     ".delta::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}",
     ".delta .delta-scores{font-family:var(--font-mono)}",
-    "@media (prefers-reduced-motion:reduce){.tab,summary,.bet-card{transition:none}}",
+    "@media (prefers-reduced-motion:reduce){.tab{transition:none}}",
     ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
-    ".score-chip-real{background:var(--ok);font-size:.86rem;min-width:88px}",
-    ".score-chip-prono{background:var(--slate);font-size:.86rem;min-width:98px}",
+    ".score-chip-real{background:var(--ok);color:#fff;border-color:transparent;font-size:.86rem;min-width:88px}",
+    ".score-chip-prono{font-size:.86rem;min-width:98px}",
     ".prob-bar{display:flex;height:6px;border-radius:999px;overflow:hidden;background:var(--track);margin:2px 0 4px}",
     ".prob-seg{display:block;height:100%}",
     ".prob-seg+.prob-seg{border-left:1px solid var(--surface)}",
@@ -768,8 +770,11 @@ _CSS = "".join([
     "summary:hover{text-decoration:underline}",
     "summary::marker{color:var(--brand)}",
     ".note-list{margin:8px 0 0;padding:8px 10px 8px 24px;color:var(--muted);font-size:.8rem;line-height:1.3;background:var(--surface-3);border:1px solid var(--line);border-radius:10px}",
-    ".cell-details{position:relative}",
-    ".cell-details details[open] .note-list{position:absolute;right:4px;top:calc(100% - 6px);width:560px;max-width:72vw;z-index:30;background:var(--surface);box-shadow:var(--shadow-floating)}",
+    ".details-btn{background:none;border:0;cursor:pointer;font:inherit;font-size:.84rem;color:var(--brand);font-weight:700;padding:6px 4px;border-radius:6px}",
+    ".details-btn:hover{text-decoration:underline}",
+    "tr.note-row{border-top:0}",
+    "tr.note-row>td{padding:0 8px 10px}",
+    "tr.note-row .note-list{margin:0}",
     ".muted{color:var(--muted);font-size:.9rem}",
     ".err{background:var(--alert);color:#fff;padding:11px 12px;border-radius:10px;margin-bottom:10px}",
     ".err a{color:#fff;font-weight:700}",
@@ -789,7 +794,6 @@ _CSS = "".join([
     ".info-list{margin:0;padding-left:17px;color:var(--muted);font-size:.82rem;line-height:1.35}",
     ".info-line{font-size:.82rem;color:var(--muted);margin:2px 0}",
     ".status-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
-    ".status-caption{color:var(--muted);font-size:.82rem}",
     ".tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:var(--bg);padding:8px 4px 0;margin:0 0 14px;border-bottom:1px solid var(--line);box-shadow:0 8px 12px -12px rgba(20,30,50,.5)}",
     ".tab{text-decoration:none;padding:10px 16px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:2px solid transparent;border-radius:9px 9px 0 0;line-height:1;transition:color .15s ease,background .15s ease,border-color .15s ease}",
     ".tab:hover{color:var(--brand);background:var(--brand-soft)}",
@@ -816,10 +820,11 @@ _CSS = "".join([
     ".cell-prono,.cell-nutri{display:inline-block;vertical-align:middle;margin:4px 10px 0 0}"
     ".cell-prob{margin-top:4px}"
     ".cell-saisi{display:inline-block;vertical-align:middle;margin:8px 16px 0 0;text-align:left}"
-    ".cell-saisi::before{content:'Saisi';color:var(--muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;margin-right:8px}"
+    ".cell-saisi::before{content:'Saisi';display:inline-block;width:3.4em;color:var(--muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}"
     ".cell-details{display:inline-block;vertical-align:middle;margin-top:8px}"
-    ".cell-details details[open] .note-list{position:static;width:auto;max-width:none;box-shadow:none}"
+    "tr.note-row{border-top:0;padding:0}tr.note-row>td{padding:0 0 8px}"
     ".done-toggle{width:24px;height:24px}summary{padding:10px 4px}}",
+    "@media (max-width:480px){.prob-bar{display:none}}",
 ])
 
 
@@ -1057,7 +1062,8 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
             parts.extend([
                 "<article class='bet-card'>",
                 f"<div class='bet-sel-line'>{html.escape(sel)} <span class='bet-odds'>@ {b['odds']:.2f}</span></div>",
-                f"<div class='bet-context'>1N2 &middot; {html.escape(s['label'])}"
+                "<div class='bet-context'>1N2</div>",
+                f"<div class='bet-context'>{html.escape(s['label'])}"
                 + (f" &middot; {html.escape(s['when'])}" if s.get("when") else "")
                 + "</div>",
                 f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(s['stake'], 2)}</span> "
@@ -1136,9 +1142,9 @@ def _render_row(r: Dict) -> List[str]:
     )
 
     delta_badge = ""
-    if not r["completed"] and r.get("prediction_changed"):
+    if r.get("prediction_changed"):
         delta_badge = (
-            f"<span class='delta' role='status' "
+            f"<span class='delta' "
             f"title='Prono recalculé après une maj des données — la coche Saisi vaut acquittement'>"
             f"Modifié <span class='delta-scores'>{html.escape(r['predicted_score'])} &rarr; "
             f"{html.escape(r['predicted_score_live'])}</span></span>"
@@ -1152,9 +1158,7 @@ def _render_row(r: Dict) -> List[str]:
         )
     else:
         # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul.
-        score_block = (
-            f"<span class='score-chip score-chip-prono'>{html.escape(r['score'])}</span>"
-        )
+        score_block = f"<span class='score-chip'>{html.escape(r['score'])}</span>"
 
     kick = r.get("kickoff_paris") or ""
     kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
@@ -1162,7 +1166,7 @@ def _render_row(r: Dict) -> List[str]:
     meta_sub = (f"J{html.escape(str(r['matchday']))} · Gr. {html.escape(str(r['group']))}"
                 f" · {html.escape(str(r['id']))}")
 
-    parts = ["<tr>"]
+    parts = ["<tr class='match-row'>"]
     parts.append(f"<td class='cell-meta'>{kick_html}<span class='meta-sub'>{meta_sub}</span></td>")
     parts.append(
         f"<td class='cell-teams'>"
@@ -1181,7 +1185,15 @@ def _render_row(r: Dict) -> List[str]:
         f"data-match='{html.escape(match_ref)}'></td>"
     )
 
-    parts.append("<td class='cell-details'><details><summary>Détails</summary><ul class='note-list'>")
+    notes_id = f"notes-{html.escape(str(r['id']))}"
+    parts.append(
+        f"<td class='cell-details'><button type='button' class='details-btn' "
+        f"aria-expanded='false' aria-controls='{notes_id}'>Détails</button></td>"
+    )
+    parts.append("</tr>")
+    # Sous-ligne pleine largeur repliée : le détail pousse verticalement,
+    # sans jamais masquer l'en-tête du jour suivant (pattern liste-matchs-dense).
+    parts.append(f"<tr class='note-row' id='{notes_id}' hidden><td colspan='7'><ul class='note-list'>")
     parts.append(
         f"<li>Prono recommandé (optimise les points Mon Petit Prono) : {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
     )
@@ -1214,8 +1226,7 @@ def _render_row(r: Dict) -> List[str]:
         parts.append(f"<li>{html.escape(vs)}</li>")
     for note in r["notes"]:
         parts.append(f"<li>{html.escape(note)}</li>")
-    parts.append("</ul></details></td>")
-    parts.append("</tr>")
+    parts.append("</ul></td></tr>")
     return parts
 
 
@@ -1292,7 +1303,12 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
     for day, md_rows in grouped:
         day_label = _fr_date_label(day)
         if safe_tab == "futurs":
-            day_count = (f"<span class='tiny'>{len(md_rows)} matchs · "
+            n_mod_day = sum(1 for r in md_rows if r.get("prediction_changed"))
+            mod_html = ""
+            if n_mod_day:
+                plural = "s" if n_mod_day > 1 else ""
+                mod_html = f" · <span class='day-mod'>{n_mod_day} modifié{plural}</span>"
+            day_count = (f"<span class='tiny'>{len(md_rows)} matchs{mod_html} · "
                          f"<span class='day-saisis'>0/{len(md_rows)} saisis</span></span>")
         else:
             day_count = f"<span class='tiny'>{len(md_rows)} matchs</span>"
@@ -1346,6 +1362,15 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         "});",
         "});",
         "refreshCount(done);refreshDays();",
+        "document.querySelectorAll('.details-btn').forEach((btn)=>{",
+        "btn.addEventListener('click',()=>{",
+        "const t=document.getElementById(btn.getAttribute('aria-controls'));",
+        "if(!t){return;}",
+        "const open=t.hasAttribute('hidden');",
+        "if(open){t.removeAttribute('hidden');}else{t.setAttribute('hidden','');}",
+        "btn.setAttribute('aria-expanded',open?'true':'false');",
+        "});",
+        "});",
         "})();",
         "</script>",
         "</main></body></html>",
