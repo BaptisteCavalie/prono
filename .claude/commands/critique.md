@@ -7,11 +7,18 @@ argument-hint: [quoi auditer : URL, page, composant, ou "tout"]
 
 Cible : $ARGUMENTS
 
-1. Si une URL ou un dev server est disponible, capture desktop + mobile :
+0. Charge le skill `domain-knowledge` avant de lancer les critics, et
+   transmets le domaine actif dans leurs prompts.
+1. Si aucun serveur ne tourne, lance d'abord l'app du projet (ici :
+   `python ui.py --port 8765`). Capture CHAQUE écran/onglet de la cible —
+   pas seulement la racine — en desktop ET mobile :
    ```bash
-   npx playwright screenshot --viewport-size=1440,900 <url> /tmp/review-desktop.png
-   npx playwright screenshot --viewport-size=390,844 <url> /tmp/review-mobile.png
+   npx playwright screenshot --viewport-size=1440,900 <url> /tmp/review-<ecran>-desktop.png
+   npx playwright screenshot --viewport-size=390,844 <url> /tmp/review-<ecran>-mobile.png
    ```
+   Après les captures, vérifie `git status` : lancer l'app peut muter
+   `data/*.json` (auto-refresh). Restaure ces fichiers avant tout commit
+   (`git restore data/`).
 2. Lance en parallèle `design-critic` (screenshots + code de la cible) et
    `code-reviewer` (fichiers de la cible). Présente le travail comme celui
    d'une équipe externe.

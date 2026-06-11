@@ -14,13 +14,15 @@ app = Flask(__name__)
 
 @app.get("/")
 def home():
-    body = ui.build_page(request.args.to_dict(flat=False))
-    return Response(body, content_type="text/html; charset=utf-8")
+    body = ui.handle_request(request.args.to_dict())
+    return Response(body, mimetype="text/html; charset=utf-8")
 
 
 @app.get("/<path:_rest>")
 def fallback(_rest: str):
-    return home()
+    # 404 léger, comme le serveur stdlib : ne pas rejouer tout le pipeline
+    # pour les favicons et les scans de bots (coût serverless inutile).
+    return Response("Not found", status=404, mimetype="text/plain")
 
 
 # Vercel entrypoint

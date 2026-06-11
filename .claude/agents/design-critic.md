@@ -96,3 +96,7 @@ classe tout en major est aussi inutile qu'un audit vide.
 `rethink` est réservé au cas où le problème est structurel (le pattern choisi
 est le mauvais) — corriger des issues n'y suffirait pas. Ne rends JAMAIS une
 note chiffrée. Ne propose JAMAIS de refonte cosmétique non demandée.
+
+Avant de proposer un renommage de libellé, vérifie qu'il n'entre pas en
+collision (visuelle ou sémantique) avec les libellés adjacents du même écran ;
+propose alors une alternative sans collision. <!-- /retro 2026-06-11 -->
