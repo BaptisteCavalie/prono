@@ -59,7 +59,7 @@ def _print_plan(staked, combos, bankroll, evals, want_combos):
 
     skipped = [e for e in evals if e["has_odds"] and not e["bet"]]
     if skipped:
-        print(f"\n  no value (priced fairly): "
+        print("\n  no value (priced fairly): "
               + ", ".join(e["label"] for e in skipped[:8])
               + (" ..." if len(skipped) > 8 else ""))
     no_odds = [e for e in evals if not e["has_odds"]]

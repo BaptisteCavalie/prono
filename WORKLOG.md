@@ -2,7 +2,24 @@
 
 ## 2026-06-10
 
-### Summary
+### Summary (audit /critique + fixes)
+- Audit complet (/critique) par design-critic + code-reviewer, puis correction des majors et minors retenus :
+  - Sécurité : le paramètre `?odds_file=` est désormais confiné sous la racine du projet (path traversal bloqué), erreurs sans écho de chemin.
+  - Déduplication : l'orchestration web vit dans `ui.build_page(params)`, partagée par le serveur local et `api/index.py` (adaptateur Flask minimal) ; helpers communs (`split_match`, `match_key`, `find_match_odds`, `parse_date`, `load_odds_board`) centralisés dans `engine/common.py` pour la CLI et le web.
+  - Erreurs : messages FR actionnables (`UserFacingError`) pour cotes/date invalides ; les exceptions inattendues sont loggées côté serveur et remplacées par un message générique.
+  - Code mort : `_default_odds_file`, paramètres `action`/`applied_results` de `_render_page`, variable `eb` (mpp), import `Tuple` (expert_signals), f-string sans placeholder (bet.py).
+  - Robustesse : `bankroll=nan/inf` rejeté (`math.isfinite`), `mimetype` Flask remplacé par `content_type`.
+  - Design : focus clavier en `--brand` plein (3:1+), palette entièrement tokenisée dans `:root` (`--accent` mort supprimé), badge « Miser » en `--ok-strong` (AA), segment Nul assombri, graisses normalisées 400/700, `.legend` limité à 75ch, dates de journée en `<h2>`, summary « Détails » allégé, pastille de maj non focusable.
+  - Copy : onglet Paris avec sous-titre dédié et état vide unique quand aucune cote n'est chargée (plus de « Aucune value détectée » mensonger ni de stats à zéro), guidance cotes canonique (clé The Odds API, documentée dans le README), jargon CLI retiré de l'UI, « Solidité n/a/100 » remplacé par un libellé propre.
+- Le crash `predict.py --match "A vs B"` repéré pendant l'audit a été corrigé en parallèle sur main (couche MPP, voir ci-dessous).
+
+### Key Files Added/Updated (audit)
+- engine/common.py (nouveau)
+- ui.py, api/index.py, predict.py, bet.py
+- engine/mpp.py, engine/expert_signals.py
+- README.md (section « Cotes (The Odds API) »)
+
+### Summary (MPP meta-game layer)
 - Compared the engine against a friend's MPP strategy PDF and ported the meta-game layer it exposed:
   - `engine/x2.py`: x2 bonus policy — best target of a slate (highest E[MPP] = the doubler's marginal gain) + codified timing tree (never MD1, group comeback at 80+ behind, R32 standout only, R16 optimal window, QF last call, leaders hold as insurance). Surfaced in `--loop`.
   - League-position modes in `mpp.recommend(mode=...)`: `ev` / `protect` (leader: modal pick, no rarity chasing) / `chase` (trailing: >= "tres rare" bonus only). CLI `--mpp-mode`, `--rank`, `--league-size`, `--points-behind`, `--leading`.
@@ -14,7 +31,7 @@
 - Follow-up (same day): the friend's expert source is **archived** (renamed `_mpp_strategy_2026.json`, never loaded) — it was captured to benchmark the engine vs his strategy, not to feed predictions. Snapshots refrozen on maths + Wiloo only (G19 1-0, G31 2-0, G36 2-0 reverted; G23 keeps the host-fix 2-0).
 - New tests: `tests/test_mpp_x2.py` (knockout distribution, modes, x2 policy, both bug regressions). Suite: 31 tests OK.
 
-### Key Files Added/Updated
+### Key Files Added/Updated (MPP)
 - engine/x2.py (new), engine/mpp.py, engine/prediction.py, engine/report.py, engine/autonomous.py
 - predict.py, ui.py, README.md
 - data/expert_sources/mpp_strategy_2026.json (new), data/fixtures.json

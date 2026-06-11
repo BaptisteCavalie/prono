@@ -41,7 +41,7 @@ from __future__ import annotations
 import copy
 import json
 from pathlib import Path
-from typing import Dict, Iterable, List, Tuple
+from typing import Dict, Iterable, List, Optional
 
 EXPERT_DIR = Path(__file__).resolve().parent.parent / "data" / "expert_sources"
 
@@ -53,7 +53,7 @@ def _clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
 
-def load_sources(data_dir: Path = None) -> List[Dict]:
+def load_sources(data_dir: Optional[Path] = None) -> List[Dict]:
     """Read every expert JSON file. Files whose name starts with '_' are docs."""
     directory = Path(data_dir) if data_dir else EXPERT_DIR
     if not directory.is_dir():
@@ -108,8 +108,8 @@ def expert_notes(team: str, sources: List[Dict]) -> Iterable[str]:
     return notes
 
 
-def apply_expert_priors(ratings: Dict, sources: List[Dict] = None,
-                        data_dir: Path = None) -> Dict:
+def apply_expert_priors(ratings: Dict, sources: Optional[List[Dict]] = None,
+                        data_dir: Optional[Path] = None) -> Dict:
     """Fold expert priors into team ratings (no-op when no sources exist).
 
     Adds `expert_delta` per team and rolls it into `rating`, on top of any
