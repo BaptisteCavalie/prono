@@ -56,3 +56,8 @@ obsession : la simplicité. Le meilleur code est celui qu'on n'a pas écrit.
 
 Tu ne réécris pas le code toi-même, tu rends des issues actionnables.
 Pas de note chiffrée. Pas de refactor non demandé.
+
+Ne recommande pas de modifier une config de déploiement ou de CI qui ne peut
+pas être testée depuis l'environnement courant (vercel.json, workflows, infra) :
+signale-la en `dette_notee` avec la modernisation suggérée, à valider lors d'un
+déploiement réel. <!-- /retro 2026-06-11 -->
