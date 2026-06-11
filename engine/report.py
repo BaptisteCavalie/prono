@@ -33,11 +33,13 @@ def _header_tag(match: Dict) -> str:
 
 
 def card(match: Dict, home: str, away: str,
-         r_home: Dict, r_away: Dict, out: Dict) -> str:
+         r_home: Dict, r_away: Dict, out: Dict, mode: str = "ev") -> str:
     both_live = r_home.get("source") == "live" and r_away.get("source") == "live"
     conf = confidence(out, both_live)
-    rec = mpp.recommend(out)
+    ko = mpp.is_knockout(match)
+    rec = mpp.recommend(out, knockout=ko, mode=mode)
     ri, rj = rec["score"]
+    ko_tag = "  (120', prolongations comprises)" if ko else ""
     return "\n".join([
         "─" * 64,
         f" {home}  vs  {away}    · {_header_tag(match)}",
@@ -49,7 +51,7 @@ def card(match: Dict, home: str, away: str,
         f"{away} {out['lambda_away']:.2f}",
         f"   scores: {_scores(out['top_scores'])}",
         f"   MPP prono: {ri}-{rj}  (+{rec['bonus']} {rec['tier']}, "
-        f"E[MPP] {rec['exp_points']:.1f})",
+        f"E[MPP] {rec['exp_points']:.1f}){ko_tag}",
         f"   O2.5 {_pct(out['p_over25'])}   ·   BTTS {_pct(out['p_btts'])}"
         f"   ·   confidence: {conf}",
     ])
@@ -60,7 +62,7 @@ def brief(match: Dict, home: str, away: str,
     src = f"{r_home['source']}/{r_away['source']}"
     top = ", ".join(f"{i}-{j}" for (i, j), _ in out["top_scores"][:3])
     grp = f" (Group {match.get('group')})" if match.get("group") else ""
-    rec = mpp.recommend(out)
+    rec = mpp.recommend(out, knockout=mpp.is_knockout(match))
     ri, rj = rec["score"]
     return "\n".join([
         f"ASK CLAUDE — {home} vs {away}{grp}",
@@ -93,8 +95,10 @@ def render_value(home: str, away: str, rows) -> str:
 
 
 def simple(match: Dict, home: str, away: str,
-           r_home: Dict, r_away: Dict, out: Dict, value_rows=None) -> str:
-    rec = mpp.recommend(out)  # model-only prono (see engine/prediction.py); odds drive the value table below, not the scoreline
+           r_home: Dict, r_away: Dict, out: Dict, value_rows=None,
+           mode: str = "ev") -> str:
+    # model-only prono (see engine/prediction.py); odds drive the value table below, not the scoreline
+    rec = mpp.recommend(out, knockout=mpp.is_knockout(match), mode=mode)
     i, j = rec["score"]
     sp = rec["p_exact"]
     mi, mj = rec["modal_score"]

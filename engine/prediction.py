@@ -47,9 +47,10 @@ def analyse_match(match: Dict, ratings: Dict) -> Optional[Dict]:
 def scoreline(match: Dict, ratings: Dict) -> Optional[Tuple[int, int]]:
     """Return the model-only MPP-optimal ``(home, away)`` scoreline for one
     fixture, or ``None`` if a team is missing. Deterministic given the prepared
-    ratings — this is exactly what gets displayed and frozen."""
+    ratings — this is exactly what gets displayed and frozen. Knockout fixtures
+    are optimised on the 120-minute distribution (MPP counts extra time)."""
     out = analyse_match(match, ratings)
     if out is None:
         return None
-    ph, pa = mpp.recommend(out)["score"]
+    ph, pa = mpp.recommend(out, knockout=mpp.is_knockout(match))["score"]
     return int(ph), int(pa)

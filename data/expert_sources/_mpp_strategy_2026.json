@@ -1,0 +1,189 @@
+{
+  "source": "mpp_strategy_2026",
+  "label": "Stratégie MPP 2026 — doc d'un ami (PDF)",
+  "video_url": "",
+  "captured_at": "2026-06-10",
+  "trust": 0.7,
+  "cap_elo": 35.0,
+  "_doc": "ARCHIVE (prefixe '_' = jamais charge par engine/expert_signals.py, decision Baptiste 2026-06-10): ce doc servait a comparer la solidite du moteur vs la strategie d'un ami, pas a alimenter les predictions. Conserve pour audit et pour scorer ses calls apres la phase de groupes. Pour le reactiver: retirer le prefixe '_'. Methodologie d'origine: lean derive de ses classements de groupe predits vs l'ordre Elo effectif (bonus hote +65 inclus): lean = clamp(rang_elo - rang_ami, -2, +2); confidence calibree sur le ton du document; trust 0.7 (source non eprouvee).",
+  "teams": {
+    "United States": {
+      "lean": 2,
+      "confidence": 0.45,
+      "stage_call": "Groupe D: 1er (Elo: 3e)",
+      "quote": "Home advantage massive, young squad (Pulisic, Balogun, McKennie, Musah). Mais il flag lui-même 'Turkey could top this group' — conviction modérée."
+    },
+    "Türkiye": {
+      "lean": -1,
+      "confidence": 0.45,
+      "stage_call": "Groupe D: 2e (Elo: 1er)",
+      "quote": "Attaque 'genuinely frightening' (Guler, Yildiz, Calhanoglu), USA vs Turkey désigné trap match. Il les met 2es tout en écrivant qu'ils peuvent finir 1ers."
+    },
+    "Australia": {
+      "lean": 1,
+      "confidence": 0.45,
+      "stage_call": "Groupe D: 3e (Elo: 4e)",
+      "quote": "Consistent qualifiers, limited ceiling — devant le Paraguay."
+    },
+    "Paraguay": {
+      "lean": -2,
+      "confidence": 0.5,
+      "stage_call": "Groupe D: 4e (Elo: 2e)",
+      "quote": "CONMEBOL qualifier, tough but limited — dernier du groupe malgré son Elo."
+    },
+    "Germany": {
+      "lean": 1,
+      "confidence": 0.55,
+      "stage_call": "Groupe E: 1er (Elo: 2e)",
+      "quote": "W8 L1 recent, best form in years (Wirtz, Musiala). Curacao 4-0/5-0, Ecuador battu 2-0."
+    },
+    "Ecuador": {
+      "lean": -1,
+      "confidence": 0.5,
+      "stage_call": "Groupe E: 2e (Elo: 1er)",
+      "quote": "Elite defense (Caicedo, Pacho, Hincapie) mais derrière l'Allemagne."
+    },
+    "Japan": {
+      "lean": 1,
+      "confidence": 0.6,
+      "stage_call": "Groupe F: 1er (Elo: 2e)",
+      "quote": "'Group of death. Japan's recent scalps (Germany, Spain, Brazil, England) make them genuine favorites.' Upset pick n°1: Japan bat Netherlands 2-1 en MD1, candidat x2."
+    },
+    "Netherlands": {
+      "lean": -1,
+      "confidence": 0.55,
+      "stage_call": "Groupe F: 2e (Elo: 1er)",
+      "quote": "Deep squad but history of big-tournament choking; 'Netherlands starting slowly is a pattern.'"
+    },
+    "Egypt": {
+      "lean": 1,
+      "confidence": 0.5,
+      "stage_call": "Groupe G: 2e (Elo: 3e)",
+      "quote": "Salah + Marmoush is elite attack, AFCON finalists; Belgium vs Egypt désigné trap match (Egypte avait battu la Belgique en 2022)."
+    },
+    "Iran": {
+      "lean": -1,
+      "confidence": 0.45,
+      "stage_call": "Groupe G: 3e (Elo: 2e)",
+      "quote": "Masters of the low block, organized, cynical — mais 3e derrière l'Égypte."
+    },
+    "Saudi Arabia": {
+      "lean": 1,
+      "confidence": 0.4,
+      "stage_call": "Groupe H: 3e (Elo: 4e)",
+      "quote": "Herve Renard factor, can produce one shock result (Argentine 2022); bigger-game experience vs Cape Verde."
+    },
+    "Cape Verde": {
+      "lean": -1,
+      "confidence": 0.4,
+      "stage_call": "Groupe H: 4e (Elo: 3e)",
+      "quote": "WC debutants, limited squad depth — derniers malgré un Elo au-dessus des Saoudiens."
+    },
+    "DR Congo": {
+      "lean": 1,
+      "confidence": 0.45,
+      "stage_call": "Groupe K: 3e (Elo: 4e)",
+      "quote": "AFCON 2024 semi-finalists; 'DR Congo's PL/Bundesliga players too sharp' (Wissa, Silas, Mbemba) — devant l'Ouzbékistan."
+    },
+    "Uzbekistan": {
+      "lean": -1,
+      "confidence": 0.45,
+      "stage_call": "Groupe K: 4e (Elo: 3e)",
+      "quote": "WC debutants, 4es du groupe; seule réserve: l'altitude d'Azteca en MD1 comme leveller."
+    }
+  },
+  "group_standings": {
+    "A": [
+      "Mexico",
+      "South Korea",
+      "Czechia",
+      "South Africa"
+    ],
+    "B": [
+      "Switzerland",
+      "Canada",
+      "Bosnia-Herzegovina",
+      "Qatar"
+    ],
+    "C": [
+      "Brazil",
+      "Morocco",
+      "Scotland",
+      "Haiti"
+    ],
+    "D": [
+      "United States",
+      "Türkiye",
+      "Australia",
+      "Paraguay"
+    ],
+    "E": [
+      "Germany",
+      "Ecuador",
+      "Ivory Coast",
+      "Curaçao"
+    ],
+    "F": [
+      "Japan",
+      "Netherlands",
+      "Sweden",
+      "Tunisia"
+    ],
+    "G": [
+      "Belgium",
+      "Egypt",
+      "Iran",
+      "New Zealand"
+    ],
+    "H": [
+      "Spain",
+      "Uruguay",
+      "Saudi Arabia",
+      "Cape Verde"
+    ],
+    "I": [
+      "France",
+      "Norway",
+      "Senegal",
+      "Iraq"
+    ],
+    "J": [
+      "Argentina",
+      "Austria",
+      "Algeria",
+      "Jordan"
+    ],
+    "K": [
+      "Portugal",
+      "Colombia",
+      "DR Congo",
+      "Uzbekistan"
+    ],
+    "L": [
+      "England",
+      "Croatia",
+      "Panama",
+      "Ghana"
+    ]
+  },
+  "outrights": {
+    "winner": "France",
+    "runner_up": "Argentina",
+    "finalists": [
+      "France",
+      "Argentina"
+    ],
+    "top_scorer": "Kylian Mbappé (projection 8-9 buts)",
+    "dark_horses": [
+      "Japan",
+      "Türkiye"
+    ],
+    "disappointments": [],
+    "notes": [
+      "Bracket France: R32 vs 3e (Iran/Saoudite) 3-0, R16 vs Autriche/Colombie 2-1, QF vs Espagne 1-0, SF vs Angleterre/Allemagne 2-1, finale vs Argentine 2-1.",
+      "Top upsets groupe: Japon bat Pays-Bas, Sénégal accroche la France (1-1), Türkiye bat USA, Croatie accroche l'Angleterre (1-1), Saoudite accroche l'Uruguay.",
+      "x2: fenêtre optimale = 8es de finale; plan d'urgence si -100 pts après les groupes.",
+      "Risques relevés sur la France: défaite amicale vs Côte d'Ivoire (juin 2026), vide créatif post-Griezmann, doute physique Theo Hernandez."
+    ]
+  }
+}

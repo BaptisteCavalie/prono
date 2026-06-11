@@ -250,7 +250,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         # just the single most-likely scoreline. Model-only on purpose (see
         # engine/prediction.py): the calendar prono must match the frozen one,
         # and odds-driven betting lives on the Paris tab, not here.
-        rec = mpp.recommend(out)
+        rec = mpp.recommend(out, knockout=mpp.is_knockout(m))
         rsi, rsj = rec["score"]
         live_predicted_score = f"{rsi}-{rsj}"
         frozen_home = _as_int(m.get("predicted_home"))
