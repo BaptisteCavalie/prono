@@ -1357,7 +1357,6 @@ def handle_request(params: Dict[str, str]) -> bytes:
         ratings = team_signals.adjust_ratings_with_status(ratings, team_status)
         ratings = expert_signals.apply_expert_priors(ratings)
         health = data_quality.assess_data_health(fixtures, ratings, team_status)
-        data_info = _build_data_info(fixtures, ratings, team_status, health, odds_file)
 
         selected = _select_fixtures(fixtures, date_value, matchday)
         if not selected and not error:
@@ -1371,6 +1370,9 @@ def handle_request(params: Dict[str, str]) -> bytes:
             odds_board = odds_fetch.ensure_board(ratings, fixtures)
         else:                                          # other tabs: read cache only, never spend credits
             odds_board = odds_fetch.load_cached_board()
+        # Après le chargement des cotes : un odds_file rejeté ne doit pas
+        # apparaître comme « source de données » dans les diagnostics.
+        data_info = _build_data_info(fixtures, ratings, team_status, health, odds_file)
         rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
         if tab == "paris" and (health or {}).get("level") != "critical":
             recommendations = _build_recommendations(rows, bankroll=bankroll)
