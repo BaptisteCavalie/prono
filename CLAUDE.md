@@ -12,7 +12,7 @@ de pari, consultation rapide avant les matchs, desktop et mobile.
 Priorités d'usage : lisibilité avant tout ; voir d'un coup d'œil un prono
 qui a changé après update des data ; ordre chronologique clair pour
 reporter les pronos dans MPP ; paris lisibles tels quels pour les saisir
-dans Winamax.
+dans Winamax. Desktop d'abord (refonte 2026-06-11), le mobile suit.
 Spécificités : sortie = distribution de probabilités calibrée, jamais un
 score sec présenté comme certitude ; transparence du modèle (Elo, forme,
 prior expert) ; aucune incitation à parier.
