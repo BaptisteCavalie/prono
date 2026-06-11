@@ -765,6 +765,7 @@ _CSS = "".join([
     ".cell-saisi{white-space:nowrap;text-align:center}",
     ".done-toggle{width:22px;height:22px;accent-color:var(--brand);cursor:pointer}",
     "tr.done-row .cell-meta,tr.done-row .cell-teams,tr.done-row .cell-prono,tr.done-row .cell-nutri,tr.done-row .cell-prob{opacity:.45}",
+    "tr.done-row+tr.note-row{opacity:.45}",
     "details{border:0;background:transparent}",
     "summary{cursor:pointer;font-size:.84rem;color:var(--brand);font-weight:700;display:inline-block;padding:6px 4px;border-radius:6px}",
     "summary:hover{text-decoration:underline}",
