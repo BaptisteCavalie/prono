@@ -1,26 +1,13 @@
 {
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-check.sh"
-          }
-        ]
+  "extraKnownMarketplaces": {
+    "product-builder-kit": {
+      "source": {
+        "source": "github",
+        "repo": "BaptisteCavalie/product-builder"
       }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/stop-gate.sh"
-          }
-        ]
-      }
-    ]
+    }
+  },
+  "enabledPlugins": {
+    "product-builder@product-builder-kit": true
   }
 }
