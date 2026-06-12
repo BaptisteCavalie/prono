@@ -766,7 +766,6 @@ _CSS = "".join([
     "a:focus-visible,summary:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
     ".stats{display:flex;gap:8px;flex-wrap:wrap}",
     ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
-    ".stamp-warn{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-text);font-weight:700}",
     "table{width:100%;border-collapse:collapse;table-layout:fixed}",
     "th,td{padding:9px 8px;vertical-align:middle}",
     "thead th{text-align:left;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:4px}",
@@ -939,9 +938,9 @@ def _render_day_sections(grouped, past: bool) -> List[str]:
             if n_mod_day:
                 plural = "s" if n_mod_day > 1 else ""
                 mod_html = f" · <span class='day-mod'>{n_mod_day} modifié{plural}</span>"
-            day_count = f"<span class='tiny'>{len(md_rows)} matchs{mod_html}</span>"
+            day_count = f"<span class='tiny'>{len(md_rows)} match{'s' if len(md_rows) > 1 else ''}{mod_html}</span>"
         else:
-            day_count = f"<span class='tiny'>{len(md_rows)} matchs</span>"
+            day_count = f"<span class='tiny'>{len(md_rows)} match{'s' if len(md_rows) > 1 else ''}</span>"
         out.extend([
             "<section class='panel day-section'>",
             "<div class='md-title'>",
@@ -1277,8 +1276,13 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
             f"Modifié <span class='delta-scores'>{html.escape(r['predicted_score'])} &rarr; "
             f"{html.escape(r['predicted_score_live'])}</span></span>"
         )
-    # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul.
-    score_block = f"<span class='score-chip'>{html.escape(r['score'])}</span>"
+    # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul,
+    # mais on porte le sens en title/aria pour ne jamais le lire comme un
+    # résultat (la distribution 1N2 reste l'objet premier, cf. DA).
+    score_block = (
+        f"<span class='score-chip' title='Prono : score le plus probable' "
+        f"aria-label='Prono {html.escape(r['score'])}'>{html.escape(r['score'])}</span>"
+    )
 
     parts = [row_open, meta_cell, teams_cell]
     parts.append(f"<td class='cell-prono'>{score_block}{delta_badge}</td>")
@@ -1448,11 +1452,11 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
     elif safe_tab == "diagnostics":
         parts.append("<div class='topbar'><div><h1>Diagnostics</h1>"
                      "<p class='subtitle'>Qualité des données &amp; solidité du modèle — à consulter avant de faire confiance aux pronos.</p></div></div>")
+        # _render_diagnostics émet déjà ses propres .panel — pas de wrapper
+        # (sinon bordure dans bordure).
         diag_chunk = _render_diagnostics(health, health_meta, solidity_report, data_info)
         if diag_chunk:
-            parts.append("<section class='panel'>")
             parts.extend(diag_chunk)
-            parts.append("</section>")
         else:
             parts.append("<div class='panel'><div class='muted'>Diagnostics indisponibles pour le moment.</div></div>")
 

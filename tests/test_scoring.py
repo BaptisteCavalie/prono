@@ -87,5 +87,21 @@ class TestTallyPronos(unittest.TestCase):
         self.assertEqual(counts["total"], 2)
 
 
+class TestPageRouting(unittest.TestCase):
+    """Routage de la refonte dashboard : onglets legacy/inconnus → vue Matchs."""
+
+    def _render(self, tab: str) -> str:
+        import ui  # import local : pas d'effet réseau à l'import
+        return ui._render_page([], None, tab=tab).decode("utf-8")
+
+    def test_legacy_and_unknown_tabs_fall_back_to_matchs(self):
+        for tab in ("futurs", "passes", "bogus", ""):
+            self.assertIn("<h1>Matchs</h1>", self._render(tab), f"tab={tab!r}")
+
+    def test_known_tabs_render_their_view(self):
+        self.assertIn("<h1>Paris</h1>", self._render("paris"))
+        self.assertIn("<h1>Diagnostics</h1>", self._render("diagnostics"))
+
+
 if __name__ == "__main__":
     unittest.main()
