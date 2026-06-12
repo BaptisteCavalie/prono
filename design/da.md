@@ -68,9 +68,10 @@ Le dashboard a deux territoires chromatiques distincts, et c'est délibéré.
 - **Surface** : sombre **chaude** `~#1d2330` (dérivée de l'encre `#1f2430`, ni
   noir pur ni bleu froid) ; item au survol légèrement plus clair.
 - **Texte** : clair `~#c7cedd` (atténué), `~#f4f6fb` pour l'actif/titre.
-- **Actif** : le teal `#0f5c78` est illisible sur sombre → l'état actif utilise
-  un **teal lumineux** `#86d4ec` sur fond d'item teinté `#143b4b` + bordure
-  gauche ; contrastes validés au build (texte actif 7.2:1, texte nav 9.63:1).
+- **Actif** : le teal `#0f5c78` est illisible sur sombre → l'état actif =
+  **fond d'item teinté** `#143b4b` + **encre teal lumineux** `#86d4ec` (double
+  encodage, sans barre d'accent à gauche — interdit anti-slop) ; contrastes
+  validés au build (texte actif 7.2:1, texte nav 9.63:1).
 - **Frontière** : sidebar/canvas séparés par un trait net 1px, pas une ombre.
 
 ## Densité & forme
