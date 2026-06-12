@@ -694,6 +694,7 @@ _CSS = "".join([
     ":root{--bg:#f6f4ec;--surface:#fffefa;--surface-2:#f2eee3;--surface-3:#fbfdff;"
     "--text:#1f2430;--muted:#5d6679;--line:#d8deea;--line-2:#b8c2d9;--track:#e7ebf3;"
     "--brand:#0f5c78;--brand-dark:#0a4a66;--brand-ink:#f4fbff;--brand-soft:#eaf2f8;"
+    "--on-accent:#ffffff;"  # texte sur un fond sémantique saturé (ok/alert/nutri)
     "--ok:#257942;--ok-bg:#edf8f1;--ok-line:#9ad0af;"
     "--warn:#e8590c;--warn-text:#7c4b10;--warn-bg:#fff6e7;--warn-line:#f1cd8b;"
     "--alert:#8f2736;--alert-bg:#fdecec;--alert-line:#e4a7b1;"
@@ -788,7 +789,7 @@ _CSS = "".join([
     ".nutri-b{background:var(--nutri-b)}",
     ".nutri-c{background:var(--nutri-c)}",
     ".nutri-d{background:var(--nutri-d)}",
-    ".nutri-e{background:var(--nutri-e);color:#fff}",
+    ".nutri-e{background:var(--nutri-e);color:var(--on-accent)}",
     # Sticky en tête de panneau ; top:0 = le canvas scrolle sous le bord haut
     # (plus de tabbar à compenser depuis la refonte dashboard).
     ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;position:sticky;top:0;z-index:5;background:var(--surface);margin:-14px -14px 4px;padding:12px 14px 8px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}",
@@ -806,7 +807,7 @@ _CSS = "".join([
     ".delta .delta-scores{font-family:var(--font-mono)}",
     "@media (prefers-reduced-motion:reduce){.tab{transition:none}}",
     ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
-    ".score-chip-real{background:var(--ok);color:#fff;border-color:transparent;font-size:.86rem;min-width:88px}",
+    ".score-chip-real{background:var(--ok);color:var(--on-accent);border-color:transparent;font-size:.86rem;min-width:88px}",
     ".score-chip-prono{font-size:.86rem;min-width:98px}",
     # Récap justesse (tête de l'onglet Passés) — barre segmentée 100 %, pas de donut.
     ".recap-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}",
@@ -850,8 +851,8 @@ _CSS = "".join([
     "tr.note-row>td{padding:0 8px 10px}",
     "tr.note-row .note-list{margin:0}",
     ".muted{color:var(--muted);font-size:.9rem}",
-    ".err{background:var(--alert);color:#fff;padding:11px 12px;border-radius:10px;margin-bottom:10px}",
-    ".err a{color:#fff;font-weight:700}",
+    ".err{background:var(--alert);color:var(--on-accent);padding:11px 12px;border-radius:10px;margin-bottom:10px}",
+    ".err a{color:var(--on-accent);font-weight:700}",
     ".legend{margin-top:8px;color:var(--muted);font-size:.82rem;max-width:75ch}",
     ".health-pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 10px;font-size:.78rem;font-weight:700;border:1px solid transparent}",
     ".health-dot{display:inline-block;width:8px;height:8px;border-radius:50%}",
