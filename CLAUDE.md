@@ -38,6 +38,12 @@ Kit : repo `BaptisteCavalie/product-builder` (public, marketplace
 dans un clone GitHub du kit — jamais dans le cache du plugin — et le push
 revient à Baptiste tant que la session n'a pas l'accès en écriture à ce repo.
 
+- **Mobbin (MCP)** n'est pas monté par défaut en session cloud (serveurs montés
+  cette session : Excalidraw, Papers, github). Pour l'activer : déclarer le
+  serveur MCP Mobbin (compte + credentials) dans la config de l'environnement.
+  Sans lui, `/da` et `pattern-researcher` se rabattent sur la bibliothèque
+  d'exemplaires du kit → galeries web (avec captures Playwright). <!-- 2026-06-12 -->
+
 ## Déploiement
 
 Push sur `main` = déploiement Vercel automatique (intégration Git, entrypoint
