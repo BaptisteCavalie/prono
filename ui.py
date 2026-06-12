@@ -740,7 +740,7 @@ _CSS = "".join([
     ".no-results{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--muted);margin-bottom:14px}",
     ".link-btn{background:none;border:0;padding:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}",
     ".sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}",
-    ".past-disclosure{margin-top:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}",
+    ".past-disclosure{margin:0 0 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}",
     ".past-summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-weight:700;list-style:none}",
     ".past-summary::-webkit-details-marker{display:none}",
     ".past-summary::after{content:'\\25be';color:var(--muted);margin-left:14px;transition:transform .18s ease}",
