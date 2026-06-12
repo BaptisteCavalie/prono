@@ -12,7 +12,14 @@ de pari, consultation rapide avant les matchs, desktop et mobile.
 Priorités d'usage : lisibilité avant tout ; voir d'un coup d'œil un prono
 qui a changé après update des data ; ordre chronologique clair pour
 reporter les pronos dans MPP ; paris lisibles tels quels pour les saisir
-dans Winamax. Desktop d'abord (refonte 2026-06-11), le mobile suit.
+dans Winamax. **Desktop uniquement** (refonte dashboard 2026-06-12) ; le
+mobile n'est plus une cible (décision Baptiste — on n'améliore plus le
+responsive, on ne le démantèle pas pour autant).
+Forme de l'UI (décidée 2026-06-12) : **dashboard à menu latéral** — sidebar
+persistante (entrées : Matchs · Paris · Diagnostics), passés et futurs
+fusionnés sur la page Matchs avec les passés **masquables** (repliés par
+défaut), et un **filtre pays** instantané sur la liste. Parti-pris visuel
+« dashboard pro » (sidebar sombre / contenu clair) — voir `design/da.md`.
 Spécificités : sortie = distribution de probabilités calibrée, jamais un
 score sec présenté comme certitude ; transparence du modèle (Elo, forme,
 prior expert) ; aucune incitation à parier.

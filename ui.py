@@ -688,7 +688,7 @@ def _build_data_info(fixtures: List[Dict], ratings: Dict, team_status: Dict,
     }
 
 
-_TAB_LABELS = {"futurs": "Futurs", "passes": "Passés", "paris": "Paris"}
+_TAB_LABELS = {"matchs": "Matchs", "paris": "Paris", "diagnostics": "Diagnostics"}
 
 _CSS = "".join([
     ":root{--bg:#f6f4ec;--surface:#fffefa;--surface-2:#f2eee3;--surface-3:#fbfdff;"
@@ -704,12 +704,52 @@ _CSS = "".join([
     # HORS ok/warn/alert (signaux) et hors gamme A–E (verdicts de pari) : une
     # erreur de prono n'est pas une faute morale du modèle.
     "--recap-exact:#0f5c78;--recap-bon:#5f97ab;--recap-erreur:#aab4c6;"
+    # Châssis dashboard (sidebar) : sombre CHAUD dérivé de l'encre, le sombre
+    # s'arrête à la nav (jamais sur la donnée). Actif = teal lumineux (le teal
+    # canvas est illisible sur sombre). Contrastes vérifiés AA au build.
+    "--nav-bg:#1d2330;--nav-bg-2:#2a3344;--nav-line:#333d50;"
+    "--nav-text:#c2cbdb;--nav-text-strong:#f4f7fb;"
+    "--nav-active-bg:#143b4b;--nav-active-text:#86d4ec;"
     "--font-mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;"
     "--shadow-floating:0 4px 16px rgb(0 0 0 / 0.10)}",
     "*{box-sizing:border-box}",
     "body{font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;margin:0;background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-variant-numeric:tabular-nums}",
-    ".wrap{max-width:1240px;margin:0 auto;padding:20px 18px 34px}",
-    ".mast{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:12px}",
+    # Dashboard : châssis sombre (sidebar) + canvas clair (contenu).
+    ".app{display:grid;grid-template-columns:224px 1fr;min-height:100vh}",
+    ".sidebar{background:var(--nav-bg);color:var(--nav-text);position:sticky;top:0;align-self:start;height:100vh;display:flex;flex-direction:column;padding:18px 14px;border-right:1px solid var(--nav-line)}",
+    ".brand{display:flex;flex-direction:column;gap:2px;padding:4px 8px 0}",
+    ".brand-name{font-family:var(--font-mono);font-weight:700;font-size:1.1rem;letter-spacing:.16em;color:var(--nav-text-strong)}",
+    ".brand-sub{font-size:.72rem;color:var(--nav-text);opacity:.7}",
+    ".side-nav{list-style:none;margin:20px 0 0;padding:0;display:flex;flex-direction:column;gap:3px}",
+    ".nav-item{display:block;padding:9px 12px;border-radius:8px;color:var(--nav-text);text-decoration:none;font-weight:600;font-size:.92rem;border-left:3px solid transparent}",
+    ".nav-item:hover{background:var(--nav-bg-2);color:var(--nav-text-strong)}",
+    ".nav-item.active{background:var(--nav-active-bg);color:var(--nav-active-text);border-left-color:var(--nav-active-text)}",
+    ".sidebar a:focus-visible{outline:3px solid color-mix(in srgb,var(--nav-active-text) 60%,transparent);outline-offset:2px}",
+    ".sidebar-foot{margin-top:auto;display:flex;flex-direction:column;gap:6px;font-size:.76rem}",
+    ".nav-health{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--nav-line);border-radius:8px;color:var(--nav-text)}",
+    ".nav-dot{width:8px;height:8px;border-radius:50%;flex:none}",
+    ".nav-stat{color:var(--nav-text);opacity:.75;padding:0 4px;font-family:var(--font-mono)}",
+    ".nav-mod{color:var(--nav-active-text);opacity:1}",
+    ".canvas{padding:22px 28px 44px;max-width:1180px;min-width:0}",
+    ".topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px}",
+    ".topbar h1{margin:0}",
+    ".filter-wrap{display:flex;flex-direction:column;gap:4px;align-items:flex-end}",
+    ".country-filter{width:240px;max-width:48vw;padding:9px 12px;border:1px solid var(--line-2);border-radius:10px;font-size:.95rem;background:var(--surface);color:var(--text)}",
+    ".country-filter::placeholder{color:var(--muted)}",
+    ".filter-count{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);min-height:1em}",
+    ".no-results{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;color:var(--muted);margin-bottom:14px}",
+    ".link-btn{background:none;border:0;padding:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}",
+    ".sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}",
+    ".past-disclosure{margin-top:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}",
+    ".past-summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-weight:700;list-style:none}",
+    ".past-summary::-webkit-details-marker{display:none}",
+    ".past-summary::after{content:'\\25be';color:var(--muted);margin-left:14px;transition:transform .18s ease}",
+    ".past-disclosure[open] .past-summary::after{transform:rotate(180deg)}",
+    ".past-label{display:flex;align-items:center;gap:9px}",
+    ".past-count{font-family:var(--font-mono);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 9px;font-size:.82rem}",
+    ".past-hint{font-weight:400;font-size:.76rem;color:var(--muted);margin-left:auto}",
+    ".past-body{padding:2px 16px 12px;border-top:1px solid var(--line)}",
+    "@media (prefers-reduced-motion:reduce){.past-summary::after{transition:none}}",
     "h1{margin:0;font-size:clamp(1.3rem,2vw,1.7rem);letter-spacing:.2px;line-height:1.1}",
     ".subtitle{margin:5px 0 0;color:var(--muted);font-size:.9rem;max-width:70ch}",
     ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:14px}",
@@ -739,9 +779,9 @@ _CSS = "".join([
     ".nutri-c{background:var(--nutri-c)}",
     ".nutri-d{background:var(--nutri-d)}",
     ".nutri-e{background:var(--nutri-e);color:#fff}",
-    # top:44px = hauteur de .tabbar sticky — garder synchro si padding ou
-    # taille de police du tabbar change.
-    ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;position:sticky;top:44px;z-index:5;background:var(--surface);margin:-14px -14px 4px;padding:12px 14px 8px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}",
+    # Sticky en tête de panneau ; top:0 = le canvas scrolle sous le bord haut
+    # (plus de tabbar à compenser depuis la refonte dashboard).
+    ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;position:sticky;top:0;z-index:5;background:var(--surface);margin:-14px -14px 4px;padding:12px 14px 8px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}",
     ".md-title h2{margin:0;font-size:1rem;font-weight:700}",
     ".day-mod{color:var(--warn-text);font-weight:700}",
     ".cell-meta .kick{display:block;font-family:var(--font-mono);font-weight:700;font-size:.95rem;line-height:1.2}",
@@ -817,22 +857,14 @@ _CSS = "".join([
     ".info-card h4{margin:0 0 6px;font-size:.88rem}",
     ".info-list{margin:0;padding-left:17px;color:var(--muted);font-size:.82rem;line-height:1.35}",
     ".info-line{font-size:.82rem;color:var(--muted);margin:2px 0}",
-    ".status-line{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
-    ".tabbar{position:sticky;top:0;z-index:50;display:flex;gap:4px;background:var(--bg);padding:8px 4px 0;margin:0 0 14px;border-bottom:1px solid var(--line);box-shadow:0 8px 12px -12px rgba(20,30,50,.5)}",
-    ".tab{text-decoration:none;padding:10px 16px;font-weight:700;font-size:.9rem;color:var(--muted);border-bottom:2px solid transparent;border-radius:9px 9px 0 0;line-height:1;transition:color .15s ease,background .15s ease,border-color .15s ease}",
-    ".tab:hover{color:var(--brand);background:var(--brand-soft)}",
-    ".tab.active{color:var(--brand);border-bottom-color:var(--brand);background:var(--surface)}",
     ".bankroll-form{display:flex;align-items:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}",
     ".bankroll-form .field{display:flex;flex-direction:column;gap:4px}",
     ".bankroll-form label{font-size:.78rem;font-weight:700;color:var(--muted)}",
     ".bankroll-form input{width:120px;padding:9px 10px;border:1px solid var(--line-2);border-radius:8px;font-size:.95rem;background:var(--surface);color:var(--text)}",
     ".bankroll-form button{padding:10px 14px;border:0;border-radius:8px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:.85rem;cursor:pointer}",
     ".bankroll-form button:hover{background:var(--brand-dark)}",
-    ".diag-wrap{margin-top:20px}",
-    ".diag-wrap>summary{font-size:.85rem}",
-    ".diag-wrap[open]>summary{margin-bottom:10px}",
     "@media (max-width:860px){.info-grid{grid-template-columns:1fr}}",
-    "@media (max-width:760px){.wrap{padding:14px 10px 20px}.panel{padding:11px 10px}.tab{padding:13px 16px;font-size:.92rem}"
+    "@media (max-width:760px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap}.side-nav{flex-direction:row;margin:0}.sidebar-foot{display:none}.canvas{padding:14px 10px 20px}.panel{padding:11px 10px}"
     ".md-title{position:static;margin:-11px -10px 4px;padding:10px 10px 8px}"
     "table,tbody{display:block;width:100%}thead{display:none}"
     "tr{display:block;border-top:1px solid var(--line);padding:10px 2px}"
@@ -850,42 +882,80 @@ _CSS = "".join([
 ])
 
 
-def _render_header(safe_tab: str, health: Optional[Dict], health_meta: Dict[str, str],
-                   n_future: int, n_past: int, n_changed: int = 0) -> List[str]:
-    subtitle = ("Recommandations prudentes calculées à partir du modèle et des cotes bookmaker."
-                if safe_tab == "paris"
-                else "Vue calendrier rapide : ouvrez un match pour voir les explications utiles à la décision.")
+def _render_sidebar(safe_tab: str, health: Optional[Dict], health_meta: Dict[str, str],
+                    n_future: int, n_past: int, n_changed: int = 0) -> List[str]:
+    """Châssis du dashboard : marque + nav 3 entrées + statut data en pied.
+
+    Nav server-rendered (3 `<a href>` réels) : marche sans JS, actif calculé
+    serveur (fond teinté + encre + aria-current = trois signaux redondants)."""
+    def item(key: str, label: str) -> str:
+        active = " active" if safe_tab == key else ""
+        current = " aria-current='page'" if safe_tab == key else ""
+        return (f"<li><a href='/?tab={key}' class='nav-item{active}'{current}>"
+                f"{html.escape(label)}</a></li>")
+
     parts = [
-        "<header class='mast'>",
-        "<div>",
-        "<h1>Pronos Coupe du Monde 2026</h1>",
-        f"<p class='subtitle'>{subtitle}</p>",
-        "</div>",
-        "<div class='status-line'>",
+        "<aside class='sidebar'>",
+        "<div class='brand'><span class='brand-name'>PRONO</span>"
+        "<span class='brand-sub'>Coupe du Monde 2026</span></div>",
+        "<nav aria-label='Navigation principale'><ul class='side-nav'>",
+        item("matchs", "Matchs"),
+        item("paris", "Paris"),
+        item("diagnostics", "Diagnostics"),
+        "</ul></nav>",
+        "<div class='sidebar-foot'>",
     ]
-    # Le détail qualité/solidité vit dans le panneau Diagnostics ; le header ne
-    # signale que l'anomalie (feu non vert) et les compteurs utiles.
-    if (health or {}).get("level") != "good":
+    if health and (health or {}).get("level") != "good":
+        # Feu data = un signal qualité : couleur sémantique légitime (ok/warn/alert).
+        dot = "var(--alert)" if "critical" in health_meta["class"] else "var(--warn)"
         parts.append(
-            f"<div class='health-pill {health_meta['class']}'><span class='health-dot'></span>"
-            f"Feu data : {health_meta['label']} ({health_meta['state']})</div>"
+            f"<div class='nav-health'><span class='nav-dot' style='background:{dot}'></span>"
+            f"Feu data : {html.escape(health_meta['label'])}</div>"
         )
-    parts.extend([
-        "<div class='stats'>",
-        f"<span class='stamp'>Futurs {n_future}</span>",
-        f"<span class='stamp'>Passés {n_past}</span>",
-    ])
+    parts.append(f"<div class='nav-stat'>{n_future} à venir · {n_past} joués</div>")
     if n_changed:
-        parts.append(
-            f"<span class='stamp stamp-warn' title='Pronos recalculés après mise à jour des données — repérez les badges Modifié'>"
-            f"Modifiés : {n_changed}</span>"
-        )
-    parts.extend([
-        "</div>",
-        "</div>",
-        "</header>",
-    ])
+        plural = "s" if n_changed > 1 else ""
+        parts.append(f"<div class='nav-stat nav-mod'>{n_changed} prono{plural} modifié{plural}</div>")
+    parts.extend(["</div>", "</aside>"])
     return parts
+
+
+def _render_day_sections(grouped, past: bool) -> List[str]:
+    """Sections par jour (panneau + table), réutilisé pour futurs et passés."""
+    if past:
+        thead = ("<th style='width:16%'>Heure (FR)</th><th style='width:42%'>Match</th>"
+                 "<th>Réel · Prono</th>")
+    else:
+        thead = ("<th style='width:11%'>Heure (FR)</th><th style='width:31%'>Match</th>"
+                 "<th style='width:18%'>Pronostic</th><th style='width:7%'>Conf.</th>"
+                 "<th style='width:20%'>Probabilités 1 · N · 2</th>"
+                 "<th style='width:13%'>Détails</th>")
+    out: List[str] = []
+    for day, md_rows in grouped:
+        day_label = _fr_date_label(day)
+        if not past:
+            n_mod_day = sum(1 for r in md_rows if r.get("prediction_changed"))
+            mod_html = ""
+            if n_mod_day:
+                plural = "s" if n_mod_day > 1 else ""
+                mod_html = f" · <span class='day-mod'>{n_mod_day} modifié{plural}</span>"
+            day_count = f"<span class='tiny'>{len(md_rows)} matchs{mod_html}</span>"
+        else:
+            day_count = f"<span class='tiny'>{len(md_rows)} matchs</span>"
+        out.extend([
+            "<section class='panel day-section'>",
+            "<div class='md-title'>",
+            f"<h2>{html.escape(day_label)}</h2>",
+            day_count,
+            "</div>",
+            "<table><thead><tr>",
+            thead,
+            "</tr></thead><tbody>",
+        ])
+        for r in md_rows:
+            out.extend(_render_row(r, past=past))
+        out.extend(["</tbody></table>", "</section>"])
+    return out
 
 
 def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
@@ -1140,6 +1210,12 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
 def _render_row(r: Dict, past: bool = False) -> List[str]:
     home_label = r["home_label"]
     away_label = r["away_label"]
+    # Chaîne pour le filtre pays côté client : noms anglais (clés ratings) ET
+    # libellés FR, pour qu'on retrouve aussi bien « Korea » que « Corée ».
+    search = html.escape(" ".join(
+        str(x) for x in (r["home"], r["away"], home_label, away_label)
+    ).lower())
+    row_open = f"<tr class='match-row' data-search='{search}'>"
 
     kick = r.get("kickoff_paris") or ""
     kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
@@ -1166,7 +1242,7 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
             f"</span>"
         )
         return [
-            "<tr class='match-row'>",
+            row_open,
             meta_cell,
             teams_cell,
             f"<td class='cell-prono'>{score_block}</td>",
@@ -1204,7 +1280,7 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul.
     score_block = f"<span class='score-chip'>{html.escape(r['score'])}</span>"
 
-    parts = ["<tr class='match-row'>", meta_cell, teams_cell]
+    parts = [row_open, meta_cell, teams_cell]
     parts.append(f"<td class='cell-prono'>{score_block}{delta_badge}</td>")
     parts.append(f"<td class='cell-nutri'>{nutri_chip}</td>")
     parts.append(f"<td class='cell-prob'>{prob_block}</td>")
@@ -1332,17 +1408,16 @@ def _render_recap(past_rows: List[Dict]) -> List[str]:
 
 
 def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str = "",
-                 tab: str = "futurs", health: Optional[Dict] = None,
+                 tab: str = "matchs", health: Optional[Dict] = None,
                  solidity_report: Optional[Dict] = None, data_info: Optional[Dict] = None,
                  bankroll: float = 50.0) -> bytes:
-    safe_tab = tab if tab in _TAB_LABELS else "futurs"
+    safe_tab = tab if tab in _TAB_LABELS else "matchs"
 
     past_rows = [r for r in rows if r.get("completed")]
     future_rows = [r for r in rows if not r.get("completed")]
-    shown_rows = [] if safe_tab == "paris" else (past_rows if safe_tab == "passes" else future_rows)
-    grouped = _group_rows_by_matchday(shown_rows)
     health_meta = _health_level_ui(str((health or {}).get("level", "")))
     bet_blocked = health_meta["can_bet"] != "1"
+    n_changed = sum(1 for r in future_rows if r.get("prediction_changed"))
 
     parts = [
         "<!doctype html>",
@@ -1351,116 +1426,122 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         f"<title>Pronos CM2026 — {_TAB_LABELS[safe_tab]}</title>",
         "<style>",
         _CSS,
-        "</style></head><body><main class='wrap'>",
+        "</style></head><body><div class='app'>",
     ]
-    n_changed = sum(1 for r in future_rows if r.get("prediction_changed"))
-    parts.extend(_render_header(safe_tab, health, health_meta, len(future_rows), len(past_rows), n_changed))
+    parts.extend(_render_sidebar(safe_tab, health, health_meta,
+                                 len(future_rows), len(past_rows), n_changed))
+    parts.append("<main class='canvas'>")
 
     if error:
         parts.append(
             f"<div class='err' role='alert'>{html.escape(error)} "
-            "<a href='/?tab=futurs'>Voir tous les matchs</a></div>"
+            "<a href='/?tab=matchs'>Voir tous les matchs</a></div>"
         )
-
-    def _tab(key: str, label: str) -> str:
-        active = " active" if safe_tab == key else ""
-        current = " aria-current='page'" if safe_tab == key else ""
-        return f"<a href='/?tab={key}' class='tab{active}'{current}>{label}</a>"
-
-    parts.extend([
-        "<nav class='tabbar' aria-label='Sections'>",
-        _tab("futurs", "Futurs"),
-        _tab("passes", "Passés"),
-        _tab("paris", "Paris"),
-        "</nav>",
-    ])
     if (health or {}).get("level") != "good":
         parts.append(f"<div class='guard-msg' style='margin-top:0'>{html.escape(health_meta['message'])}</div>")
-    if safe_tab == "futurs" and shown_rows:
-        parts.append(
-            "<p class='legend' style='margin:0 0 12px'>Indice de confiance du pronostic : "
-            "<strong>A</strong> forte &rarr; <strong>E</strong> faible. La barre indique les "
-            "probabilités <strong>1</strong> (domicile) · <strong>N</strong> (nul) · <strong>2</strong> (extérieur). "
-            "Un badge <strong>Modifié</strong> signale un prono recalculé après mise à jour des données.</p>"
-        )
 
     if safe_tab == "paris":
+        parts.append("<div class='topbar'><div><h1>Paris</h1>"
+                     "<p class='subtitle'>Recommandations prudentes calculées à partir du modèle et des cotes bookmaker.</p></div></div>")
         parts.extend(_render_paris(recommendations, bankroll, bet_blocked))
 
-    # Récap cumul-tournoi de la justesse des pronos : en tête des Passés, sur
-    # TOUS les matchs terminés (pas seulement la journée affichée).
-    if safe_tab == "passes" and past_rows:
-        parts.extend(_render_recap(past_rows))
-
-    if not shown_rows and safe_tab != "paris":
-        if safe_tab == "passes":
-            parts.append(
-                "<div class='panel'><div class='muted'>Aucun match joué pour l'instant : les résultats "
-                "apparaîtront ici après les premiers coups d'envoi. "
-                "<a href='/?tab=futurs'>Voir les matchs à venir</a></div></div>"
-            )
+    elif safe_tab == "diagnostics":
+        parts.append("<div class='topbar'><div><h1>Diagnostics</h1>"
+                     "<p class='subtitle'>Qualité des données &amp; solidité du modèle — à consulter avant de faire confiance aux pronos.</p></div></div>")
+        diag_chunk = _render_diagnostics(health, health_meta, solidity_report, data_info)
+        if diag_chunk:
+            parts.append("<section class='panel'>")
+            parts.extend(diag_chunk)
+            parts.append("</section>")
         else:
-            parts.append(
-                "<div class='panel'><div class='muted'>Aucun match à venir à afficher. "
-                "<a href='/?tab=passes'>Voir les matchs joués</a></div></div>"
-            )
+            parts.append("<div class='panel'><div class='muted'>Diagnostics indisponibles pour le moment.</div></div>")
 
-    past_tab = safe_tab == "passes"
-    if past_tab:
-        # Matchs joués : colonnes réduites au vis-à-vis Réel/Prono.
-        thead = ("<th style='width:16%'>Heure (FR)</th><th style='width:42%'>Match</th>"
-                 "<th>Réel · Prono</th>")
-    else:
-        thead = ("<th style='width:11%'>Heure (FR)</th><th style='width:31%'>Match</th>"
-                 "<th style='width:18%'>Pronostic</th><th style='width:7%'>Conf.</th>"
-                 "<th style='width:20%'>Probabilités 1 · N · 2</th>"
-                 "<th style='width:13%'>Détails</th>")
-    for day, md_rows in grouped:
-        day_label = _fr_date_label(day)
-        if safe_tab == "futurs":
-            n_mod_day = sum(1 for r in md_rows if r.get("prediction_changed"))
-            mod_html = ""
-            if n_mod_day:
-                plural = "s" if n_mod_day > 1 else ""
-                mod_html = f" · <span class='day-mod'>{n_mod_day} modifié{plural}</span>"
-            day_count = f"<span class='tiny'>{len(md_rows)} matchs{mod_html}</span>"
+    else:  # matchs : futurs + passés sur une page, passés repliés par défaut
+        parts.append(
+            "<div class='topbar'>"
+            "<div><h1>Matchs</h1>"
+            "<p class='subtitle'>Matchs à venir d'abord ; les passés sont repliés en bas. "
+            "Indice de confiance <strong>A</strong>&rarr;<strong>E</strong>, barre 1·N·2, "
+            "badge <strong>Modifié</strong> = prono recalculé.</p></div>"
+            "<div class='filter-wrap'>"
+            "<label class='sr-only' for='country-filter'>Filtrer par pays</label>"
+            "<input id='country-filter' class='country-filter' type='search' "
+            "placeholder='Filtrer par pays…' autocomplete='off' spellcheck='false'>"
+            "<span class='filter-count' id='filter-count' aria-live='polite'></span>"
+            "</div>"
+            "</div>"
+        )
+        parts.append(
+            "<div class='no-results' id='no-results' hidden role='status'>Aucun match pour ce pays. "
+            "<button type='button' class='link-btn' id='clear-filter'>Effacer le filtre</button></div>"
+        )
+        if future_rows:
+            parts.extend(_render_day_sections(_group_rows_by_matchday(future_rows), past=False))
         else:
-            day_count = f"<span class='tiny'>{len(md_rows)} matchs</span>"
-        parts.extend([
-            "<section class='panel'>",
-            "<div class='md-title'>",
-            f"<h2>{html.escape(day_label)}</h2>",
-            day_count,
-            "</div>",
-            "<table><thead><tr>",
-            thead,
-            "</tr></thead><tbody>",
-        ])
-        for r in md_rows:
-            parts.extend(_render_row(r, past=past_tab))
-        parts.extend(["</tbody></table>", "</section>"])
+            parts.append("<div class='panel'><div class='muted'>Aucun match à venir à afficher.</div></div>")
 
-    diag_chunk = _render_diagnostics(health, health_meta, solidity_report, data_info)
-    if diag_chunk:
-        parts.append("<details class='diag-wrap'><summary>Diagnostics — qualité des données &amp; solidité du modèle</summary>")
-        parts.extend(diag_chunk)
-        parts.append("</details>")
+        if past_rows:
+            n_past = len(past_rows)
+            parts.append("<details class='past-disclosure' id='past-disclosure'>")
+            parts.append(
+                f"<summary class='past-summary'>"
+                f"<span class='past-label'>Matchs passés <span class='past-count'>{n_past}</span></span>"
+                f"<span class='past-hint'>afficher / masquer</span></summary>"
+            )
+            parts.append("<div class='past-body'>")
+            parts.extend(_render_recap(past_rows))
+            parts.extend(_render_day_sections(_group_rows_by_matchday(past_rows), past=True))
+            parts.append("</div></details>")
 
+    parts.append("</main></div>")
     parts.extend([
         "<script>",
         "(function(){",
-        "document.querySelectorAll('.details-btn').forEach((btn)=>{",
-        "btn.addEventListener('click',()=>{",
-        "const t=document.getElementById(btn.getAttribute('aria-controls'));",
+        # Accordéon « Détails » des lignes futures.
+        "document.querySelectorAll('.details-btn').forEach(function(btn){",
+        "btn.addEventListener('click',function(){",
+        "var t=document.getElementById(btn.getAttribute('aria-controls'));",
         "if(!t){return;}",
-        "const open=t.hasAttribute('hidden');",
+        "var open=t.hasAttribute('hidden');",
         "if(open){t.removeAttribute('hidden');}else{t.setAttribute('hidden','');}",
         "btn.setAttribute('aria-expanded',open?'true':'false');",
+        "});});",
+        # Repli des passés : persistance entre visites (défaut serveur = replié).
+        "var past=document.getElementById('past-disclosure');",
+        "if(past){var PK='wc2026_past_open_v1';",
+        "try{if(localStorage.getItem(PK)==='1'){past.open=true;}}catch(e){}",
+        "past.addEventListener('toggle',function(){try{localStorage.setItem(PK,past.open?'1':'0');}catch(e){}});}",
+        # Filtre pays instantané (futurs + passés).
+        "var input=document.getElementById('country-filter');",
+        "if(input){",
+        "var countEl=document.getElementById('filter-count');",
+        "var noRes=document.getElementById('no-results');",
+        "var clearBtn=document.getElementById('clear-filter');",
+        "var rows=Array.prototype.slice.call(document.querySelectorAll('.match-row'));",
+        "var apply=function(){",
+        "var q=input.value.trim().toLowerCase();var visible=0,pastHit=0;",
+        "rows.forEach(function(tr){",
+        "var hit=!q||(tr.getAttribute('data-search')||'').indexOf(q)>=0;",
+        "tr.style.display=hit?'':'none';",
+        "var nr=tr.nextElementSibling;",
+        "if(nr&&nr.classList.contains('note-row')){nr.style.display=hit?'':'none';}",
+        "if(hit){visible++;if(past&&past.contains(tr)){pastHit++;}}",
         "});",
-        "});",
+        # Masquer les sections-jour vidées par le filtre (pas d'en-tête trompeur).
+        "document.querySelectorAll('.day-section').forEach(function(sec){",
+        "var vis=false;sec.querySelectorAll('.match-row').forEach(function(r){if(r.style.display!=='none'){vis=true;}});",
+        "sec.style.display=vis?'':'none';});",
+        # Un match passé qui matche derrière un repli : on déplie pour ne pas le perdre.
+        "if(past&&q&&pastHit>0){past.open=true;}",
+        "countEl.textContent=q?(visible+' match'+(visible>1?'s':'')+' \\u00b7 \\u00ab '+input.value.trim()+' \\u00bb'):'';",
+        "noRes.hidden=!(q&&visible===0);",
+        "};",
+        "input.addEventListener('input',apply);",
+        "if(clearBtn){clearBtn.addEventListener('click',function(){input.value='';apply();input.focus();});}",
+        "}",
         "})();",
         "</script>",
-        "</main></body></html>",
+        "</body></html>",
     ])
     return "".join(parts).encode("utf-8")
 
@@ -1474,7 +1555,11 @@ def handle_request(params: Dict[str, str]) -> bytes:
     date_value = (params.get("date") or "").strip()
     odds_file = (params.get("odds_file") or "").strip()
     action = (params.get("action") or "").strip().lower()
-    tab = (params.get("tab") or "futurs").strip().lower() or "futurs"
+    tab = (params.get("tab") or "matchs").strip().lower() or "matchs"
+    # Back-compat : les anciens onglets séparés Futurs/Passés sont désormais
+    # fusionnés dans la vue Matchs unique.
+    if tab in ("futurs", "passes"):
+        tab = "matchs"
     if action == "reco":          # back-compat: old reco button -> Paris page
         tab = "paris"
     no_auto = (params.get("no_auto") or "") in ("1", "on", "true")
