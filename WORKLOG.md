@@ -1,5 +1,32 @@
 # Project Work Log
 
+## 2026-06-12 (après-midi) — /feature refonte dashboard
+
+### Summary
+- Refonte complète de l'UI vers un **dashboard à menu latéral** (desktop-only).
+  - **DA révisée** (`design/da.md`) : « poste de pilotage » — sidebar sombre
+    chaude (châssis) + canvas papier clair (contenu). Règle cardinale : le
+    sombre s'arrête à la nav, jamais sur la donnée de pari. Signature Nutri
+    conservée. Validée par Baptiste (checkpoint /da).
+  - **Châssis** : `_render_sidebar` (nav 3 entrées server-rendered, actif =
+    fond teinté + encre teal lumineux + bordure + aria-current), tokens
+    `--nav-*` dans le `:root`. Remplace la tabbar.
+  - **Page Matchs unique** : futurs + passés fusionnés ; passés en `<details>`
+    replié par défaut (récap Justesse en tête), persistance localStorage,
+    dégradation sans JS. `_render_day_sections` extrait (réutilisé).
+  - **Filtre pays instantané** (futurs + passés) : compte vivant, état aucun
+    résultat, auto-dépli des passés si match, masquage des sections vides.
+  - **Diagnostics** promu en vue de la sidebar. Mobile non ciblé.
+- Critics : design `ship` (tour 2 ; 2 tours, highs corrigés : pluriel, label
+  chip prono, double-panel Diagnostics), code `ship` (tour 2). 45 tests OK.
+- Pattern `patterns/chassis-dashboard.md` (sidebar + repli + filtre).
+
+### Key Files
+- ui.py (_render_sidebar, _render_day_sections, _render_page réécrit, tokens
+  --nav-*, JS filtre + repli, nettoyage CSS mort)
+- design/da.md (révision dashboard), patterns/chassis-dashboard.md (nouveau)
+- tests/test_scoring.py (routage + pluriel), CLAUDE.md (forme UI)
+
 ## 2026-06-12
 
 ### Summary (/feature — scores réels + récap justesse pronos)

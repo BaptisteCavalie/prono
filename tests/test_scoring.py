@@ -103,5 +103,24 @@ class TestPageRouting(unittest.TestCase):
         self.assertIn("<h1>Diagnostics</h1>", self._render("diagnostics"))
 
 
+class TestDaySectionPlural(unittest.TestCase):
+    """Le compteur d'en-tête de jour s'accorde (« 1 match » / « N matchs »)."""
+
+    def _row(self, fid: str) -> dict:
+        return {"id": fid, "group": "A", "matchday": 1, "date": "2026-06-11",
+                "home": "x", "away": "y", "home_label": "X", "away_label": "Y",
+                "home_flag": "", "away_flag": "", "score": "1-0", "actual_score": "1-0",
+                "predicted_score": "1-0", "completed": True, "verdict": "exact"}
+
+    def test_singular_and_plural(self):
+        import ui
+        one = "".join(ui._render_day_sections([("2026-06-11", [self._row("G01")])], past=True))
+        self.assertIn("1 match<", one)
+        self.assertNotIn("1 matchs", one)
+        two = "".join(ui._render_day_sections(
+            [("2026-06-11", [self._row("G01"), self._row("G02")])], past=True))
+        self.assertIn("2 matchs", two)
+
+
 if __name__ == "__main__":
     unittest.main()
