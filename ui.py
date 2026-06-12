@@ -748,11 +748,18 @@ _CSS = "".join([
     ".past-label{display:flex;align-items:center;gap:9px}",
     ".past-count{font-family:var(--font-mono);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 9px;font-size:.82rem}",
     ".past-hint{font-weight:400;font-size:.76rem;color:var(--muted);margin-left:auto}",
-    ".past-body{padding:2px 16px 12px;border-top:1px solid var(--line)}",
-    # Différenciation légère passés/futurs : les tables de matchs passés sont
-    # « rangées » (fond ivoire recessed) vs les futurs sur cards blanches.
-    ".past-body .day-section{background:var(--surface-2)}",
-    ".past-body .md-title{background:var(--surface-2)}",
+    # La disclosure EST déjà la carte des passés : son corps est recessed
+    # (ivoire) et les sections-jour à l'intérieur sont à plat (pas de carte ni
+    # de coins arrondis imbriqués). Différenciation = le fond recessed, pas une
+    # 2e bordure.
+    ".past-body{padding:0 16px 12px;border-top:1px solid var(--line);background:var(--surface-2);border-radius:0 0 14px 14px}",
+    ".past-body .day-section{background:transparent;border:0;border-radius:0;margin:0}",
+    ".past-body .md-title{position:static;margin:0;padding:12px 0 8px;background:transparent;border-radius:0}",
+    ".past-body .day-section+.day-section .md-title{border-top:1px solid var(--line);margin-top:6px}",
+    # Survol du chart Justesse → surlignage des matchs de la catégorie.
+    ".recap-seg[data-cat],.recap-legend li[data-cat]{cursor:help}",
+    ".match-row.row-hl td{background:var(--brand-soft)}",
+    ".match-row.row-hl td:first-child{box-shadow:inset 3px 0 0 var(--brand)}",
     # Survol du chart Justesse → surlignage des matchs de la catégorie.
     ".recap-seg[data-cat],.recap-legend li[data-cat]{cursor:help}",
     ".match-row.row-hl td{background:var(--brand-soft)}",
