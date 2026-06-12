@@ -756,14 +756,10 @@ _CSS = "".join([
     ".past-body .day-section{background:transparent;border:0;border-radius:0;margin:0}",
     ".past-body .md-title{position:static;margin:0;padding:12px 0 8px;background:transparent;border-radius:0}",
     ".past-body .day-section+.day-section .md-title{border-top:1px solid var(--line);margin-top:6px}",
-    # Survol du chart Justesse → surlignage des matchs de la catégorie.
-    ".recap-seg[data-cat],.recap-legend li[data-cat]{cursor:help}",
-    ".match-row.row-hl td{background:var(--brand-soft)}",
-    ".match-row.row-hl td:first-child{box-shadow:inset 3px 0 0 var(--brand)}",
-    # Survol du chart Justesse → surlignage des matchs de la catégorie.
-    ".recap-seg[data-cat],.recap-legend li[data-cat]{cursor:help}",
-    ".match-row.row-hl td{background:var(--brand-soft)}",
-    ".match-row.row-hl td:first-child{box-shadow:inset 3px 0 0 var(--brand)}",
+    # Survol du chart Justesse → petit tooltip listant les matchs (flottant,
+    # sombre comme le châssis ; n'ouvre/ne déplace rien).
+    ".recap-seg[data-tip],.recap-legend li[data-tip]{cursor:help}",
+    ".recap-tip{position:fixed;z-index:60;max-width:340px;background:var(--nav-bg);color:var(--nav-text-strong);border:1px solid var(--nav-line);border-radius:8px;padding:7px 11px;font-size:.8rem;line-height:1.35;box-shadow:var(--shadow-floating);pointer-events:none}",
     "@media (prefers-reduced-motion:reduce){.past-summary::after{transition:none}}",
     "h1{margin:0;font-size:clamp(1.3rem,2vw,1.7rem);letter-spacing:.2px;line-height:1.1}",
     ".subtitle{margin:5px 0 0;color:var(--muted);font-size:.9rem;max-width:70ch}",
@@ -1229,9 +1225,7 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     search = html.escape(" ".join(
         str(x) for x in (r["home"], r["away"], home_label, away_label)
     ).lower())
-    # data-verdict (passés uniquement) : cible du surlignage au survol du chart.
-    verdict_attr = f" data-verdict='{r['verdict']}'" if r.get("verdict") else ""
-    row_open = f"<tr class='match-row' data-search='{search}'{verdict_attr}>"
+    row_open = f"<tr class='match-row' data-search='{search}'>"
 
     kick = r.get("kickoff_paris") or ""
     kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
@@ -1388,14 +1382,15 @@ def _render_recap(past_rows: List[Dict]) -> List[str]:
     aria = (f"{counts['exact']} exacts, {counts['bon']} bons, {counts['erreur']} erreurs "
             f"sur {sample}")
 
-    # Liste des matchs par catégorie : sert le title (survol) et le surlignage.
+    # Liste des matchs par catégorie : alimente le tooltip au survol (data-tip)
+    # et l'aria-label (lecteurs d'écran). Pas de title natif (double tooltip).
     by_cat: Dict[str, List[str]] = {c: [] for c in common.PRONO_CATEGORIES}
     for r in past_rows:
         v = r.get("verdict")
         if v in by_cat:
             by_cat[v].append(f"{r['home_label']}–{r['away_label']}")
 
-    def _cat_title(cat: str) -> str:
+    def _cat_tip(cat: str) -> str:
         label = {"exact": "Exacts", "bon": "Bons résultats", "erreur": "Erreurs"}[cat]
         matches = " · ".join(by_cat[cat]) if by_cat[cat] else "aucun"
         return html.escape(f"{label} : {matches}")
@@ -1404,16 +1399,16 @@ def _render_recap(past_rows: List[Dict]) -> List[str]:
     for cat in common.PRONO_CATEGORIES:
         if counts[cat]:
             # flex-grow proportionnel au compte : largeurs exactes, zéro filet
-            # blanc d'arrondi en bout de barre. data-cat = cible du survol.
+            # blanc d'arrondi en bout de barre. data-tip = liste pour le tooltip.
             segs.append(
                 f"<span class='recap-seg recap-seg-{cat}' style='flex:{counts[cat]}' "
-                f"data-cat='{cat}' title='{_cat_title(cat)}'></span>"
+                f"data-tip='{_cat_tip(cat)}' aria-label='{_cat_tip(cat)}'></span>"
             )
 
     legend = []
     for cat in common.PRONO_CATEGORIES:
-        # Survol de la légende = même surlignage que la barre (cible plus large).
-        attrs = f"data-cat='{cat}' title='{_cat_title(cat)}'" if counts[cat] else ""
+        # Survol de la légende = même tooltip que la barre (cible plus large).
+        attrs = f"data-tip='{_cat_tip(cat)}' aria-label='{_cat_tip(cat)}'" if counts[cat] else ""
         legend.append(
             f"<li {attrs}><span class='swatch swatch-{cat}'></span> {_count_label(cat)}</li>"
         )
@@ -1518,6 +1513,7 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         if past_rows:
             n_past = len(past_rows)
             parts.extend(_render_recap(past_rows))
+            parts.append("<div id='recap-tip' class='recap-tip' role='tooltip' hidden></div>")
             parts.append("<details class='past-disclosure' id='past-disclosure'>")
             parts.append(
                 f"<summary class='past-summary'>"
@@ -1581,13 +1577,18 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         "}",
         # Survol du chart Justesse (segment ou légende) : surligne les matchs
         # de la catégorie dans la liste des passés juste en dessous.
-        "document.querySelectorAll('[data-cat]').forEach(function(el){",
-        "var sel=\".match-row[data-verdict='\"+el.getAttribute('data-cat')+\"']\";",
-        "var hl=function(on){document.querySelectorAll(sel).forEach(function(r){r.classList.toggle('row-hl',on);});};",
-        # Le récap est toujours visible ; on déplie la liste (une fois) pour que
-        # le surlignage des matchs survolés soit réellement visible.
-        "el.addEventListener('mouseenter',function(){if(past&&!past.open){past.open=true;}hl(true);});",
-        "el.addEventListener('mouseleave',function(){hl(false);});",
+        # Survol du chart Justesse (segment ou légende) : petit tooltip listant
+        # les matchs de la catégorie. N'ouvre rien, ne déplace rien.
+        "var tip=document.getElementById('recap-tip');",
+        "document.querySelectorAll('[data-tip]').forEach(function(el){",
+        "var show=function(){if(!tip){return;}tip.textContent=el.getAttribute('data-tip');tip.hidden=false;",
+        "var r=el.getBoundingClientRect();var x=Math.max(8,r.left);",
+        "x=Math.min(x,window.innerWidth-tip.offsetWidth-8);",
+        "var y=r.top-tip.offsetHeight-8;if(y<8){y=r.bottom+8;}",
+        "tip.style.left=Math.round(x)+'px';tip.style.top=Math.round(y)+'px';};",
+        "var hide=function(){if(tip){tip.hidden=true;}};",
+        "el.addEventListener('mouseenter',show);el.addEventListener('mouseleave',hide);",
+        "el.addEventListener('focus',show);el.addEventListener('blur',hide);",
         "});",
         "})();",
         "</script>",
