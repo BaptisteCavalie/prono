@@ -749,6 +749,14 @@ _CSS = "".join([
     ".past-count{font-family:var(--font-mono);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 9px;font-size:.82rem}",
     ".past-hint{font-weight:400;font-size:.76rem;color:var(--muted);margin-left:auto}",
     ".past-body{padding:2px 16px 12px;border-top:1px solid var(--line)}",
+    # Différenciation légère passés/futurs : les tables de matchs passés sont
+    # « rangées » (fond ivoire recessed) vs les futurs sur cards blanches.
+    ".past-body .day-section{background:var(--surface-2)}",
+    ".past-body .md-title{background:var(--surface-2)}",
+    # Survol du chart Justesse → surlignage des matchs de la catégorie.
+    ".recap-seg[data-cat],.recap-legend li[data-cat]{cursor:help}",
+    ".match-row.row-hl td{background:var(--brand-soft)}",
+    ".match-row.row-hl td:first-child{box-shadow:inset 3px 0 0 var(--brand)}",
     "@media (prefers-reduced-motion:reduce){.past-summary::after{transition:none}}",
     "h1{margin:0;font-size:clamp(1.3rem,2vw,1.7rem);letter-spacing:.2px;line-height:1.1}",
     ".subtitle{margin:5px 0 0;color:var(--muted);font-size:.9rem;max-width:70ch}",
@@ -1214,7 +1222,9 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     search = html.escape(" ".join(
         str(x) for x in (r["home"], r["away"], home_label, away_label)
     ).lower())
-    row_open = f"<tr class='match-row' data-search='{search}'>"
+    # data-verdict (passés uniquement) : cible du surlignage au survol du chart.
+    verdict_attr = f" data-verdict='{r['verdict']}'" if r.get("verdict") else ""
+    row_open = f"<tr class='match-row' data-search='{search}'{verdict_attr}>"
 
     kick = r.get("kickoff_paris") or ""
     kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
@@ -1371,17 +1381,34 @@ def _render_recap(past_rows: List[Dict]) -> List[str]:
     aria = (f"{counts['exact']} exacts, {counts['bon']} bons, {counts['erreur']} erreurs "
             f"sur {sample}")
 
+    # Liste des matchs par catégorie : sert le title (survol) et le surlignage.
+    by_cat: Dict[str, List[str]] = {c: [] for c in common.PRONO_CATEGORIES}
+    for r in past_rows:
+        v = r.get("verdict")
+        if v in by_cat:
+            by_cat[v].append(f"{r['home_label']}–{r['away_label']}")
+
+    def _cat_title(cat: str) -> str:
+        label = {"exact": "Exacts", "bon": "Bons résultats", "erreur": "Erreurs"}[cat]
+        matches = " · ".join(by_cat[cat]) if by_cat[cat] else "aucun"
+        return html.escape(f"{label} : {matches}")
+
     segs = []
     for cat in common.PRONO_CATEGORIES:
         if counts[cat]:
             # flex-grow proportionnel au compte : largeurs exactes, zéro filet
-            # blanc d'arrondi en bout de barre.
-            segs.append(f"<span class='recap-seg recap-seg-{cat}' style='flex:{counts[cat]}'></span>")
+            # blanc d'arrondi en bout de barre. data-cat = cible du survol.
+            segs.append(
+                f"<span class='recap-seg recap-seg-{cat}' style='flex:{counts[cat]}' "
+                f"data-cat='{cat}' title='{_cat_title(cat)}'></span>"
+            )
 
     legend = []
     for cat in common.PRONO_CATEGORIES:
+        # Survol de la légende = même surlignage que la barre (cible plus large).
+        attrs = f"data-cat='{cat}' title='{_cat_title(cat)}'" if counts[cat] else ""
         legend.append(
-            f"<li><span class='swatch swatch-{cat}'></span> {_count_label(cat)}</li>"
+            f"<li {attrs}><span class='swatch swatch-{cat}'></span> {_count_label(cat)}</li>"
         )
 
     small = total < _RECAP_SMALL_N
@@ -1460,11 +1487,11 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         else:
             parts.append("<div class='panel'><div class='muted'>Diagnostics indisponibles pour le moment.</div></div>")
 
-    else:  # matchs : futurs + passés sur une page, passés repliés par défaut
+    else:  # matchs : passés (repliés) puis futurs, ordre chronologique
         parts.append(
             "<div class='topbar'>"
             "<div><h1>Matchs</h1>"
-            "<p class='subtitle'>Matchs à venir d'abord ; les passés sont repliés en bas. "
+            "<p class='subtitle'>Ordre chronologique : les passés (repliés) en tête, puis les à venir. "
             "Indice de confiance <strong>A</strong>&rarr;<strong>E</strong>, barre 1·N·2, "
             "badge <strong>Modifié</strong> = prono recalculé.</p></div>"
             "<div class='filter-wrap'>"
@@ -1479,11 +1506,7 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
             "<div class='no-results' id='no-results' hidden role='status'>Aucun match pour ce pays. "
             "<button type='button' class='link-btn' id='clear-filter'>Effacer le filtre</button></div>"
         )
-        if future_rows:
-            parts.extend(_render_day_sections(_group_rows_by_matchday(future_rows), past=False))
-        else:
-            parts.append("<div class='panel'><div class='muted'>Aucun match à venir à afficher.</div></div>")
-
+        # Passés d'abord (chronologie), repliés par défaut → simple bandeau en tête.
         if past_rows:
             n_past = len(past_rows)
             parts.append("<details class='past-disclosure' id='past-disclosure'>")
@@ -1496,6 +1519,11 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
             parts.extend(_render_recap(past_rows))
             parts.extend(_render_day_sections(_group_rows_by_matchday(past_rows), past=True))
             parts.append("</div></details>")
+
+        if future_rows:
+            parts.extend(_render_day_sections(_group_rows_by_matchday(future_rows), past=False))
+        else:
+            parts.append("<div class='panel'><div class='muted'>Aucun match à venir à afficher.</div></div>")
 
     parts.append("</main></div>")
     parts.extend([
@@ -1543,6 +1571,14 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         "input.addEventListener('input',apply);",
         "if(clearBtn){clearBtn.addEventListener('click',function(){input.value='';apply();input.focus();});}",
         "}",
+        # Survol du chart Justesse (segment ou légende) : surligne les matchs
+        # de la catégorie dans la liste des passés juste en dessous.
+        "document.querySelectorAll('[data-cat]').forEach(function(el){",
+        "var sel=\".match-row[data-verdict='\"+el.getAttribute('data-cat')+\"']\";",
+        "var hl=function(on){document.querySelectorAll(sel).forEach(function(r){r.classList.toggle('row-hl',on);});};",
+        "el.addEventListener('mouseenter',function(){hl(true);});",
+        "el.addEventListener('mouseleave',function(){hl(false);});",
+        "});",
         "})();",
         "</script>",
         "</body></html>",
