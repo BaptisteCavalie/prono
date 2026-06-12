@@ -63,6 +63,24 @@ def load_team_status() -> Dict:
     return _load("team_status.json")
 
 
+def load_bets() -> List[Dict]:
+    """Paris réels suivis (data/bets.json), écrits par la couche ask-Claude.
+
+    Schéma d'une ligne : ``id``, ``label`` (match ou « Combiné N sél. »),
+    ``sel``, ``odds``, ``stake``, ``status`` (gagne|perdu|rembourse|en_cours) ;
+    optionnels ``combo``, ``date``, ``closing``. Fichier optionnel (absent tant
+    qu'aucun pari n'est enregistré → liste vide) et tolérant à un JSON cassé :
+    ne jamais faire planter la page Paris pour un fichier de suivi mal formé.
+    """
+    try:
+        with open(DATA_DIR / "bets.json", encoding="utf-8") as f:
+            raw = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return []
+    bets = raw.get("bets") if isinstance(raw, dict) else raw
+    return [b for b in bets if isinstance(b, dict)] if isinstance(bets, list) else []
+
+
 def resolve_team(name: str, ratings: Dict) -> Optional[str]:
     """Best-effort map of user input to a canonical team name."""
     if not name:

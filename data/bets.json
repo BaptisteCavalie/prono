@@ -1,0 +1,5 @@
+{
+  "bets": [
+    {"id": 1, "date": "2026-06-12", "label": "Corée du Sud – Rép. tchèque", "sel": "Corée du Sud vainqueur", "odds": 2.6, "stake": 5, "status": "en_cours"}
+  ]
+}

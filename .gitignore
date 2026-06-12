@@ -4,8 +4,9 @@ __pycache__/
 .venv/
 venv/
 
-# personal runtime data (bet log + CLV), created by track.py on first use
-data/bets.json
+# data/bets.json is now committed bet-tracking data (settled bets + P&L), written
+# by the ask-Claude layer and read by the Paris page — versioned like fixtures
+# scores, not personal runtime state.
 .vercel
 
 # autonomous refresh runtime state (regenerated on each run)

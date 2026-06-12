@@ -81,6 +81,75 @@ def tally_pronos(verdicts) -> Dict[str, int]:
     return counts
 
 
+# Statuts de règlement d'un pari réel (saisis par la couche ask-Claude dans
+# data/bets.json, jamais dans l'UI). « en_cours » = pari placé non encore réglé.
+BET_STATUSES = ("gagne", "perdu", "rembourse", "en_cours")
+SETTLED_STATUSES = ("gagne", "perdu", "rembourse")
+
+
+def bet_status(bet: Dict) -> str:
+    """Statut normalisé d'un pari ; ``en_cours`` par défaut / si inconnu."""
+    s = str(bet.get("status") or "en_cours").strip().lower()
+    return s if s in BET_STATUSES else "en_cours"
+
+
+def bet_net(bet: Dict) -> Optional[float]:
+    """Gain net d'un pari réglé, du seul point de vue de la mise.
+
+    ``gagne`` → mise × (cote − 1) ; ``perdu`` → −mise ; ``rembourse`` → 0.
+    Renvoie ``None`` si le pari est en cours ou si mise/cote sont inexploitables
+    (un pari non réglé n'a pas de P&L ; on ne devine pas). Logique argent : pure
+    et testée (tests/test_bets.py).
+    """
+    status = bet_status(bet)
+    if status not in SETTLED_STATUSES:
+        return None
+    try:
+        stake = float(bet.get("stake"))
+        odds = float(bet.get("odds"))
+    except (TypeError, ValueError):
+        return None
+    if stake < 0 or odds < 1:
+        return None
+    if status == "gagne":
+        return stake * (odds - 1.0)
+    if status == "perdu":
+        return -stake
+    return 0.0  # rembourse
+
+
+def tally_bets(bets) -> Dict:
+    """Bilan cumulé tournoi des paris réglés : compteurs, mise, P&L, ROI.
+
+    Comptage « argent réel » a posteriori, distinct du récap justesse des
+    pronos (1N2). Neutre par construction : un net négatif est un nombre comme
+    un autre. Les paris en cours sont comptés à part (``n_pending``), jamais
+    dans la mise/P&L. ``roi`` vaut ``None`` tant qu'aucune mise n'est engagée.
+    """
+    agg = {"n_settled": 0, "n_won": 0, "n_lost": 0, "n_refunded": 0,
+           "n_pending": 0, "staked": 0.0, "net": 0.0, "roi": None}
+    for b in bets:
+        status = bet_status(b)
+        if status not in SETTLED_STATUSES:
+            agg["n_pending"] += 1
+            continue
+        net = bet_net(b)
+        if net is None:           # réglé mais mise/cote inexploitables : on ignore
+            continue              # plutôt que de corrompre la mise totale
+        agg["staked"] += float(b.get("stake"))
+        agg["net"] += net
+        agg["n_settled"] += 1
+        if status == "gagne":
+            agg["n_won"] += 1
+        elif status == "perdu":
+            agg["n_lost"] += 1
+        else:
+            agg["n_refunded"] += 1
+    if agg["staked"] > 0:
+        agg["roi"] = agg["net"] / agg["staked"]
+    return agg
+
+
 def load_odds_board(path: Optional[str], root: Optional[Path] = None) -> Dict[str, List[float]]:
     """Parse a {key: [home, draw, away]} decimal-odds JSON file.
 

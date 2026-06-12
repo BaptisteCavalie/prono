@@ -775,6 +775,45 @@ _CSS = "".join([
     ".bet-return{font-size:.8rem;color:var(--muted)}",
     ".bet-why{margin-top:7px}",
     ".bet-why summary{font-size:.78rem;padding:3px 2px}",
+    # Suivi des paris (argent réel) : bilan P&L/ROI + ledger. Distinct du récap
+    # justesse (segmented bar) : ici une grille de métriques + une table, et des
+    # chips de statut neutres (hors ok/warn/alert et hors gamme Nutri). Le chiffre
+    # de gain net est présenté à l'identique qu'il soit + ou − (neutralité ANJ).
+    ".suivi-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}",
+    ".suivi-head h2{margin:0;font-size:1rem;font-weight:700}",
+    ".suivi-sample{font-family:var(--font-mono);font-size:.82rem;color:var(--muted)}",
+    ".suivi-counts{margin:10px 0 0;font-size:.84rem;color:var(--slate)}",
+    ".pnl-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}",
+    ".pnl-cell{flex:1 1 130px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-3)}",
+    ".pnl-cell.lead{flex-basis:165px}",
+    ".pnl-key{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}",
+    ".pnl-val{font-family:var(--font-mono);font-size:1.18rem;font-weight:700;margin-top:4px;color:var(--text);line-height:1.15}",
+    ".pnl-val.sub{font-size:1rem;font-weight:600}",
+    ".bets-table{margin-top:14px}",
+    ".bets-table td{font-size:.92rem}",
+    ".bets-table tbody tr:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
+    ".bets-table .b-pari{line-height:1.3}",
+    ".bets-table .b-sel{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}",
+    ".bets-table .b-num{font-family:var(--font-mono);text-align:right;white-space:nowrap}",
+    ".bets-table th.col-num{text-align:right}",
+    ".combo-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);font-size:.66rem;font-family:var(--font-mono);color:var(--slate);vertical-align:middle}",
+    ".bet-status{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:700;border:1px solid var(--line-2);white-space:nowrap}",
+    # Pastille seulement sur « Gagné » : micro-signal teal (la couleur donnée du
+    # projet). Sur les statuts neutres, label + contour suffisent — pas
+    # d'ornement redondant (le texte porte déjà le sens).
+    ".bet-status-gagne::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor;flex:none;opacity:.85}",
+    ".bet-status-gagne{background:var(--brand-soft);color:var(--brand-dark);border-color:color-mix(in srgb,var(--brand) 30%,var(--line-2))}",
+    ".bet-status-perdu{background:var(--surface-2);color:var(--slate)}",
+    ".bet-status-rembourse{background:var(--surface-2);color:var(--muted);border-style:dashed}",
+    ".bet-status-encours{background:transparent;color:var(--muted);border-style:dashed}",
+    ".b-net{font-family:var(--font-mono);font-weight:700;text-align:right;white-space:nowrap;color:var(--text)}",
+    ".b-net-pending{color:var(--muted);font-weight:400}",
+    ".suivi-note{margin:11px 0 0;font-size:.78rem;color:var(--muted);max-width:75ch;line-height:1.35}",
+    # Mobile (hors cible, mais on évite le rendu cassé) : table en lignes
+    # étiquetées plutôt que la dégradation générique sans en-têtes.
+    "@media (max-width:760px){.bets-table td{display:flex;justify-content:space-between;gap:12px;text-align:right}"
+    ".bets-table td::before{content:attr(data-label);color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;text-align:left;font-weight:700}"
+    ".bets-table .b-sel{text-align:right}}",
     "a:focus-visible,summary:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
     ".stats{display:flex;gap:8px;flex-wrap:wrap}",
     ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
@@ -1218,6 +1257,131 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
     return parts
 
 
+# Libellés FR des statuts de règlement + classe du chip (neutre, double encodé :
+# le texte porte le sens, la couleur ne fait que renforcer).
+_BET_STATUS_UI = {
+    "gagne": ("Gagné", "bet-status-gagne"),
+    "perdu": ("Perdu", "bet-status-perdu"),
+    "rembourse": ("Remboursé", "bet-status-rembourse"),
+    "en_cours": ("En cours", "bet-status-encours"),
+}
+
+
+def _bet_label(b: Dict) -> str:
+    return str(b.get("label") or b.get("match") or "Pari").strip() or "Pari"
+
+
+def _net_txt(value: float) -> str:
+    """Gain net formaté : signe seulement s'il est non nul (évite « +0,00 € »)."""
+    return "0,00 €" if abs(value) < 0.005 else _eur_signed(value)
+
+
+def _render_suivi_paris(bets: List[Dict]) -> List[str]:
+    """Suivi des paris réels (terminés + en cours) + bilan cumulé tournoi.
+
+    Bilan « argent réel » (mise engagée, P&L net, ROI), distinct du récap
+    justesse des pronos (1N2) et neutre par construction : le gain net est
+    présenté tel quel, un négatif aussi sobrement qu'un positif. Données écrites
+    par la couche ask-Claude (data/bets.json), jamais saisies sur le site.
+    """
+    if not bets:
+        return [
+            "<section class='panel' aria-labelledby='suivi-title'>",
+            "<div class='suivi-head'><h2 id='suivi-title'>Suivi des paris</h2></div>",
+            "<p class='muted' style='margin:8px 0 0'>Aucun pari enregistré pour l'instant. "
+            "Les paris et leur résultat (gagné / perdu / remboursé) s'ajoutent en les dictant à "
+            "Claude, qui met à jour <code>data/bets.json</code> — aucune saisie sur le site.</p>",
+            "</section>",
+        ]
+
+    agg = common.tally_bets(bets)
+    n_set = agg["n_settled"]
+
+    sample = f"{n_set} pari{'s' if n_set != 1 else ''} réglé{'s' if n_set != 1 else ''}"
+    if agg["n_pending"]:
+        sample += f" · {agg['n_pending']} en cours"
+
+    out = [
+        "<section class='panel' aria-labelledby='suivi-title'>",
+        "<div class='suivi-head'>",
+        "<h2 id='suivi-title'>Suivi des paris</h2>",
+        f"<span class='suivi-sample'>{html.escape(sample)}</span>",
+        "</div>",
+    ]
+
+    # Bilan cumulé : P&L net et ROI en tête, neutres. Affiché dès qu'un pari est
+    # réglé ; sinon une ligne d'attente (les en cours n'ont pas de P&L).
+    if n_set:
+        roi_txt = (f"{agg['roi'] * 100:+.1f} %".replace(".", ",")
+                   if agg["roi"] is not None else "—")
+        out.extend([
+            "<div class='pnl-grid'>",
+            "<div class='pnl-cell lead'><div class='pnl-key'>Gain net (P&amp;L)</div>"
+            f"<div class='pnl-val'>{html.escape(_net_txt(agg['net']))}</div></div>",
+            "<div class='pnl-cell lead' title='ROI = gain net / mise totale engagée'>"
+            "<div class='pnl-key'>ROI</div>"
+            f"<div class='pnl-val'>{html.escape(roi_txt)}</div></div>",
+            "<div class='pnl-cell lead'><div class='pnl-key'>Mise totale</div>"
+            f"<div class='pnl-val'>{html.escape(_eur(agg['staked'], 2))}</div></div>",
+            "</div>",
+        ])
+        # Compteurs gagnés/perdus/remboursés : ligne discrète sous la grille
+        # (objet lexical, séparé des cellules chiffrées).
+        counts = [f"{agg['n_won']} gagné{'s' if agg['n_won'] != 1 else ''}",
+                  f"{agg['n_lost']} perdu{'s' if agg['n_lost'] != 1 else ''}"]
+        if agg["n_refunded"]:
+            counts.append(f"{agg['n_refunded']} remboursé{'s' if agg['n_refunded'] != 1 else ''}")
+        out.append(f"<p class='suivi-counts'>{html.escape(' · '.join(counts))}</p>")
+    else:
+        out.append("<p class='muted' style='margin:8px 0 0'>Aucun pari réglé pour l'instant — "
+                   "le bilan (P&amp;L, ROI) s'affiche dès le premier résultat.</p>")
+
+    # Ledger dans le MÊME panel : un seul bloc « Suivi des paris » (bilan +
+    # historique), pas deux cards juxtaposées. Plus récents en tête.
+    out.extend([
+        "<table class='bets-table'>",
+        "<colgroup><col style='width:40%'><col style='width:12%'><col style='width:13%'>"
+        "<col style='width:19%'><col style='width:16%'></colgroup>",
+        "<thead><tr><th>Pari</th><th class='col-num'>Cote</th><th class='col-num'>Mise</th>"
+        "<th>Statut</th><th class='col-num'>Net</th></tr></thead>",
+        "<tbody>",
+    ])
+    for b in reversed(bets):
+        status = common.bet_status(b)
+        status_label, status_cls = _BET_STATUS_UI[status]
+        net = common.bet_net(b)
+        try:
+            odds_txt = f"{float(b.get('odds')):.2f}".replace(".", ",")
+        except (TypeError, ValueError):
+            odds_txt = "—"
+        try:
+            stake_txt = _eur(float(b.get("stake")), 2)
+        except (TypeError, ValueError):
+            stake_txt = "—"
+        sel = str(b.get("sel") or "").strip()
+        combo_tag = "<span class='combo-tag'>combiné</span>" if b.get("combo") else ""
+        sel_html = f"<span class='b-sel'>{html.escape(sel)}</span>" if sel else ""
+        net_html = ("<span class='b-net-pending'>—</span>" if net is None
+                    else html.escape(_net_txt(net)))
+        out.extend([
+            "<tr>",
+            f"<td data-label='Pari' class='b-pari'>{html.escape(_bet_label(b))}{combo_tag}{sel_html}</td>",
+            f"<td data-label='Cote' class='b-num'>{odds_txt}</td>",
+            f"<td data-label='Mise' class='b-num'>{html.escape(stake_txt)}</td>",
+            f"<td data-label='Statut'><span class='bet-status {status_cls}'>{status_label}</span></td>",
+            f"<td data-label='Net' class='b-net'>{net_html}</td>",
+            "</tr>",
+        ])
+    out.append("</tbody></table>")
+    out.append(
+        "<p class='suivi-note'>Bilan « argent réel » (mises Winamax), distinct du récap "
+        "justesse des pronos. Le gain net est présenté tel quel, sans mise en avant — "
+        "parier reste un coût, pas un objectif.</p>"
+    )
+    out.append("</section>")
+    return out
+
+
 def _render_row(r: Dict, past: bool = False) -> List[str]:
     home_label = r["home_label"]
     away_label = r["away_label"]
@@ -1444,7 +1608,7 @@ def _render_recap(past_rows: List[Dict]) -> List[str]:
 def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str = "",
                  tab: str = "matchs", health: Optional[Dict] = None,
                  solidity_report: Optional[Dict] = None, data_info: Optional[Dict] = None,
-                 bankroll: float = 50.0) -> bytes:
+                 bankroll: float = 50.0, bets: Optional[List[Dict]] = None) -> bytes:
     safe_tab = tab if tab in _TAB_LABELS else "matchs"
 
     past_rows = [r for r in rows if r.get("completed")]
@@ -1478,6 +1642,9 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         parts.append("<div class='topbar'><div><h1>Paris</h1>"
                      "<p class='subtitle'>Recommandations prudentes calculées à partir du modèle et des cotes bookmaker.</p></div></div>")
         parts.extend(_render_paris(recommendations, bankroll, bet_blocked))
+        # Suivi des paris réels : indépendant du modèle/des cotes (donnée
+        # historique), donc affiché même si la reco est bloquée.
+        parts.extend(_render_suivi_paris(bets or []))
 
     elif safe_tab == "diagnostics":
         parts.append("<div class='topbar'><div><h1>Diagnostics</h1>"
@@ -1681,7 +1848,8 @@ def handle_request(params: Dict[str, str]) -> bytes:
         error = "Une erreur interne est survenue pendant la préparation de la page. Réessayez dans un instant."
 
     return _render_page(rows, recommendations, error=error, tab=tab, health=health,
-                        solidity_report=solidity_report, data_info=data_info, bankroll=bankroll)
+                        solidity_report=solidity_report, data_info=data_info,
+                        bankroll=bankroll, bets=data.load_bets())
 
 
 class Handler(BaseHTTPRequestHandler):

@@ -14,6 +14,8 @@ import argparse
 import json
 from pathlib import Path
 
+from engine import common
+
 BETS = Path(__file__).resolve().parent / "data" / "bets.json"
 
 
@@ -35,12 +37,29 @@ def _clv(odds_taken, closing):
 
 def add(a):
     d = _load()
+    # Champ canonique = `label` (aligné sur la couche ask-Claude et sur ce que
+    # lit l'UI) ; `--match` reste le nom de l'argument côté CLI.
     bet = {"id": (max([b["id"] for b in d["bets"]], default=0) + 1),
-           "match": a.match, "sel": a.sel, "odds": a.odds,
-           "stake": a.stake, "closing": None}
+           "label": a.match, "sel": a.sel, "odds": a.odds,
+           "stake": a.stake, "status": "en_cours", "closing": None}
+    if a.combo:
+        bet["combo"] = True
     d["bets"].append(bet)
     _save(d)
     print(f"logged #{bet['id']}: {a.match} | {a.sel} @ {a.odds} (stake {a.stake})")
+
+
+def settle(a):
+    d = _load()
+    for b in d["bets"]:
+        if b["id"] == a.id:
+            b["status"] = a.status
+            _save(d)
+            net = common.bet_net(b)
+            net_txt = "-" if net is None else f"{net:+.2f}"
+            print(f"#{a.id} -> {a.status}  net {net_txt}")
+            return
+    print(f"no bet with id {a.id}")
 
 
 def close(a):
@@ -60,9 +79,21 @@ def list_(a):
         print("no bets logged")
         return
     for b in d["bets"]:
-        clv = f"{_clv(b['odds'], b['closing']):+.1f}%" if b["closing"] else "open"
-        print(f"#{b['id']:>3}  {b['match']:<28} {b['sel']:<12} "
-              f"@{b['odds']:.2f}  close {b['closing'] or '-'}  CLV {clv}")
+        # Lecture tolérante (label ou match ; champs optionnels), alignée sur
+        # l'UI : un pari écrit par ask-Claude (combiné, sans `closing`) ne doit
+        # pas casser l'affichage CLI.
+        label = b.get("label") or b.get("match") or "?"
+        sel = str(b.get("sel") or "")
+        odds = b.get("odds")
+        closing = b.get("closing")
+        odds_txt = f"@{odds:.2f}" if isinstance(odds, (int, float)) else "@   ? "
+        clv = (f"{_clv(odds, closing):+.1f}%"
+               if closing and isinstance(odds, (int, float)) else "open")
+        status = common.bet_status(b)
+        net = common.bet_net(b)
+        net_txt = "" if net is None else f"  net {net:+.2f}"
+        print(f"#{b['id']:>3}  {label:<28} {sel:<12} "
+              f"{odds_txt}  {status:<9}{net_txt}  CLV {clv}")
 
 
 def report(a):
@@ -90,7 +121,13 @@ def main(argv=None):
     pa.add_argument("--sel", required=True, help="selection, e.g. team name / Over2.5")
     pa.add_argument("--odds", type=float, required=True, help="decimal odds you took")
     pa.add_argument("--stake", type=float, default=1.0)
+    pa.add_argument("--combo", action="store_true", help="mark this line as a combo (combiné)")
     pa.set_defaults(func=add)
+
+    ps = sub.add_parser("settle", help="record a bet's result (gagne/perdu/rembourse)")
+    ps.add_argument("--id", type=int, required=True)
+    ps.add_argument("--status", required=True, choices=list(common.BET_STATUSES))
+    ps.set_defaults(func=settle)
 
     pc = sub.add_parser("close", help="record the closing odds for a bet")
     pc.add_argument("--id", type=int, required=True)

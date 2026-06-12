@@ -30,6 +30,16 @@ Pas de saisie de score dans l'UI ; l'outil ne touche pas au réseau lui-même.
 Le bilan de justesse des pronos (exact / bon / erreur) est un **cumul
 tournoi** sur tous les matchs terminés — c'est un suivi a posteriori, jamais
 une note de certitude (la distribution 1N2 reste l'objet premier).
+Suivi des paris réels : Baptiste parie sur Winamax ; le règlement de ses
+paris (gagné / perdu / remboursé) arrive par la **couche ask-Claude** comme
+les scores — Baptiste dicte, Claude écrit `data/bets.json`, aucune saisie
+dans l'UI. La page Paris affiche un **suivi des paris terminés** + un bilan
+cumulé tournoi : **P&L (gain net) et ROI uniquement** — pas de bankroll
+évolutive à tenir à jour (décision Baptiste 2026-06-12). Un pari = une ligne,
+qu'il soit **simple ou combiné** (le combiné est une ligne unique : libellé
++ cote combinée + statut, sans détail par sélection). Ce bilan « argent réel »
+est distinct du récap justesse des pronos (1N2) et reste neutre (un net
+négatif s'affiche aussi sobrement qu'un positif — aucune incitation à parier).
 
 ## Kit
 
