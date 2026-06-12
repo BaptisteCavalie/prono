@@ -33,6 +33,54 @@ def parse_date(s: str) -> date:
     return datetime.strptime(str(s)[:10], "%Y-%m-%d").date()
 
 
+# Les trois verdicts de justesse d'un prono, alignés sur la logique Mon Petit
+# Prono : score juste (gros bonus), bon résultat 1N2 (points moindres), erreur
+# (0). Ce sont des compteurs descriptifs a posteriori — jamais une note de
+# certitude du modèle, dont la sortie reste une distribution calibrée.
+PRONO_CATEGORIES = ("exact", "bon", "erreur")
+
+
+def _outcome(home: int, away: int) -> int:
+    """1 = victoire domicile, 0 = nul, -1 = victoire extérieur."""
+    return (home > away) - (home < away)
+
+
+def classify_prono(pred_home, pred_away, act_home, act_away) -> Optional[str]:
+    """Compare un prono figé (score) au résultat réel.
+
+    Renvoie ``"exact"`` (score juste), ``"bon"`` (bon résultat 1N2 mais score
+    faux), ``"erreur"`` (mauvais résultat), ou ``None`` si une donnée manque
+    (match non joué ou prono non figé). Comparer un prono recalculé après le
+    résultat n'aurait pas de sens : on n'appelle cette fonction qu'avec le
+    score figé d'avant-match.
+    """
+    if any(v is None for v in (pred_home, pred_away, act_home, act_away)):
+        return None
+    try:
+        ph, pa, ah, aa = int(pred_home), int(pred_away), int(act_home), int(act_away)
+    except (TypeError, ValueError):
+        return None
+    if ph == ah and pa == aa:
+        return "exact"
+    if _outcome(ph, pa) == _outcome(ah, aa):
+        return "bon"
+    return "erreur"
+
+
+def tally_pronos(verdicts) -> Dict[str, int]:
+    """Agrège des verdicts (sortie de :func:`classify_prono`) en compteurs.
+
+    Les verdicts ``None`` sont ignorés. Renvoie un dict avec une clé par
+    catégorie plus ``total`` (nombre de matchs effectivement comptés).
+    """
+    counts: Dict[str, int] = {c: 0 for c in PRONO_CATEGORIES}
+    for verdict in verdicts:
+        if verdict in counts:
+            counts[verdict] += 1
+    counts["total"] = sum(counts[c] for c in PRONO_CATEGORIES)
+    return counts
+
+
 def load_odds_board(path: Optional[str], root: Optional[Path] = None) -> Dict[str, List[float]]:
     """Parse a {key: [home, draw, away]} decimal-odds JSON file.
 

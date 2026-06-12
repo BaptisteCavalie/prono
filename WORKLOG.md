@@ -1,5 +1,36 @@
 # Project Work Log
 
+## 2026-06-12
+
+### Summary (/feature — scores réels + récap justesse pronos)
+- La CDM a commencé : ajout du suivi réel vs prono sur l'onglet **Passés**.
+  - **Couche ask-Claude** : scores réels J1 récupérés et vérifiés (web), écrits
+    dans `data/fixtures.json` : G01 Mexico 2-0 Afrique du Sud (prono 2-0 →
+    exact), G02 Corée du Sud 2-1 Tchéquie (prono 2-0 → bon résultat). Canada-
+    Bosnie est en réalité le 12/06 (pas encore joué). L'outil ne touche jamais
+    le réseau lui-même (doctrine projet).
+  - **Logique de classement** pure et testée (`engine.common.classify_prono`,
+    `tally_pronos`) : exact (score juste) / bon (résultat 1N2 juste, score faux)
+    / erreur (résultat faux), alignée Mon Petit Prono. Verdict calculé seulement
+    si le prono était figé avant le coup d'envoi.
+  - **Vis-à-vis par match** : tag verdict discret (pastille + texte, double
+    encodage) accolé aux chips Réel/Prono.
+  - **Récap cumul-tournoi** « Justesse des pronos » en tête des Passés : barre
+    segmentée 100 % (exact·bon·erreur), compteurs mono, échantillon en clair,
+    garde-fou petit N (< 5 matchs) + note anti-certitude. Pas de donut : barre
+    plus lisible/accessible pour 3 parts (pattern `recap-justesse-pronos`).
+  - Couleurs : rampe dédiée `--recap-exact/bon/erreur` (teal → teal désaturé →
+    gris froid), hors rôles ok/warn/alert et hors gamme Nutri A–E.
+- Critics : design `ship` (3 minor + 1 nit corrigés), code `ship` (0 issue,
+  dette `classify_prono` durcie). Suite : 42 tests OK.
+
+### Key Files Added/Updated
+- engine/common.py (classify_prono, tally_pronos, PRONO_CATEGORIES)
+- ui.py (_render_recap, verdict par ligne, tokens + CSS récap/verdict)
+- data/fixtures.json (scores réels G01, G02)
+- tests/test_scoring.py (nouveau), tools/screenshots.sh (nouveau)
+- patterns/recap-justesse-pronos.md (nouveau), CLAUDE.md (doctrine scores réels)
+
 ## 2026-06-10
 
 ### Summary (audit /critique + fixes)

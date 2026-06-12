@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -361,6 +361,14 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         if frozen_home is not None and frozen_away is not None:
             preserved_predicted_score = f"{frozen_home}-{frozen_away}"
         predicted_score = preserved_predicted_score or live_predicted_score
+        # Verdict de justesse : seulement quand le match est joué ET qu'un prono
+        # a été figé avant le coup d'envoi (sinon la comparaison porterait sur un
+        # prono recalculé après le résultat — sans valeur). Aligné MPP.
+        verdict = None
+        if completed and preserved_predicted_score is not None:
+            verdict = common.classify_prono(
+                frozen_home, frozen_away, m.get("actual_home"), m.get("actual_away")
+            )
         bet_label = pick_label
         bet_conf = round(pick_prob * 100)
         value_rows = []
@@ -478,6 +486,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "probs": {"home": out["p_home"], "draw": out["p_draw"], "away": out["p_away"]},
             "nutri": _confidence_nutriscore(pick_prob, est),
             "completed": completed,
+            "verdict": verdict,
             "est": est,
         })
     return rows
@@ -697,6 +706,11 @@ _CSS = "".join([
     "--alert:#8f2736;--alert-bg:#fdecec;--alert-line:#e4a7b1;"
     "--neutral:#64748b;--slate:#44536e;--away:#b45309;"
     "--nutri-a:#36b14f;--nutri-b:#8cc152;--nutri-c:#f0c000;--nutri-d:#ea8c2e;--nutri-e:#c0392b;--nutri-ink:#1c1407;"
+    # Récap justesse : rampe de valeur dérivée de l'accent (teal plein → teal
+    # désaturé → gris froid), distinguable en niveaux de gris. Volontairement
+    # HORS ok/warn/alert (signaux) et hors gamme A–E (verdicts de pari) : une
+    # erreur de prono n'est pas une faute morale du modèle.
+    "--recap-exact:#0f5c78;--recap-bon:#5f97ab;--recap-erreur:#aab4c6;"
     "--font-mono:ui-monospace,'SF Mono','Cascadia Mono',Menlo,Consolas,monospace;"
     "--shadow-floating:0 4px 16px rgb(0 0 0 / 0.10)}",
     "*{box-sizing:border-box}",
@@ -752,6 +766,35 @@ _CSS = "".join([
     ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
     ".score-chip-real{background:var(--ok);color:#fff;border-color:transparent;font-size:.86rem;min-width:88px}",
     ".score-chip-prono{font-size:.86rem;min-width:98px}",
+    # Verdicts uniformes : tag discret (fond léger + pastille colorée + texte),
+    # même poids pour exact/bon/erreur → un seul élément saillant par ligne
+    # (pattern liste-matchs-dense). La pastille double-encode la couleur.
+    ".verdict{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 8px;border-radius:999px;font-size:.74rem;font-weight:700;line-height:1;border:1px solid var(--line-2);background:var(--surface-2);color:var(--slate);white-space:nowrap}",
+    ".verdict::before{content:'';width:8px;height:8px;border-radius:50%;flex:none}",
+    ".verdict-exact::before{background:var(--recap-exact)}",
+    ".verdict-bon::before{background:var(--recap-bon)}",
+    ".verdict-erreur::before{background:var(--recap-erreur)}",
+    # Récap justesse (tête de l'onglet Passés) — barre segmentée 100 %, pas de donut.
+    ".recap-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}",
+    ".recap-head h2{margin:0;font-size:1rem;font-weight:700}",
+    ".recap-sample{font-family:var(--font-mono);font-size:.82rem;color:var(--muted)}",
+    ".recap-bar{display:flex;height:14px;border-radius:999px;overflow:hidden;background:var(--track)}",
+    ".recap-seg{display:block;height:100%}",
+    ".recap-seg+.recap-seg{border-left:3px solid var(--surface)}",
+    ".recap-seg-exact{background:var(--recap-exact)}",
+    ".recap-seg-bon{background:var(--recap-bon)}",
+    ".recap-seg-erreur{background:var(--recap-erreur)}",
+    ".recap-small .recap-bar{opacity:.7}",
+    ".recap-legend{list-style:none;display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0;padding:0;font-size:.86rem}",
+    ".recap-legend li{display:flex;align-items:center;gap:7px}",
+    ".recap-legend strong{font-family:var(--font-mono);font-weight:700;color:var(--text)}",
+    ".swatch{width:11px;height:11px;border-radius:3px;flex:none;border:1px solid var(--line-2)}",
+    ".swatch-exact{background:var(--recap-exact)}",
+    ".swatch-bon{background:var(--recap-bon)}",
+    ".swatch-erreur{background:var(--recap-erreur)}",
+    ".recap-caveat{margin:9px 0 0;font-size:.82rem;color:var(--slate);font-weight:700}",
+    ".recap-note{margin:9px 0 0;font-size:.78rem;color:var(--muted);max-width:75ch;line-height:1.35}",
+    ".recap code{font-family:var(--font-mono);font-size:.92em}",
     ".prob-bar{display:flex;height:6px;border-radius:999px;overflow:hidden;background:var(--track);margin:2px 0 4px}",
     ".prob-seg{display:block;height:100%}",
     ".prob-seg+.prob-seg{border-left:1px solid var(--surface)}",
@@ -1151,10 +1194,19 @@ def _render_row(r: Dict) -> List[str]:
             f"{html.escape(r['predicted_score_live'])}</span></span>"
         )
     if r["completed"]:
+        verdict_chip = ""
+        verdict = r.get("verdict")
+        if verdict in _VERDICT_META:
+            label, title = _VERDICT_META[verdict]
+            verdict_chip = (
+                f"<span class='verdict verdict-{verdict}' title='{html.escape(title)}'>"
+                f"{html.escape(label)}</span>"
+            )
         score_block = (
             f"<span class='score-dual'>"
             f"<span class='score-chip score-chip-real'>Réel {html.escape(r['actual_score'] or r['score'])}</span>"
             f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['predicted_score'])}</span>"
+            f"{verdict_chip}"
             f"</span>"
         )
     else:
@@ -1231,6 +1283,94 @@ def _render_row(r: Dict) -> List[str]:
     return parts
 
 
+# Libellé + infobulle de chaque verdict (texte = double encodage avec la
+# couleur, pour ne jamais dépendre de la seule teinte — leçon a11y).
+_VERDICT_META = {
+    "exact": ("Score exact", "Prono exact : score juste"),
+    "bon": ("Bon résultat", "Bon résultat 1N2, mais score différent"),
+    "erreur": ("Erreur", "Mauvais résultat (1N2)"),
+}
+# Forme singulier/pluriel des compteurs du récap.
+_RECAP_LABELS = {
+    "exact": ("exact", "exacts"),
+    "bon": ("bon", "bons"),
+    "erreur": ("erreur", "erreurs"),
+}
+# En dessous de ce nombre de matchs comptés, on ne laisse pas la barre conclure
+# seule : avertissement « échantillon réduit » + barre atténuée (pattern
+# recap-justesse-pronos, garde-fou petit N).
+_RECAP_SMALL_N = 5
+
+
+def _render_recap(past_rows: List[Dict]) -> List[str]:
+    """Récap cumul-tournoi de la justesse des pronos figés (exact/bon/erreur).
+
+    Comptage descriptif a posteriori, jamais une note de certitude : la sortie
+    du modèle reste une distribution de probabilités calibrée.
+    """
+    counts = common.tally_pronos(r.get("verdict") for r in past_rows)
+    total = counts["total"]
+    if total == 0:
+        # Des matchs sont joués mais aucun prono n'avait été figé avant le coup
+        # d'envoi : rien à comparer honnêtement.
+        return [
+            "<section class='panel recap'>",
+            "<div class='recap-head'><h2>Justesse des pronos</h2></div>",
+            "<p class='recap-note'>Aucun prono figé avant match à comparer pour l'instant. "
+            "Lancez <code>python3 tools/snapshot_predictions.py</code> avant les coups d'envoi "
+            "pour suivre la justesse réel vs prono.</p>",
+            "</section>",
+        ]
+
+    def _count_label(cat: str) -> str:
+        n = counts[cat]
+        sing, plur = _RECAP_LABELS[cat]
+        return f"<strong>{n}</strong> {sing if n <= 1 else plur}"
+
+    sample = f"{total} match{'s' if total > 1 else ''} terminé{'s' if total > 1 else ''}"
+    aria = (f"{counts['exact']} exacts, {counts['bon']} bons, {counts['erreur']} erreurs "
+            f"sur {sample}")
+
+    segs = []
+    for cat in common.PRONO_CATEGORIES:
+        if counts[cat]:
+            # flex-grow proportionnel au compte : largeurs exactes, zéro filet
+            # blanc d'arrondi en bout de barre.
+            segs.append(f"<span class='recap-seg recap-seg-{cat}' style='flex:{counts[cat]}'></span>")
+
+    legend = []
+    for cat in common.PRONO_CATEGORIES:
+        legend.append(
+            f"<li><span class='swatch swatch-{cat}'></span> {_count_label(cat)}</li>"
+        )
+
+    small = total < _RECAP_SMALL_N
+    section_cls = "panel recap recap-small" if small else "panel recap"
+    out = [
+        f"<section class='{section_cls}' aria-labelledby='recap-title'>",
+        "<div class='recap-head'>",
+        "<h2 id='recap-title'>Justesse des pronos</h2>",
+        f"<span class='recap-sample'>sur {html.escape(sample)}</span>",
+        "</div>",
+        f"<div class='recap-bar' role='img' aria-label='{html.escape(aria)}'>",
+        "".join(segs),
+        "</div>",
+        "<ul class='recap-legend'>",
+        "".join(legend),
+        "</ul>",
+    ]
+    if small:
+        out.append(
+            "<p class='recap-caveat'>Échantillon réduit — trop tôt pour conclure quoi que ce soit.</p>"
+        )
+    out.append(
+        "<p class='recap-note'>Comptage descriptif des pronos figés avant match, pas une note de "
+        "fiabilité du modèle — sa sortie reste une distribution de probabilités, pas un score sûr.</p>"
+    )
+    out.append("</section>")
+    return out
+
+
 def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str = "",
                  tab: str = "futurs", health: Optional[Dict] = None,
                  solidity_report: Optional[Dict] = None, data_info: Optional[Dict] = None,
@@ -1287,6 +1427,11 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
 
     if safe_tab == "paris":
         parts.extend(_render_paris(recommendations, bankroll, bet_blocked))
+
+    # Récap cumul-tournoi de la justesse des pronos : en tête des Passés, sur
+    # TOUS les matchs terminés (pas seulement la journée affichée).
+    if safe_tab == "passes" and past_rows:
+        parts.extend(_render_recap(past_rows))
 
     if not shown_rows and safe_tab != "paris":
         if safe_tab == "passes":

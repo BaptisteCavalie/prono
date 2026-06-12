@@ -16,6 +16,13 @@ dans Winamax. Desktop d'abord (refonte 2026-06-11), le mobile suit.
 Spécificités : sortie = distribution de probabilités calibrée, jamais un
 score sec présenté comme certitude ; transparence du modèle (Elo, forme,
 prior expert) ; aucune incitation à parier.
+Résultats réels : les scores exacts (`actual_home`/`actual_away` dans
+`data/fixtures.json`) arrivent par la **couche ask-Claude** — Claude récupère
+les résultats post-match (accès web), Baptiste valide, Claude écrit le JSON.
+Pas de saisie de score dans l'UI ; l'outil ne touche pas au réseau lui-même.
+Le bilan de justesse des pronos (exact / bon / erreur) est un **cumul
+tournoi** sur tous les matchs terminés — c'est un suivi a posteriori, jamais
+une note de certitude (la distribution 1N2 reste l'objet premier).
 
 ## Kit
 
