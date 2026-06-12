@@ -46,3 +46,12 @@ Push sur `main` = déploiement Vercel automatique (intégration Git, entrypoint
 - **Points d'étape** : avant un build long (> ~15 min de travail), annoncer
   le plan en une liste courte, puis poster un jalon à chaque groupe de
   corrections terminé — jamais de longue phase silencieuse. <!-- 2026-06-11 -->
+- **Hygiène des branches** : chaque session cloud crée une branche `claude/*`
+  et Vercel en fait un preview deploy — d'où l'accumulation de « Active
+  Branches ». Une fois une branche mergée dans `main`, la supprimer
+  (`git push origin --delete <branche>` ou via l'UI GitHub) pour purger les
+  previews. À faire **côté GitHub/Vercel** : depuis la session cloud, la
+  suppression de branche est impossible (proxy git → 403 sur la suppression de
+  refs ; le MCP GitHub n'a pas de delete-branch). Avant de purger, vérifier
+  qu'une branche n'a pas de commits hors `main`
+  (`git log origin/main..origin/<branche>`). <!-- 2026-06-12 -->
