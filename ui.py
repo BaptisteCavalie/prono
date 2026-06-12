@@ -1506,9 +1506,11 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
             "<div class='no-results' id='no-results' hidden role='status'>Aucun match pour ce pays. "
             "<button type='button' class='link-btn' id='clear-filter'>Effacer le filtre</button></div>"
         )
-        # Passés d'abord (chronologie), repliés par défaut → simple bandeau en tête.
+        # Passés d'abord (chronologie). Le récap Justesse reste TOUJOURS visible
+        # (hors disclosure) ; seule la liste des matchs passés est repliable.
         if past_rows:
             n_past = len(past_rows)
+            parts.extend(_render_recap(past_rows))
             parts.append("<details class='past-disclosure' id='past-disclosure'>")
             parts.append(
                 f"<summary class='past-summary'>"
@@ -1516,7 +1518,6 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
                 f"<span class='past-hint'>afficher / masquer</span></summary>"
             )
             parts.append("<div class='past-body'>")
-            parts.extend(_render_recap(past_rows))
             parts.extend(_render_day_sections(_group_rows_by_matchday(past_rows), past=True))
             parts.append("</div></details>")
 
@@ -1576,7 +1577,9 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         "document.querySelectorAll('[data-cat]').forEach(function(el){",
         "var sel=\".match-row[data-verdict='\"+el.getAttribute('data-cat')+\"']\";",
         "var hl=function(on){document.querySelectorAll(sel).forEach(function(r){r.classList.toggle('row-hl',on);});};",
-        "el.addEventListener('mouseenter',function(){hl(true);});",
+        # Le récap est toujours visible ; on déplie la liste (une fois) pour que
+        # le surlignage des matchs survolés soit réellement visible.
+        "el.addEventListener('mouseenter',function(){if(past&&!past.open){past.open=true;}hl(true);});",
         "el.addEventListener('mouseleave',function(){hl(false);});",
         "});",
         "})();",
