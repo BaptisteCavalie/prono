@@ -436,13 +436,6 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
                 "Plus risqué — bon candidat pour le bonus X2."
             )
 
-        if completed:
-            notes.append("Match terminé : le score affiché correspond au résultat final réel.")
-            if preserved_predicted_score:
-                notes.append("Prono conservé avant match : comparaison réel vs prono disponible directement.")
-            else:
-                notes.append("Prono non figé : lance 'python3 tools/snapshot_predictions.py' pour conserver les pronos avant les matchs.")
-
         rows.append({
             "id": m.get("id", ""),
             "group": m.get("group", "?"),
@@ -750,7 +743,6 @@ _CSS = "".join([
     # taille de police du tabbar change.
     ".md-title{display:flex;justify-content:space-between;gap:8px;align-items:baseline;position:sticky;top:44px;z-index:5;background:var(--surface);margin:-14px -14px 4px;padding:12px 14px 8px;border-bottom:1px solid var(--line);border-radius:14px 14px 0 0}",
     ".md-title h2{margin:0;font-size:1rem;font-weight:700}",
-    ".day-saisis{font-family:var(--font-mono)}",
     ".day-mod{color:var(--warn-text);font-weight:700}",
     ".cell-meta .kick{display:block;font-family:var(--font-mono);font-weight:700;font-size:.95rem;line-height:1.2}",
     ".cell-meta .kick-tbd{color:var(--muted);font-weight:400}",
@@ -766,14 +758,6 @@ _CSS = "".join([
     ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
     ".score-chip-real{background:var(--ok);color:#fff;border-color:transparent;font-size:.86rem;min-width:88px}",
     ".score-chip-prono{font-size:.86rem;min-width:98px}",
-    # Verdicts uniformes : tag discret (fond léger + pastille colorée + texte),
-    # même poids pour exact/bon/erreur → un seul élément saillant par ligne
-    # (pattern liste-matchs-dense). La pastille double-encode la couleur.
-    ".verdict{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 8px;border-radius:999px;font-size:.74rem;font-weight:700;line-height:1;border:1px solid var(--line-2);background:var(--surface-2);color:var(--slate);white-space:nowrap}",
-    ".verdict::before{content:'';width:8px;height:8px;border-radius:50%;flex:none}",
-    ".verdict-exact::before{background:var(--recap-exact)}",
-    ".verdict-bon::before{background:var(--recap-bon)}",
-    ".verdict-erreur::before{background:var(--recap-erreur)}",
     # Récap justesse (tête de l'onglet Passés) — barre segmentée 100 %, pas de donut.
     ".recap-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}",
     ".recap-head h2{margin:0;font-size:1rem;font-weight:700}",
@@ -805,10 +789,6 @@ _CSS = "".join([
     ".prob-legend strong{color:var(--text);font-family:var(--font-mono)}",
     ".flag{font-size:1.05rem}",
     ".tiny{font-size:.76rem;color:var(--muted)}",
-    ".cell-saisi{white-space:nowrap;text-align:center}",
-    ".done-toggle{width:22px;height:22px;accent-color:var(--brand);cursor:pointer}",
-    "tr.done-row .cell-meta,tr.done-row .cell-teams,tr.done-row .cell-prono,tr.done-row .cell-nutri,tr.done-row .cell-prob{opacity:.45}",
-    "tr.done-row+tr.note-row{opacity:.45}",
     "details{border:0;background:transparent}",
     "summary{cursor:pointer;font-size:.84rem;color:var(--brand);font-weight:700;display:inline-block;padding:6px 4px;border-radius:6px}",
     "summary:hover{text-decoration:underline}",
@@ -863,11 +843,9 @@ _CSS = "".join([
     ".cell-teams{font-size:.95rem}"
     ".cell-prono,.cell-nutri{display:inline-block;vertical-align:middle;margin:4px 10px 0 0}"
     ".cell-prob{margin-top:4px}"
-    ".cell-saisi{display:inline-block;vertical-align:middle;margin:8px 16px 0 0;text-align:left}"
-    ".cell-saisi::before{content:'Saisi';display:inline-block;width:3.4em;color:var(--muted);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase}"
     ".cell-details{display:inline-block;vertical-align:middle;margin-top:8px}"
     "tr.note-row{border-top:0;padding:0}tr.note-row>td{padding:0 0 8px}"
-    ".done-toggle{width:24px;height:24px}summary{padding:10px 4px}}",
+    "summary{padding:10px 4px}}",
     "@media (max-width:480px){.prob-bar{display:none}}",
 ])
 
@@ -896,7 +874,6 @@ def _render_header(safe_tab: str, health: Optional[Dict], health_meta: Dict[str,
         "<div class='stats'>",
         f"<span class='stamp'>Futurs {n_future}</span>",
         f"<span class='stamp'>Passés {n_past}</span>",
-        "<span class='stamp' id='done-count' aria-live='polite'>Saisis : 0</span>",
     ])
     if n_changed:
         parts.append(
@@ -1160,12 +1137,43 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
     return parts
 
 
-def _render_row(r: Dict) -> List[str]:
-    est = " *" if r["est"] else ""
-    match_ref = f"{r['id']}|{r['home']}|{r['away']}|{r['date']}"
+def _render_row(r: Dict, past: bool = False) -> List[str]:
     home_label = r["home_label"]
     away_label = r["away_label"]
 
+    kick = r.get("kickoff_paris") or ""
+    kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
+                 else "<span class='kick kick-tbd'>&mdash;</span>")
+    meta_sub = (f"J{html.escape(str(r['matchday']))} · Gr. {html.escape(str(r['group']))}"
+                f" · {html.escape(str(r['id']))}")
+    meta_cell = f"<td class='cell-meta'>{kick_html}<span class='meta-sub'>{meta_sub}</span></td>"
+    teams_cell = (
+        f"<td class='cell-teams'>"
+        f"<span class='flag'>{r['home_flag']}</span> <span class='team-name'>{html.escape(home_label)}</span>"
+        f"<span class='team-sep'>&ndash;</span>"
+        f"<span class='team-name'>{html.escape(away_label)}</span> <span class='flag'>{r['away_flag']}</span>"
+        f"</td>"
+    )
+
+    # Matchs passés : ligne réduite à Heure · Match · Réel/Prono. La confiance et
+    # les probas sont des prévisions d'avant-match, sans valeur une fois le score
+    # connu ; le vis-à-vis Réel/Prono se lit seul (pas de verdict, pas de détail).
+    if past:
+        score_block = (
+            f"<span class='score-dual'>"
+            f"<span class='score-chip score-chip-real'>Réel {html.escape(r['actual_score'] or r['score'])}</span>"
+            f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['predicted_score'])}</span>"
+            f"</span>"
+        )
+        return [
+            "<tr class='match-row'>",
+            meta_cell,
+            teams_cell,
+            f"<td class='cell-prono'>{score_block}</td>",
+            "</tr>",
+        ]
+
+    est = " *" if r["est"] else ""
     ph, pd, pa = r["p_home"], r["p_draw"], r["p_away"]
     mx = max(ph, pd, pa)
     leg_home = f"<strong>1 {ph}%</strong>" if ph == mx else f"1 {ph}%"
@@ -1189,54 +1197,17 @@ def _render_row(r: Dict) -> List[str]:
     if r.get("prediction_changed"):
         delta_badge = (
             f"<span class='delta' "
-            f"title='Prono recalculé après une maj des données — la coche Saisi vaut acquittement'>"
+            f"title='Prono recalculé après une mise à jour des données'>"
             f"Modifié <span class='delta-scores'>{html.escape(r['predicted_score'])} &rarr; "
             f"{html.escape(r['predicted_score_live'])}</span></span>"
         )
-    if r["completed"]:
-        verdict_chip = ""
-        verdict = r.get("verdict")
-        if verdict in _VERDICT_META:
-            label, title = _VERDICT_META[verdict]
-            verdict_chip = (
-                f"<span class='verdict verdict-{verdict}' title='{html.escape(title)}'>"
-                f"{html.escape(label)}</span>"
-            )
-        score_block = (
-            f"<span class='score-dual'>"
-            f"<span class='score-chip score-chip-real'>Réel {html.escape(r['actual_score'] or r['score'])}</span>"
-            f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['predicted_score'])}</span>"
-            f"{verdict_chip}"
-            f"</span>"
-        )
-    else:
-        # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul.
-        score_block = f"<span class='score-chip'>{html.escape(r['score'])}</span>"
+    # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul.
+    score_block = f"<span class='score-chip'>{html.escape(r['score'])}</span>"
 
-    kick = r.get("kickoff_paris") or ""
-    kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
-                 else "<span class='kick kick-tbd'>&mdash;</span>")
-    meta_sub = (f"J{html.escape(str(r['matchday']))} · Gr. {html.escape(str(r['group']))}"
-                f" · {html.escape(str(r['id']))}")
-
-    parts = ["<tr class='match-row'>"]
-    parts.append(f"<td class='cell-meta'>{kick_html}<span class='meta-sub'>{meta_sub}</span></td>")
-    parts.append(
-        f"<td class='cell-teams'>"
-        f"<span class='flag'>{r['home_flag']}</span> <span class='team-name'>{html.escape(home_label)}</span>"
-        f"<span class='team-sep'>&ndash;</span>"
-        f"<span class='team-name'>{html.escape(away_label)}</span> <span class='flag'>{r['away_flag']}</span>"
-        f"</td>"
-    )
+    parts = ["<tr class='match-row'>", meta_cell, teams_cell]
     parts.append(f"<td class='cell-prono'>{score_block}{delta_badge}</td>")
     parts.append(f"<td class='cell-nutri'>{nutri_chip}</td>")
     parts.append(f"<td class='cell-prob'>{prob_block}</td>")
-    parts.append(
-        f"<td class='cell-saisi'><input class='done-toggle' type='checkbox' "
-        f"aria-label='Marquer {html.escape(home_label)} vs {html.escape(away_label)} comme saisi sur Mon Petit Prono' "
-        f"title='Cochez quand vous avez saisi ce prono sur Mon Petit Prono' "
-        f"data-match='{html.escape(match_ref)}'></td>"
-    )
 
     notes_id = f"notes-{html.escape(str(r['id']))}"
     parts.append(
@@ -1246,7 +1217,7 @@ def _render_row(r: Dict) -> List[str]:
     parts.append("</tr>")
     # Sous-ligne pleine largeur repliée : le détail pousse verticalement,
     # sans jamais masquer l'en-tête du jour suivant (pattern liste-matchs-dense).
-    parts.append(f"<tr class='note-row' id='{notes_id}' hidden><td colspan='7'><ul class='note-list'>")
+    parts.append(f"<tr class='note-row' id='{notes_id}' hidden><td colspan='6'><ul class='note-list'>")
     parts.append(
         f"<li>Prono recommandé (optimise les points Mon Petit Prono) : {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
     )
@@ -1267,10 +1238,6 @@ def _render_row(r: Dict) -> List[str]:
             f"{html.escape(r['predicted_score_live'])} après une maj des données "
             f"(ratings / forme / blessures / avantage hôte / attaque-défense).</li>"
         )
-    if r["completed"]:
-        parts.append(f"<li>Prono conservé : {html.escape(r['predicted_score'])}</li>")
-        if not r.get("prediction_saved"):
-            parts.append(f"<li>Note : prono non figé (estimation actuelle : {html.escape(r['predicted_score_live'])}).</li>")
     if r["odds"]:
         parts.append(
             f"<li>Cotes bookmaker chargées : 1 {r['odds'][0]:.2f} / N {r['odds'][1]:.2f} / 2 {r['odds'][2]:.2f}</li>"
@@ -1283,13 +1250,6 @@ def _render_row(r: Dict) -> List[str]:
     return parts
 
 
-# Libellé + infobulle de chaque verdict (texte = double encodage avec la
-# couleur, pour ne jamais dépendre de la seule teinte — leçon a11y).
-_VERDICT_META = {
-    "exact": ("Score exact", "Prono exact : score juste"),
-    "bon": ("Bon résultat", "Bon résultat 1N2, mais score différent"),
-    "erreur": ("Erreur", "Mauvais résultat (1N2)"),
-}
 # Forme singulier/pluriel des compteurs du récap.
 _RECAP_LABELS = {
     "exact": ("exact", "exacts"),
@@ -1416,13 +1376,12 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
     ])
     if (health or {}).get("level") != "good":
         parts.append(f"<div class='guard-msg' style='margin-top:0'>{html.escape(health_meta['message'])}</div>")
-    if safe_tab != "paris" and shown_rows:
+    if safe_tab == "futurs" and shown_rows:
         parts.append(
             "<p class='legend' style='margin:0 0 12px'>Indice de confiance du pronostic : "
             "<strong>A</strong> forte &rarr; <strong>E</strong> faible. La barre indique les "
             "probabilités <strong>1</strong> (domicile) · <strong>N</strong> (nul) · <strong>2</strong> (extérieur). "
-            "Un badge <strong>Modifié</strong> signale un prono recalculé après mise à jour des données — "
-            "cocher Saisi vaut acquittement.</p>"
+            "Un badge <strong>Modifié</strong> signale un prono recalculé après mise à jour des données.</p>"
         )
 
     if safe_tab == "paris":
@@ -1446,6 +1405,16 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
                 "<a href='/?tab=passes'>Voir les matchs joués</a></div></div>"
             )
 
+    past_tab = safe_tab == "passes"
+    if past_tab:
+        # Matchs joués : colonnes réduites au vis-à-vis Réel/Prono.
+        thead = ("<th style='width:16%'>Heure (FR)</th><th style='width:42%'>Match</th>"
+                 "<th>Réel · Prono</th>")
+    else:
+        thead = ("<th style='width:11%'>Heure (FR)</th><th style='width:31%'>Match</th>"
+                 "<th style='width:18%'>Pronostic</th><th style='width:7%'>Conf.</th>"
+                 "<th style='width:20%'>Probabilités 1 · N · 2</th>"
+                 "<th style='width:13%'>Détails</th>")
     for day, md_rows in grouped:
         day_label = _fr_date_label(day)
         if safe_tab == "futurs":
@@ -1454,8 +1423,7 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
             if n_mod_day:
                 plural = "s" if n_mod_day > 1 else ""
                 mod_html = f" · <span class='day-mod'>{n_mod_day} modifié{plural}</span>"
-            day_count = (f"<span class='tiny'>{len(md_rows)} matchs{mod_html} · "
-                         f"<span class='day-saisis'>0/{len(md_rows)} saisis</span></span>")
+            day_count = f"<span class='tiny'>{len(md_rows)} matchs{mod_html}</span>"
         else:
             day_count = f"<span class='tiny'>{len(md_rows)} matchs</span>"
         parts.extend([
@@ -1465,14 +1433,11 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
             day_count,
             "</div>",
             "<table><thead><tr>",
-            "<th style='width:11%'>Heure (FR)</th><th style='width:28%'>Match</th>"
-            "<th style='width:16%'>Pronostic</th><th style='width:6%'>Conf.</th>"
-            "<th style='width:20%'>Probabilités 1 · N · 2</th><th style='width:7%'>Saisi</th>"
-            "<th style='width:12%'>Détails</th>",
+            thead,
             "</tr></thead><tbody>",
         ])
         for r in md_rows:
-            parts.extend(_render_row(r))
+            parts.extend(_render_row(r, past=past_tab))
         parts.extend(["</tbody></table>", "</section>"])
 
     diag_chunk = _render_diagnostics(health, health_meta, solidity_report, data_info)
@@ -1484,30 +1449,6 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
     parts.extend([
         "<script>",
         "(function(){",
-        "const key='wc2026_done_predictions_v1';",
-        "const countEl=document.getElementById('done-count');",
-        "const parse=()=>{try{return new Set(JSON.parse(localStorage.getItem(key)||'[]'));}catch(_){return new Set();}};",
-        "const save=(set)=>localStorage.setItem(key,JSON.stringify(Array.from(set)));",
-        "const refreshCount=(set)=>{if(countEl){countEl.textContent='Saisis : '+set.size;}};",
-        "const refreshDays=()=>{document.querySelectorAll('.day-saisis').forEach((el)=>{",
-        "const sec=el.closest('section');if(!sec){return;}",
-        "const boxes=sec.querySelectorAll('.done-toggle');let n=0;",
-        "boxes.forEach((b)=>{if(b.checked){n++;}});",
-        "el.textContent=n+'/'+boxes.length+' saisis';});};",
-        "const done=parse();",
-        "const checks=document.querySelectorAll('.done-toggle');",
-        "checks.forEach((box)=>{",
-        "const id=box.getAttribute('data-match')||'';",
-        "if(done.has(id)){box.checked=true;}",
-        "const row=box.closest('tr');",
-        "if(row&&box.checked){row.classList.add('done-row');}",
-        "box.addEventListener('change',()=>{",
-        "if(box.checked){done.add(id);}else{done.delete(id);}",
-        "if(row){row.classList.toggle('done-row',box.checked);}",
-        "save(done);refreshCount(done);refreshDays();",
-        "});",
-        "});",
-        "refreshCount(done);refreshDays();",
         "document.querySelectorAll('.details-btn').forEach((btn)=>{",
         "btn.addEventListener('click',()=>{",
         "const t=document.getElementById(btn.getAttribute('aria-controls'));",
