@@ -1640,11 +1640,12 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
 
     if safe_tab == "paris":
         parts.append("<div class='topbar'><div><h1>Paris</h1>"
-                     "<p class='subtitle'>Recommandations prudentes calculées à partir du modèle et des cotes bookmaker.</p></div></div>")
-        parts.extend(_render_paris(recommendations, bankroll, bet_blocked))
-        # Suivi des paris réels : indépendant du modèle/des cotes (donnée
-        # historique), donc affiché même si la reco est bloquée.
+                     "<p class='subtitle'>Suivi des paris réels en tête, puis recommandations prudentes calculées à partir du modèle et des cotes bookmaker.</p></div></div>")
+        # Suivi des paris réels (argent engagé) en tête de page : c'est ce que
+        # Baptiste vient consulter en premier. Indépendant du modèle/des cotes
+        # (donnée historique), donc affiché même si la reco est bloquée.
         parts.extend(_render_suivi_paris(bets or []))
+        parts.extend(_render_paris(recommendations, bankroll, bet_blocked))
 
     elif safe_tab == "diagnostics":
         parts.append("<div class='topbar'><div><h1>Diagnostics</h1>"
