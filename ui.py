@@ -1815,7 +1815,14 @@ def handle_request(params: Dict[str, str]) -> bytes:
         # while the solidity assessment needs the untouched on-disk baseline.
         base_ratings = data.load_ratings()
         ratings = data.load_ratings()
-        ratings, _ = live_ratings.ensure(ratings)   # keep Elo fresh on read-only hosts (Vercel)
+        # eloratings.net already moves Elo with match results, and so does
+        # apply_completed_results below. Running both would count each result
+        # twice, so the live overlay only tracks Elo *before* the tournament
+        # starts; once any fixture is completed, the committed baseline + local
+        # result deltas are the single (transparent) source of in-tournament
+        # movement.
+        if not any(_is_completed(m) for m in fixtures):
+            ratings, _ = live_ratings.ensure(ratings)   # pre-tournament: keep Elo fresh on read-only hosts (Vercel)
         team_status = data.load_team_status()
         solidity_report = solidity.assess_model_solidity(fixtures, base_ratings)
         if not no_auto:

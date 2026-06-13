@@ -12,6 +12,10 @@ from typing import Dict, Iterable, Tuple
 from engine import model
 
 K_FACTOR = 24.0
+# A draw is still informative — a held favourite under-performs its rating — so
+# the margin weight keeps a modest floor instead of collapsing to zero on a
+# 0-goal gap (log(0+1) == 0 used to zero every draw out entirely).
+DRAW_MARGIN = 0.5
 
 
 def _as_int(value):
@@ -28,8 +32,12 @@ def _sort_key(match: Dict) -> Tuple:
 
 
 def _goal_mult(goal_diff: int, rating_diff: float) -> float:
-    # Elo-style multiplier that gives more weight to convincing wins.
-    return math.log(abs(goal_diff) + 1.0) * (2.2 / (abs(rating_diff) * 0.001 + 2.2))
+    # Elo-style multiplier that gives more weight to convincing wins, with a
+    # floor so a draw (goal_diff == 0) still moves ratings by its surprise.
+    # The surprise itself (under/over-performance) is carried by actual-expected
+    # in the caller; this only scales by how informative the result is.
+    margin = max(math.log(abs(goal_diff) + 1.0), DRAW_MARGIN)
+    return margin * (2.2 / (abs(rating_diff) * 0.001 + 2.2))
 
 
 def apply_completed_results(ratings: Dict, fixtures: Iterable[Dict]) -> Tuple[Dict, int]:
