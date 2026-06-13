@@ -850,6 +850,14 @@ _CSS = "".join([
     ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
     ".score-chip-real{background:var(--ok);color:var(--on-accent);border-color:transparent;font-size:.86rem;min-width:88px}",
     ".score-chip-prono{font-size:.86rem;min-width:98px}",
+    # Verdict par match (table des passés) : même rampe que le récap justesse.
+    # Pleine couleur pour exact/bon, atténué pour erreur — neutre, descriptif.
+    ".cell-verdict{white-space:nowrap}",
+    ".verdict-chip{display:inline-flex;align-items:center;justify-content:center;padding:5px 11px;border-radius:999px;font-weight:700;font-size:.82rem;line-height:1}",
+    ".verdict-exact{background:var(--recap-exact);color:#fff}",
+    ".verdict-bon{background:var(--recap-bon);color:#fff}",
+    ".verdict-erreur{background:var(--recap-erreur);color:var(--text)}",
+    ".verdict-na{background:var(--surface-2);color:var(--muted);border:1px solid var(--line-2)}",
     # Récap justesse (tête de l'onglet Passés) — barre segmentée 100 %, pas de donut.
     ".recap-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:10px}",
     ".recap-head h2{margin:0;font-size:1rem;font-weight:700}",
@@ -972,28 +980,24 @@ def _render_sidebar(safe_tab: str, health: Optional[Dict], health_meta: Dict[str
     return parts
 
 
-def _render_day_sections(grouped, past: bool) -> List[str]:
-    """Sections par jour (panneau + table), réutilisé pour futurs et passés."""
-    if past:
-        thead = ("<th style='width:16%'>Heure (FR)</th><th style='width:42%'>Match</th>"
-                 "<th>Réel · Prono</th>")
-    else:
-        thead = ("<th style='width:11%'>Heure (FR)</th><th style='width:31%'>Match</th>"
-                 "<th style='width:18%'>Pronostic</th><th style='width:7%'>Conf.</th>"
-                 "<th style='width:20%'>Probabilités 1 · N · 2</th>"
-                 "<th style='width:13%'>Détails</th>")
+def _render_day_sections(grouped, past: bool = False) -> List[str]:
+    """Sections par jour (panneau + table) pour les matchs à venir.
+
+    Les passés ont leur propre rendu compact (:func:`_render_past_table`) sans
+    regroupement par date ; ce découpage par jour ne sert plus que les futurs."""
+    thead = ("<th style='width:11%'>Heure (FR)</th><th style='width:31%'>Match</th>"
+             "<th style='width:18%'>Pronostic</th><th style='width:7%'>Conf.</th>"
+             "<th style='width:20%'>Probabilités 1 · N · 2</th>"
+             "<th style='width:13%'>Détails</th>")
     out: List[str] = []
     for day, md_rows in grouped:
         day_label = _fr_date_label(day)
-        if not past:
-            n_mod_day = sum(1 for r in md_rows if r.get("prediction_changed"))
-            mod_html = ""
-            if n_mod_day:
-                plural = "s" if n_mod_day > 1 else ""
-                mod_html = f" · <span class='day-mod'>{n_mod_day} modifié{plural}</span>"
-            day_count = f"<span class='tiny'>{len(md_rows)} match{'s' if len(md_rows) > 1 else ''}{mod_html}</span>"
-        else:
-            day_count = f"<span class='tiny'>{len(md_rows)} match{'s' if len(md_rows) > 1 else ''}</span>"
+        n_mod_day = sum(1 for r in md_rows if r.get("prediction_changed"))
+        mod_html = ""
+        if n_mod_day:
+            plural = "s" if n_mod_day > 1 else ""
+            mod_html = f" · <span class='day-mod'>{n_mod_day} modifié{plural}</span>"
+        day_count = f"<span class='tiny'>{len(md_rows)} match{'s' if len(md_rows) > 1 else ''}{mod_html}</span>"
         out.extend([
             "<section class='panel day-section'>",
             "<div class='md-title'>",
@@ -1384,6 +1388,48 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
     return out
 
 
+# Verdict de justesse par match (cf. common.classify_prono). On reprend la
+# rampe de couleurs du récap (--recap-*) pour que la ligne et le chart parlent
+# le même langage ; libellés au singulier. Neutre par construction (un « Manqué »
+# s'affiche aussi sobrement qu'un « Exact ») — aucune note de certitude.
+_VERDICT_META = {
+    "exact": ("Exact", "exact"),
+    "bon": ("Bon résultat", "bon"),
+    "erreur": ("Manqué", "erreur"),
+}
+
+
+def _verdict_chip(verdict: Optional[str]) -> str:
+    meta = _VERDICT_META.get(verdict)
+    if meta is None:
+        # Match joué mais aucun prono figé avant le coup d'envoi : rien à juger.
+        return "<span class='verdict-chip verdict-na' title='Pas de prono figé avant match'>&mdash;</span>"
+    label, cls = meta
+    return (
+        f"<span class='verdict-chip verdict-{cls}' "
+        f"aria-label='Prono : {html.escape(label)}'>{html.escape(label)}</span>"
+    )
+
+
+def _render_past_table(past_rows: List[Dict]) -> List[str]:
+    """Matchs passés en une seule table compacte, sans regroupement par date.
+
+    La date, l'heure et les méta (J/Gr/id) sont volontairement absentes : une
+    fois le match joué, l'info utile est Match · Réel/Prono · Verdict. L'ordre
+    chronologique des lignes est conservé (past_rows arrive déjà trié)."""
+    out: List[str] = [
+        "<section class='panel day-section past-table'>",
+        "<table><thead><tr>",
+        "<th>Match</th><th style='width:32%'>Réel · Prono</th>"
+        "<th style='width:16%'>Verdict</th>",
+        "</tr></thead><tbody>",
+    ]
+    for r in past_rows:
+        out.extend(_render_row(r, past=True))
+    out.extend(["</tbody></table>", "</section>"])
+    return out
+
+
 def _render_row(r: Dict, past: bool = False) -> List[str]:
     home_label = r["home_label"]
     away_label = r["away_label"]
@@ -1408,9 +1454,10 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
         f"</td>"
     )
 
-    # Matchs passés : ligne réduite à Heure · Match · Réel/Prono. La confiance et
-    # les probas sont des prévisions d'avant-match, sans valeur une fois le score
-    # connu ; le vis-à-vis Réel/Prono se lit seul (pas de verdict, pas de détail).
+    # Matchs passés : ligne réduite à l'essentiel — Match · Réel/Prono · Verdict.
+    # On laisse tomber l'heure et les méta (J/Gr/id) : une fois le score connu,
+    # seule compte la lecture réel vs prono et « ai-je eu bon ». La confiance et
+    # les probas (prévisions d'avant-match) n'ont plus de valeur ici.
     if past:
         score_block = (
             f"<span class='score-dual'>"
@@ -1420,9 +1467,9 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
         )
         return [
             row_open,
-            meta_cell,
             teams_cell,
             f"<td class='cell-prono'>{score_block}</td>",
+            f"<td class='cell-verdict'>{_verdict_chip(r.get('verdict'))}</td>",
             "</tr>",
         ]
 
@@ -1692,7 +1739,7 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
                 f"<span class='past-hint'>afficher / masquer</span></summary>"
             )
             parts.append("<div class='past-body'>")
-            parts.extend(_render_day_sections(_group_rows_by_matchday(past_rows), past=True))
+            parts.extend(_render_past_table(past_rows))
             parts.append("</div></details>")
 
         if future_rows:
