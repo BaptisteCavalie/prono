@@ -102,14 +102,16 @@ def _load_odds_board(path: Optional[str]) -> Dict[str, List[float]]:
 
 def _apply_paris_kickoffs(fixtures: List[Dict]) -> None:
     """Rewrite each fixture's date to its Europe/Paris (France) calendar date using
-    the kickoff time captured from the odds feed — the jetlag fix, so a US-evening
-    game shows on the next day like it does in France. Adds kickoff_paris (HH:MM).
-    Matches with no known kickoff keep their stored date."""
+    the kickoff time — the jetlag fix, so a US-evening game shows on the next day
+    like it does in France. Adds kickoff_paris (HH:MM).
+
+    The kickoff comes from the live odds feed when available, else from the
+    fixture's own committed ``kickoff_utc`` (so dates/times are correct even with
+    no feed — e.g. on a deploy without an odds key). Matches with no known
+    kickoff keep their stored date."""
     kicks = odds_fetch.load_kickoffs()
-    if not kicks:
-        return
     for m in fixtures:
-        ct = kicks.get(str(m.get("id", "")).upper())
+        ct = kicks.get(str(m.get("id", "")).upper()) or m.get("kickoff_utc")
         if not ct:
             continue
         d, t = odds_fetch.paris_parts(ct)
