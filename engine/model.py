@@ -18,6 +18,15 @@ BASE_TOTAL = 2.55           # baseline total goals for an evenly-matched game
 MAX_SUPREMACY = 3.2         # cap on goal supremacy for a total mismatch
 GOAL_MISMATCH_BOOST = 1.00  # extra total goals as the game gets more lopsided
 RATING_DIVISOR = 400.0      # logistic scale for win expectancy (Elo scale)
+RATING_SHRINK = 0.78        # damp the rating gap before it drives goals. The raw
+                            # gap is overconfident: on the WC2022 group stage the
+                            # favourite buckets the model priced ~72-88% only won
+                            # ~43-71%, and its 1X2 logloss (1.20) was worse than a
+                            # flat 33/33/33 coin (1.10). 0.78 removes the worst of
+                            # that overconfidence without chasing that chaotic
+                            # tournament's logloss optimum (~0.25 = overfit). Pick
+                            # accuracy is unchanged (it never flips the favourite);
+                            # only the *confidence* is pulled toward honesty.
 DC_RHO = -0.13              # Dixon-Coles low-score correlation (negative lifts draws)
 MIN_LAMBDA = 0.20           # floor on expected goals (no team is ever truly 0)
 MAX_GOALS = 10              # scoreline grid size (Poisson tail beyond this ~ 0)
@@ -91,7 +100,7 @@ def expected_goals(rating_home: float, rating_away: float,
     byte-for-byte unchanged. When supplied, each side's lambda is scaled by its
     own attack and the opponent's defensive weakness.
     """
-    dr = (rating_home + home_adv) - rating_away
+    dr = ((rating_home + home_adv) - rating_away) * RATING_SHRINK
     tilt = 2 * win_expectancy(dr) - 1                 # in [-1, 1]
     supremacy = MAX_SUPREMACY * tilt
     total = BASE_TOTAL + GOAL_MISMATCH_BOOST * abs(tilt)
