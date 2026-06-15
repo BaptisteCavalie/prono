@@ -122,16 +122,30 @@ def tally_bets(bets) -> Dict:
     """Bilan cumulé tournoi des paris réglés : compteurs, mise, P&L, ROI.
 
     Comptage « argent réel » a posteriori, distinct du récap justesse des
-    pronos (1N2). Neutre par construction : un net négatif est un nombre comme
-    un autre. Les paris en cours sont comptés à part (``n_pending``), jamais
-    dans la mise/P&L. ``roi`` vaut ``None`` tant qu'aucune mise n'est engagée.
+    pronos (1N2). Les paris en cours sont comptés à part (``n_pending``),
+    jamais dans la mise/P&L réglés ; leur exposition vit dans
+    ``staked_pending`` (mise totale en cours) et ``potential_pending`` (gain
+    total possible si tout passe = mise × cote, brut). ``roi`` vaut ``None``
+    tant qu'aucune mise réglée n'est engagée.
     """
     agg = {"n_settled": 0, "n_won": 0, "n_lost": 0, "n_refunded": 0,
-           "n_pending": 0, "staked": 0.0, "net": 0.0, "roi": None}
+           "n_pending": 0, "staked": 0.0, "net": 0.0, "roi": None,
+           "staked_pending": 0.0, "potential_pending": 0.0}
     for b in bets:
         status = bet_status(b)
         if status not in SETTLED_STATUSES:
             agg["n_pending"] += 1
+            # Exposition des paris en cours : mise totale engagée + gain total
+            # possible si tout passe (mise × cote = « gains potentiels » Winamax,
+            # brut). Mêmes garde-fous que bet_net : mise/cote inexploitable ignorée.
+            try:
+                stake = float(b.get("stake"))
+                odds = float(b.get("odds"))
+            except (TypeError, ValueError):
+                continue
+            if stake >= 0 and odds >= 1:
+                agg["staked_pending"] += stake
+                agg["potential_pending"] += stake * odds
             continue
         net = bet_net(b)
         if net is None:           # réglé mais mise/cote inexploitables : on ignore

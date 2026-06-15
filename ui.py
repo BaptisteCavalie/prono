@@ -817,6 +817,15 @@ _CSS = "".join([
     ".suivi-head h2{margin:0;font-size:1rem;font-weight:700}",
     ".suivi-sample{font-family:var(--font-mono);font-size:.82rem;color:var(--muted)}",
     ".suivi-counts{margin:10px 0 0;font-size:.84rem;color:var(--slate)}",
+    # Exposition « en cours » : bande pointillée (même langage que les chips de
+    # statut en cours), fond transparent — c'est de l'argent non encore joué,
+    # pas un résultat. Chiffres mono neutres (jamais vert : rien n'est gagné).
+    ".encours{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;padding:9px 12px;border:1px dashed var(--line-2);border-radius:10px}",
+    ".encours-tag{font-family:var(--font-mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}",
+    ".encours-figs{display:flex;gap:24px;flex-wrap:wrap;margin-left:auto}",
+    ".encours-fig{display:flex;flex-direction:column;gap:2px}",
+    ".encours-key{font-size:.66rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}",
+    ".encours-val{font-family:var(--font-mono);font-weight:700;font-size:1.02rem;color:var(--text);line-height:1.1}",
     ".pnl-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}",
     # Tuiles KPI : fond plein, SANS bordure — elles vivent déjà dans le panel
     # Suivi, pas de boîte-dans-boîte (cf. DA). La hiérarchie P&L > ROI/Mise vient
@@ -1467,6 +1476,22 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
     else:
         out.append("<p class='muted' style='margin:8px 0 0'>Aucun pari réglé pour l'instant — "
                    "le bilan (P&amp;L, ROI) s'affiche dès le premier résultat.</p>")
+
+    # Exposition des paris EN COURS : mise totale engagée + gain total possible
+    # si tout passe. Distinct du bilan réglé (argent non encore joué) → traité en
+    # bande à part, langage « en cours » (pointillés) plutôt qu'en tuile KPI.
+    if agg["n_pending"]:
+        np = agg["n_pending"]
+        out.extend([
+            "<div class='encours'>",
+            f"<span class='encours-tag'>{np} en cours</span>",
+            "<div class='encours-figs'>",
+            "<div class='encours-fig'><span class='encours-key'>Mise totale en cours</span>"
+            f"<span class='encours-val'>{html.escape(_eur(agg['staked_pending'], 2))}</span></div>",
+            "<div class='encours-fig'><span class='encours-key'>Gain total possible</span>"
+            f"<span class='encours-val'>{html.escape(_eur(agg['potential_pending'], 2))}</span></div>",
+            "</div></div>",
+        ])
 
     # Podium des 3 plus gros gains : médaillon or/argent/cuivre sur les lignes
     # au plus gros gain net (positif). Identité « ledger » de la page Paris,

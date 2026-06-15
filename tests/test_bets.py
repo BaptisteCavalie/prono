@@ -79,6 +79,27 @@ class TestTallyBets(unittest.TestCase):
         loss = common.tally_bets([{"stake": 10, "odds": 2.0, "status": "perdu"}])
         self.assertAlmostEqual(loss["roi"], -1.0)
 
+    def test_pending_exposure(self):
+        # Exposition des paris en cours : mise totale engagée + gain total
+        # possible (mise × cote, brut), distincts du bilan réglé.
+        bets = [
+            {"stake": 2, "odds": 1.82, "status": "en_cours"},   # misé 2, potentiel 3.64
+            {"stake": 5, "odds": 1.50, "status": "en_cours"},   # misé 5, potentiel 7.50
+            {"stake": 10, "odds": 2.0, "status": "gagne"},      # réglé -> hors expo en cours
+        ]
+        agg = common.tally_bets(bets)
+        self.assertEqual(agg["n_pending"], 2)
+        self.assertAlmostEqual(agg["staked_pending"], 7.0)
+        self.assertAlmostEqual(agg["potential_pending"], 3.64 + 7.50)
+        # le réglé ne pollue pas l'expo en cours
+        self.assertAlmostEqual(agg["staked"], 10.0)
+
+    def test_pending_unusable_numbers_skipped(self):
+        agg = common.tally_bets([{"stake": "?", "odds": 1.5, "status": "en_cours"}])
+        self.assertEqual(agg["n_pending"], 1)            # compté en effectif
+        self.assertAlmostEqual(agg["staked_pending"], 0.0)   # mais pas en argent
+        self.assertAlmostEqual(agg["potential_pending"], 0.0)
+
     def test_settled_but_unusable_is_skipped_not_counted(self):
         bets = [
             {"stake": 10, "odds": 2.0, "status": "gagne"},   # +10
