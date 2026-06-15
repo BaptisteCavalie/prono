@@ -182,7 +182,12 @@ def settle_status(bet: Dict, results: Dict[str, Tuple[int, int]]) -> str:
         if res is None:
             any_pending = True
             continue
-        if leg_outcome(int(res[0]), int(res[1])) != leg.get("pick"):
+        try:
+            outcome = leg_outcome(int(res[0]), int(res[1]))
+        except (TypeError, ValueError):
+            any_pending = True   # malformed score → treat as not yet decided
+            continue
+        if outcome != leg.get("pick"):
             return "perdu"
     return "en_cours" if any_pending else "gagne"
 

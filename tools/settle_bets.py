@@ -41,10 +41,18 @@ def results_from_fixtures(fixtures) -> dict:
 
 
 def main(argv=None) -> int:
-    with open(FIXTURES_PATH, encoding="utf-8") as f:
-        fixtures = json.load(f).get("matches", [])
-    with open(BETS_PATH, encoding="utf-8") as f:
-        payload = json.load(f)
+    try:
+        with open(FIXTURES_PATH, encoding="utf-8") as f:
+            fixtures = json.load(f).get("matches", [])
+    except (OSError, ValueError) as exc:
+        print(f"settle_bets : {FIXTURES_PATH.name} illisible ({exc})")
+        return 1
+    try:
+        with open(BETS_PATH, encoding="utf-8") as f:
+            payload = json.load(f)
+    except (OSError, ValueError) as exc:
+        print(f"settle_bets : {BETS_PATH.name} illisible ({exc})")
+        return 1
     bets = payload.get("bets", [])
 
     results = results_from_fixtures(fixtures)

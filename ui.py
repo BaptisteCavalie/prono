@@ -812,6 +812,7 @@ _CSS = "".join([
     ".pnl-key{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}",
     ".pnl-val{font-family:var(--font-mono);font-size:1.18rem;font-weight:700;margin-top:4px;color:var(--text);line-height:1.15}",
     ".pnl-val.sub{font-size:1rem;font-weight:600}",
+    ".pnl-sample{font-size:.65rem;color:var(--muted);margin-top:3px;letter-spacing:.01em}",
     ".bets-table{margin-top:14px}",
     ".bets-table td{font-size:.92rem}",
     ".bets-table tbody tr:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
@@ -820,8 +821,8 @@ _CSS = "".join([
     ".bets-table .b-num{font-family:var(--font-mono);text-align:right;white-space:nowrap}",
     ".bets-table th.col-num{text-align:right}",
     ".combo-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);font-size:.66rem;font-family:var(--font-mono);color:var(--slate);vertical-align:middle}",
-    ".bet-placed{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line);font-size:.66rem;font-weight:700;vertical-align:middle;white-space:nowrap}",
-    ".bet-card.is-placed{border-color:var(--ok-line);background:color-mix(in srgb,var(--ok) 6%,var(--surface-3))}",
+    ".bet-placed{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--slate);border:1px solid var(--line-2);font-size:.66rem;font-weight:700;vertical-align:middle;white-space:nowrap}",
+    ".bet-card.is-placed{border-color:var(--line-2);background:var(--surface-2)}",
     ".bet-status{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:700;border:1px solid var(--line-2);white-space:nowrap}",
     # Pastille seulement sur « Gagné » : micro-signal teal (la couleur donnée du
     # projet). Sur les statuts neutres, label + contour suffisent — pas
@@ -1367,15 +1368,17 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
     if n_set:
         roi_txt = (f"{agg['roi'] * 100:+.1f} %".replace(".", ",")
                    if agg["roi"] is not None else "—")
+        roi_sample = f"· {n_set} réglé{'s' if n_set != 1 else ''}"
         out.extend([
             "<div class='pnl-grid'>",
             "<div class='pnl-cell lead'><div class='pnl-key'>Gain net (P&amp;L)</div>"
             f"<div class='pnl-val'>{html.escape(_net_txt(agg['net']))}</div></div>",
-            "<div class='pnl-cell lead' title='ROI = gain net / mise totale engagée'>"
+            "<div class='pnl-cell' title='ROI = gain net / mise totale engagée'>"
             "<div class='pnl-key'>ROI</div>"
-            f"<div class='pnl-val'>{html.escape(roi_txt)}</div></div>",
-            "<div class='pnl-cell lead'><div class='pnl-key'>Mise totale</div>"
-            f"<div class='pnl-val'>{html.escape(_eur(agg['staked'], 2))}</div></div>",
+            f"<div class='pnl-val sub'>{html.escape(roi_txt)}</div>"
+            f"<div class='pnl-sample'>{html.escape(roi_sample)}</div></div>",
+            "<div class='pnl-cell'><div class='pnl-key'>Mise totale</div>"
+            f"<div class='pnl-val sub'>{html.escape(_eur(agg['staked'], 2))}</div></div>",
             "</div>",
         ])
         # Compteurs gagnés/perdus/remboursés : ligne discrète sous la grille
