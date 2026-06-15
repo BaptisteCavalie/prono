@@ -788,6 +788,11 @@ _CSS = "".join([
     "h1{margin:0;font-size:clamp(1.3rem,2vw,1.7rem);letter-spacing:.2px;line-height:1.1}",
     ".subtitle{margin:5px 0 0;color:var(--muted);font-size:.9rem;max-width:70ch}",
     ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:14px}",
+    # Galerie de paris : titre + grille de cards posés directement sur le canvas
+    # (pas de panel autour — une seule épaisseur de bordure, cf. DA « élévation
+    # plate »). Les cards SONT la surface, pas une boîte dans une boîte.
+    ".bet-section{margin-bottom:18px}",
+    ".bet-section>h3{margin:0 2px 2px}",
     ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:10px}",
     ".bet-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-3)}",
     ".bet-sel-line{font-size:1.02rem;font-weight:700;line-height:1.3}",
@@ -807,7 +812,11 @@ _CSS = "".join([
     ".suivi-sample{font-family:var(--font-mono);font-size:.82rem;color:var(--muted)}",
     ".suivi-counts{margin:10px 0 0;font-size:.84rem;color:var(--slate)}",
     ".pnl-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}",
-    ".pnl-cell{flex:1 1 130px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--surface-3)}",
+    # Tuiles KPI : fond plein, SANS bordure — elles vivent déjà dans le panel
+    # Suivi, pas de boîte-dans-boîte (cf. DA). La hiérarchie P&L > ROI/Mise vient
+    # de la taille de la valeur (.pnl-val vs .sub), pas d'un cadre, et reste
+    # neutre (un net négatif aussi sobre qu'un positif).
+    ".pnl-cell{flex:1 1 130px;border-radius:10px;padding:10px 12px;background:var(--surface-2)}",
     ".pnl-cell.lead{flex-basis:165px}",
     ".pnl-key{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}",
     ".pnl-val{font-family:var(--font-mono);font-size:1.18rem;font-weight:700;margin-top:4px;color:var(--text);line-height:1.15}",
@@ -819,6 +828,12 @@ _CSS = "".join([
     ".bets-table .b-pari{line-height:1.3}",
     ".bets-table .b-sel{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}",
     ".bets-table .b-num{font-family:var(--font-mono);text-align:right;white-space:nowrap}",
+    # Cote vs mise : deux chiffres mono qu'on doit distinguer d'un coup d'œil
+    # (lisibilité = priorité #1). La COTE est la donnée de décision → teal +
+    # gras (le teal « signale la donnée », cohérent avec .bet-odds des cards) ;
+    # la MISE est le montant engagé → encre neutre. Les deux restent tabulaires.
+    ".bets-table .b-cote{color:var(--brand-dark);font-weight:700}",
+    ".bets-table .b-mise{color:var(--text)}",
     ".bets-table th.col-num{text-align:right}",
     ".combo-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);font-size:.66rem;font-family:var(--font-mono);color:var(--slate);vertical-align:middle}",
     ".bet-placed{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--slate);border:1px solid var(--line-2);font-size:.66rem;font-weight:700;vertical-align:middle;white-space:nowrap}",
@@ -1160,27 +1175,38 @@ def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
     return parts
 
 
-def _placed_picks(bets: Optional[List[Dict]]) -> set:
-    """Ensemble ``{(match_id, issue)}`` des sélections que Baptiste a réellement
-    jouées (paris Winamax, data/bets.json), issue ∈ {home,draw,away}. Sert à
-    marquer dans les paris PROPOSÉS ceux déjà pris — il voit du coup le reste à
-    faire. Croisé par id de fixture (robuste aux libellés FR/EN). Les paris
-    historiques sans ``legs`` (anciens formats) ne matchent rien : neutre."""
-    placed = set()
+def _placed_picks(bets: Optional[List[Dict]]) -> Dict[str, set]:
+    """Ce que Baptiste a réellement joué sur Winamax (data/bets.json), pour
+    marquer dans les paris PROPOSÉS ceux déjà pris — il voit le reste à faire.
+
+    On distingue un **simple** joué (une sélection) d'un **combiné** joué (un
+    ensemble de sélections) : un combiné proposé n'est « déjà joué » que si ce
+    combiné-là a été pris — **pas** si ses jambes ont été jouées séparément en
+    simples (jouer Iran *et* Mexique en simples ≠ avoir joué le combiné
+    Iran+Mexique). Renvoie ``{"singles": {(match_id, issue)},
+    "combos": {frozenset({(match_id, issue), …})}}``, croisé par id de fixture
+    (robuste aux libellés FR/EN). Les paris sans ``legs`` ne matchent rien."""
+    singles: set = set()
+    combos: set = set()
     for b in (bets or []):
-        for leg in b.get("legs", []):
-            mid, pick = leg.get("match"), leg.get("pick")
-            if mid and pick:
-                placed.add((str(mid).upper(), pick))
-    return placed
+        picks = {(str(leg.get("match")).upper(), leg.get("pick"))
+                 for leg in b.get("legs", [])
+                 if leg.get("match") and leg.get("pick")}
+        if not picks:
+            continue
+        if b.get("combo") or len(picks) > 1:
+            combos.add(frozenset(picks))
+        else:
+            singles |= picks
+    return {"singles": singles, "combos": combos}
 
 
 _PLACED_BADGE = "<span class='bet-placed' title='Tu as déjà joué cette sélection sur Winamax'>déjà joué</span>"
 
 
 def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
-                  placed_picks: Optional[set] = None) -> List[str]:
-    placed = placed_picks or set()
+                  placed_picks: Optional[Dict[str, set]] = None) -> List[str]:
+    placed = placed_picks or {"singles": set(), "combos": set()}
     bk = (rec.get("bankroll") if rec else bankroll) or bankroll
     parts = [
         "<section class='panel'>",
@@ -1239,8 +1265,8 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
     ])
 
     parts.extend([
-        "<section class='panel'>",
-        "<h3 style='margin:0'>Paris simples (value uniquement)</h3>",
+        "<section class='bet-section'>",
+        "<h3>Paris simples (value uniquement)</h3>",
         "<div class='bet-grid'>",
     ])
     if rec["singles"]:
@@ -1249,7 +1275,7 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
             sel = _sel_fr(b["sel"], s["home"], s["away"])
             ret = s["stake"] * b["odds"]
             placed_tag = (_PLACED_BADGE
-                          if (str(s.get("match_id", "")).upper(), b["sel"]) in placed else "")
+                          if (str(s.get("match_id", "")).upper(), b["sel"]) in placed["singles"] else "")
             # Ordre du ticket Winamax : sélection + cote, contexte, mise, retour
             # — la recopie se fait position à position, le calcul passe en détail.
             parts.extend([
@@ -1273,26 +1299,30 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
     parts.extend(["</div>", "</section>"])
 
     parts.extend([
-        "<section class='panel'>",
-        "<h3 style='margin:0'>Combinés (2 sélections max &middot; mise minime)</h3>",
+        "<section class='bet-section'>",
+        "<h3>Combinés (2 sélections max &middot; mise minime)</h3>",
         "<div class='bet-grid'>",
     ])
     if rec["combos"]:
         for c in rec["combos"]:
             ret = c["stake"] * c["combined_odds"]
-            parts.append("<article class='bet-card'>")
+            # « déjà joué » porte sur le combiné ENTIER : un seul badge, en tête
+            # de la card, et seulement si ce combiné-là (même jeu de jambes) a
+            # été pris — pas si ses jambes l'ont été séparément en simples.
+            legs_key = frozenset((str(leg.get("match_id", "")).upper(), leg["sel"])
+                                 for leg in c["legs"])
+            placed_tag = _PLACED_BADGE if legs_key in placed["combos"] else ""
+            parts.append(f"<article class='bet-card{' is-placed' if placed_tag else ''}'>")
             parts.append(
                 f"<div class='bet-sel-line'>Combiné {len(c['legs'])} sélections "
-                f"<span class='bet-odds'>@ {c['combined_odds']:.2f}</span></div>"
+                f"<span class='bet-odds'>@ {c['combined_odds']:.2f}</span>{placed_tag}</div>"
             )
             for idx, leg in enumerate(c["legs"], start=1):
                 pair = _split_match(leg["label"]) or (leg["label"], "")
                 sel_txt = _sel_fr(leg["sel"], pair[0], pair[1])
-                leg_tag = (_PLACED_BADGE
-                           if (str(leg.get("match_id", "")).upper(), leg["sel"]) in placed else "")
                 parts.append(
                     f"<div class='bet-context'>{idx}. <strong>{html.escape(sel_txt)}</strong> "
-                    f"<span class='bet-odds'>@ {leg['odds']:.2f}</span> &middot; {html.escape(leg['label'])}{leg_tag}</div>"
+                    f"<span class='bet-odds'>@ {leg['odds']:.2f}</span> &middot; {html.escape(leg['label'])}</div>"
                 )
             parts.append(
                 f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(c['stake'], 2)}</span> "
@@ -1422,8 +1452,8 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
         out.extend([
             "<tr>",
             f"<td data-label='Pari' class='b-pari'>{html.escape(_bet_label(b))}{combo_tag}{sel_html}</td>",
-            f"<td data-label='Cote' class='b-num'>{odds_txt}</td>",
-            f"<td data-label='Mise' class='b-num'>{html.escape(stake_txt)}</td>",
+            f"<td data-label='Cote' class='b-num b-cote'>{odds_txt}</td>",
+            f"<td data-label='Mise' class='b-num b-mise'>{html.escape(stake_txt)}</td>",
             f"<td data-label='Statut'><span class='bet-status {status_cls}'>{status_label}</span></td>",
             f"<td data-label='Net' class='b-net'>{net_html}</td>",
             "</tr>",
