@@ -95,7 +95,7 @@ Réactions sur les 5 dashboards — traces de goût, validées.
   clair — confirme le parti-pris. → déjà au DA, renforcé (layout colonnes).
 - **Chiffres-clés très mis en avant** : hiérarchie d'échelle forte sur les
   nombres (proba, ROI, P&L). → porté dans `da.md` (Typographie).
-- **Gold / silver / copper light pour les Paris ?** : **OUVERT** — décision en
-  attente. Tension avec la règle « Paris neutre, aucune incitation » : le
-  médaillé glisse vite vers podium/casino (cliché bookmaker). Question posée à
-  Baptiste avant tout report au DA.
+- **Gold / silver / copper light pour les Paris** : **ADOPTÉ** (Baptiste
+  2026-06-15) — « c'est un outil perso, je m'en fiche de l'incitation ».
+  Devient la rampe métallique de la page Paris (gagné / remboursé / perdu),
+  pâle et mate. → porté dans `da.md` (Couleur · Métaux Paris).
