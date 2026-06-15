@@ -1,5 +1,405 @@
 {
   "bets": [
-    {"id": 1, "date": "2026-06-12", "label": "Corée du Sud – Rép. tchèque", "sel": "Corée du Sud vainqueur", "odds": 2.6, "stake": 5, "status": "gagne"}
+    {
+      "id": 1,
+      "date": "2026-06-12",
+      "label": "Corée du Sud – Rép. tchèque",
+      "sel": "Corée du Sud vainqueur",
+      "odds": 2.6,
+      "stake": 5,
+      "status": "gagne"
+    },
+    {
+      "id": 2,
+      "ref": "6F9V1EVH",
+      "date": "2026-06-14",
+      "combo": true,
+      "label": "Nul USA-Australie + Nul Cap-Vert-Arabie S.",
+      "odds": 12.32,
+      "stake": 1.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G21",
+          "home": "United States",
+          "away": "Australia",
+          "pick": "draw",
+          "odds": 3.85
+        },
+        {
+          "match": "G48",
+          "home": "Cape Verde",
+          "away": "Saudi Arabia",
+          "pick": "draw",
+          "odds": 3.2
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "ref": "6F9V0H6Q",
+      "date": "2026-06-14",
+      "label": "Iran – Nouvelle-Zélande",
+      "sel": "Iran vainqueur",
+      "odds": 1.8,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G38",
+          "home": "Iran",
+          "away": "New Zealand",
+          "pick": "home",
+          "odds": 1.8
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "ref": "6F9V03XQ",
+      "date": "2026-06-14",
+      "label": "Belgique – Égypte",
+      "sel": "Belgique vainqueur",
+      "odds": 1.58,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G37",
+          "home": "Belgium",
+          "away": "Egypt",
+          "pick": "home",
+          "odds": 1.58
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "ref": "6F9094BQ",
+      "date": "2026-06-13",
+      "combo": true,
+      "label": "Nul USA-Australie + Türkiye",
+      "odds": 7.33,
+      "stake": 1.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G21",
+          "home": "United States",
+          "away": "Australia",
+          "pick": "draw",
+          "odds": 3.9
+        },
+        {
+          "match": "G22",
+          "home": "Türkiye",
+          "away": "Paraguay",
+          "pick": "home",
+          "odds": 1.88
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "ref": "6F9085E9",
+      "date": "2026-06-13",
+      "label": "Türkiye – Paraguay",
+      "sel": "Türkiye vainqueur",
+      "odds": 1.88,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G22",
+          "home": "Türkiye",
+          "away": "Paraguay",
+          "pick": "home",
+          "odds": 1.88
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "ref": "6F907C3H",
+      "date": "2026-06-13",
+      "label": "USA – Australie",
+      "sel": "Match nul (Penalty World)",
+      "odds": 3.9,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G21",
+          "home": "United States",
+          "away": "Australia",
+          "pick": "draw",
+          "odds": 3.9
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "ref": "6F906EV1",
+      "date": "2026-06-13",
+      "label": "Belgique – Égypte",
+      "sel": "Belgique vainqueur",
+      "odds": 1.56,
+      "stake": 10.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G37",
+          "home": "Belgium",
+          "away": "Egypt",
+          "pick": "home",
+          "odds": 1.56
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "ref": "6F8HPGHX",
+      "date": "2026-06-13",
+      "combo": true,
+      "label": "Australie + Nul Cap-Vert-Arabie S.",
+      "odds": 10.08,
+      "stake": 1.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 3.15
+        },
+        {
+          "match": "G48",
+          "home": "Cape Verde",
+          "away": "Saudi Arabia",
+          "pick": "draw",
+          "odds": 3.2
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "ref": "6F8HOSYH",
+      "date": "2026-06-13",
+      "label": "Cap-Vert – Arabie Saoudite",
+      "sel": "Match nul",
+      "odds": 3.2,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G48",
+          "home": "Cape Verde",
+          "away": "Saudi Arabia",
+          "pick": "draw",
+          "odds": 3.2
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "ref": "6F609HHG",
+      "date": "2026-06-11",
+      "combo": true,
+      "label": "France + Sénégal",
+      "odds": 1.9,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G49",
+          "home": "France",
+          "away": "Senegal",
+          "pick": "home",
+          "odds": 1.44
+        },
+        {
+          "match": "G54",
+          "home": "Senegal",
+          "away": "Iraq",
+          "pick": "home",
+          "odds": 1.32
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "ref": "6F607TPU",
+      "date": "2026-06-11",
+      "combo": true,
+      "label": "Corée du Sud + Australie",
+      "odds": 7.67,
+      "stake": 1.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G02",
+          "home": "South Korea",
+          "away": "Czechia",
+          "pick": "home",
+          "odds": 2.6
+        },
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 2.95
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "ref": "6F5XT7N6",
+      "date": "2026-06-11",
+      "combo": true,
+      "label": "Argentine + France",
+      "odds": 1.46,
+      "stake": 1.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G55",
+          "home": "Argentina",
+          "away": "Algeria",
+          "pick": "home",
+          "odds": 1.36
+        },
+        {
+          "match": "G51",
+          "home": "France",
+          "away": "Iraq",
+          "pick": "home",
+          "odds": 1.07
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "ref": null,
+      "date": "2026-06-11",
+      "combo": true,
+      "label": "Mexique + Australie",
+      "odds": 5.07,
+      "stake": 1.0,
+      "status": "en_cours",
+      "note": "réf illisible sur la capture — à confirmer",
+      "legs": [
+        {
+          "match": "G03",
+          "home": "Mexico",
+          "away": "South Korea",
+          "pick": "home",
+          "odds": 1.72
+        },
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 2.95
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "ref": "6F5XR8QY",
+      "date": "2026-06-11",
+      "label": "Sénégal – Irak",
+      "sel": "Sénégal vainqueur",
+      "odds": 1.32,
+      "stake": 10.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G54",
+          "home": "Senegal",
+          "away": "Iraq",
+          "pick": "home",
+          "odds": 1.32
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "ref": "6F5XQY45",
+      "date": "2026-06-11",
+      "label": "Paraguay – Australie",
+      "sel": "Australie vainqueur",
+      "odds": 2.95,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 2.95
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "ref": "6F5XQ4HC",
+      "date": "2026-06-11",
+      "label": "Mexique – Corée du Sud",
+      "sel": "Mexique vainqueur",
+      "odds": 1.72,
+      "stake": 10.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G03",
+          "home": "Mexico",
+          "away": "South Korea",
+          "pick": "home",
+          "odds": 1.72
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "ref": "6F5XPV2H",
+      "date": "2026-06-11",
+      "label": "Argentine – Algérie",
+      "sel": "Argentine vainqueur",
+      "odds": 1.36,
+      "stake": 10.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G55",
+          "home": "Argentina",
+          "away": "Algeria",
+          "pick": "home",
+          "odds": 1.36
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "ref": "6F5XPB53",
+      "date": "2026-06-11",
+      "label": "France – Sénégal",
+      "sel": "France vainqueur",
+      "odds": 1.44,
+      "stake": 10.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G49",
+          "home": "France",
+          "away": "Senegal",
+          "pick": "home",
+          "odds": 1.44
+        }
+      ]
+    }
   ]
 }

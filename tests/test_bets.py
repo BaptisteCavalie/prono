@@ -90,5 +90,52 @@ class TestTallyBets(unittest.TestCase):
         self.assertAlmostEqual(agg["net"], 10.0)
 
 
+class TestSettleStatus(unittest.TestCase):
+    """Réglage auto depuis les résultats (tools/settle_bets.py)."""
+
+    def _single(self, mid, pick):
+        return {"status": "en_cours", "legs": [{"match": mid, "pick": pick}]}
+
+    def test_leg_outcome(self):
+        self.assertEqual(common.leg_outcome(2, 0), "home")
+        self.assertEqual(common.leg_outcome(1, 1), "draw")
+        self.assertEqual(common.leg_outcome(0, 3), "away")
+
+    def test_single_win_loss_pending(self):
+        res = {"G37": (2, 0)}
+        self.assertEqual(common.settle_status(self._single("G37", "home"), res), "gagne")
+        self.assertEqual(common.settle_status(self._single("G37", "draw"), res), "perdu")
+        self.assertEqual(common.settle_status(self._single("G99", "home"), res), "en_cours")
+
+    def test_combo_wins_only_when_all_legs_played_and_won(self):
+        bet = {"status": "en_cours", "legs": [
+            {"match": "G02", "pick": "home"}, {"match": "G24", "pick": "away"}]}
+        # une jambe jouée+gagnée, l'autre pas encore -> en cours
+        self.assertEqual(common.settle_status(bet, {"G02": (2, 1)}), "en_cours")
+        # les deux jouées et gagnées -> gagné
+        self.assertEqual(common.settle_status(bet, {"G02": (2, 1), "G24": (0, 1)}), "gagne")
+
+    def test_combo_loses_the_instant_one_leg_loses_even_if_others_pending(self):
+        bet = {"status": "en_cours", "legs": [
+            {"match": "G02", "pick": "home"}, {"match": "G24", "pick": "away"}]}
+        # G02 perdu (nul), G24 pas encore jouée -> perdu tout de suite
+        self.assertEqual(common.settle_status(bet, {"G02": (1, 1)}), "perdu")
+
+    def test_draw_pick_settles_correctly(self):
+        bet = self._single("G21", "draw")
+        self.assertEqual(common.settle_status(bet, {"G21": (1, 1)}), "gagne")
+        self.assertEqual(common.settle_status(bet, {"G21": (2, 0)}), "perdu")
+
+    def test_no_legs_keeps_status(self):
+        # ancien format sans legs : on ne devine pas, statut inchangé
+        self.assertEqual(common.settle_status({"status": "gagne"}, {"G01": (1, 0)}), "gagne")
+        self.assertEqual(common.settle_status({"status": "en_cours"}, {}), "en_cours")
+
+    def test_never_invents_a_refund(self):
+        # rembourse n'est jamais produit automatiquement (cas void = manuel)
+        bet = {"status": "en_cours", "legs": [{"match": "G37", "pick": "home"}]}
+        self.assertIn(common.settle_status(bet, {"G37": (2, 0)}), ("gagne", "perdu", "en_cours"))
+
+
 if __name__ == "__main__":
     unittest.main()

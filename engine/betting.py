@@ -144,7 +144,8 @@ def build_combos(staked_singles: List[Dict], bankroll: float) -> List[Dict]:
         spent += stake
         combos.append({
             "legs": [{"label": leg["label"], "sel": leg["bet"]["sel"],
-                      "odds": leg["bet"]["odds"]} for leg in chunk],
+                      "odds": leg["bet"]["odds"], "match_id": leg.get("match_id", "")}
+                     for leg in chunk],
             "combined_odds": round(dec, 2),
             "combined_prob": p,
             "ev": ev,

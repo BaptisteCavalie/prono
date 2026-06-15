@@ -150,6 +150,43 @@ def tally_bets(bets) -> Dict:
     return agg
 
 
+def leg_outcome(home_goals: int, away_goals: int) -> str:
+    """1N2 d'un match terminé : ``home`` / ``draw`` / ``away``."""
+    if home_goals > away_goals:
+        return "home"
+    if home_goals < away_goals:
+        return "away"
+    return "draw"
+
+
+def settle_status(bet: Dict, results: Dict[str, Tuple[int, int]]) -> str:
+    """Statut réglé d'un pari Winamax d'après les résultats connus.
+
+    ``results`` : ``{MATCH_ID: (buts_dom, buts_ext)}`` pour les seuls matchs
+    **terminés**. Logique combiné (et simple = 1 jambe) :
+
+    - **perdu** dès qu'**une** jambe est perdue (même si d'autres sont à jouer) ;
+    - **gagne** seulement quand **toutes** les jambes sont jouées ET gagnées ;
+    - **en_cours** sinon (au moins une jambe pas encore jouée, aucune perdue).
+
+    Ne statue jamais « remboursé » (annulation / cote void) : ces cas restent
+    manuels (cf. maj-resultats). Un pari sans ``legs`` (ancien format) garde son
+    statut tel quel — on ne devine pas. Fonction pure, testée (tests/test_bets.py).
+    """
+    legs = bet.get("legs")
+    if not legs:
+        return bet_status(bet)
+    any_pending = False
+    for leg in legs:
+        res = results.get(str(leg.get("match", "")).upper())
+        if res is None:
+            any_pending = True
+            continue
+        if leg_outcome(int(res[0]), int(res[1])) != leg.get("pick"):
+            return "perdu"
+    return "en_cours" if any_pending else "gagne"
+
+
 def load_odds_board(path: Optional[str], root: Optional[Path] = None) -> Dict[str, List[float]]:
     """Parse a {key: [home, draw, away]} decimal-odds JSON file.
 

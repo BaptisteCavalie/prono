@@ -5,7 +5,7 @@ allowed-tools: Bash, Read, Edit, WebSearch, WebFetch, Glob, Grep
 
 # /maj-resultats — résultats + horaires en autonomie
 
-Trois jobs, dans cet ordre :
+Quatre jobs, dans cet ordre :
 - **A. Scores** : remplir `actual_home`/`actual_away` des matchs **terminés**
   encore vides.
 - **B. Horaires** : renseigner `kickoff_utc` (instant UTC du coup d'envoi) des
@@ -16,6 +16,9 @@ Trois jobs, dans cet ordre :
   signal **forme** de `data/team_status.json` (`python3 tools/recompute_form.py`).
   C'est la seule adaptation persistée du modèle ici : l'Elo, lui, s'ajuste déjà
   tout seul au runtime (`updater.apply_completed_results`, voir « Hors périmètre »).
+- **D. Règlement des paris** : régler les paris Winamax en cours d'après les
+  scores qui viennent d'être saisis (`python3 tools/settle_bets.py`), pour que
+  le bilan P&L/ROI de la page Paris reste à jour sans dictée de Baptiste.
 
 Le tout sans que Baptiste ait à dicter quoi que ce soit. Pensé pour une session
 **programmée** (trigger récurrent Claude Code web). Une exécution = un cycle
@@ -114,7 +117,25 @@ réels** (cf. `engine/updater.apply_completed_results`).
    un score (match sauté en A), ce match n'a pas été saisi : il ne pèse donc pas
    sur la forme, ce qui est correct.
 
-### Finalisation (commun A + B + C)
+### D. Règlement des paris Winamax
+
+7bis. **Régler les paris** dont les matchs viennent d'être saisis. À ne lancer
+   **que si** des scores ont été écrits en A (sinon rien de neuf à régler) :
+   ```bash
+   python3 tools/settle_bets.py        # n'écrit que si un statut change
+   ```
+   L'outil est **déterministe et idempotent** (logique argent testée,
+   `engine/common.settle_status` + `tests/test_bets.py`) : il ne fait que passer
+   un pari `en_cours` à `gagne`/`perdu` une fois ses jambes décidées — un combiné
+   **perd dès qu'une** jambe est perdue, **gagne** seulement quand **toutes** sont
+   jouées et gagnées. Il ne touche jamais un pari déjà réglé et **n'invente jamais
+   un remboursement**. Les cas spéciaux (sélection **annulée / cote void / cash
+   out**, ou un pari sans champ `legs`) ne sont **pas** réglés par l'outil :
+   les **signaler** dans le rapport pour règlement manuel (Baptiste dicte, on écrit
+   `data/bets.json`). En cas de doute sur un score (match sauté en A), le match
+   n'est pas saisi : le pari reste donc `en_cours`, ce qui est correct.
+
+### Finalisation (commun A + B + C + D)
 
 8. **Hygiène des effets de bord `data/`** (règle CLAUDE.md). Si une commande a
    fait tourner l'UI/`autonomous_refresh` et muté `data/ratings.json` sans
@@ -146,7 +167,8 @@ réels** (cf. `engine/updater.apply_completed_results`).
     ```bash
     git add data/fixtures.json
     git add data/team_status.json   # seulement si l'étape C a écrit (sinon ignorer)
-    git commit -m "Maj auto du $(date +%F) (résultats + horaires + forme)"
+    git add data/bets.json          # seulement si l'étape D a réglé des paris (sinon ignorer)
+    git commit -m "Maj auto du $(date +%F) (résultats + horaires + forme + paris)"
     git push -u origin "$(git branch --show-current)"
     git fetch origin main && git checkout main && git merge --ff-only -
     git push -u origin main
@@ -160,9 +182,12 @@ réels** (cf. `engine/updater.apply_completed_results`).
     propre et rien à signaler, un résumé d'une ligne suffit.
 
 ## Hors périmètre
-- **Règlement des paris Winamax** (gagné/perdu) reste **manuel** : c'est le
-  compte réel de Baptiste, il dicte, on écrit `data/bets.json`. Ce playbook ne
-  touche qu'aux scores des matchs.
+- **Saisie d'un nouveau pari** (placer un pari, l'ajouter à `data/bets.json`)
+  reste **manuel** : Baptiste dicte ses tickets Winamax, on écrit le JSON. Ce
+  playbook ne fait que **régler** (gagné/perdu) les paris déjà enregistrés, à
+  partir des scores. Les **remboursements / cotes void / cash out** restent
+  aussi manuels (l'outil ne les devine pas — il les laisse `en_cours` et on
+  les signale).
 - **L'Elo n'est pas recalculé ni persisté ici** : `apply_completed_results`
   l'ajuste tout seul au runtime à partir des scores saisis (deltas locaux sur la
   baseline figée). Le persister serait un double comptage (cf. ui.py, commentaire

@@ -820,6 +820,8 @@ _CSS = "".join([
     ".bets-table .b-num{font-family:var(--font-mono);text-align:right;white-space:nowrap}",
     ".bets-table th.col-num{text-align:right}",
     ".combo-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);font-size:.66rem;font-family:var(--font-mono);color:var(--slate);vertical-align:middle}",
+    ".bet-placed{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--ok-bg);color:var(--ok);border:1px solid var(--ok-line);font-size:.66rem;font-weight:700;vertical-align:middle;white-space:nowrap}",
+    ".bet-card.is-placed{border-color:var(--ok-line);background:color-mix(in srgb,var(--ok) 6%,var(--surface-3))}",
     ".bet-status{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:700;border:1px solid var(--line-2);white-space:nowrap}",
     # Pastille seulement sur « Gagné » : micro-signal teal (la couleur donnée du
     # projet). Sur les statuts neutres, label + contour suffisent — pas
@@ -1157,7 +1159,27 @@ def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
     return parts
 
 
-def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> List[str]:
+def _placed_picks(bets: Optional[List[Dict]]) -> set:
+    """Ensemble ``{(match_id, issue)}`` des sélections que Baptiste a réellement
+    jouées (paris Winamax, data/bets.json), issue ∈ {home,draw,away}. Sert à
+    marquer dans les paris PROPOSÉS ceux déjà pris — il voit du coup le reste à
+    faire. Croisé par id de fixture (robuste aux libellés FR/EN). Les paris
+    historiques sans ``legs`` (anciens formats) ne matchent rien : neutre."""
+    placed = set()
+    for b in (bets or []):
+        for leg in b.get("legs", []):
+            mid, pick = leg.get("match"), leg.get("pick")
+            if mid and pick:
+                placed.add((str(mid).upper(), pick))
+    return placed
+
+
+_PLACED_BADGE = "<span class='bet-placed' title='Tu as déjà joué cette sélection sur Winamax'>déjà joué</span>"
+
+
+def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
+                  placed_picks: Optional[set] = None) -> List[str]:
+    placed = placed_picks or set()
     bk = (rec.get("bankroll") if rec else bankroll) or bankroll
     parts = [
         "<section class='panel'>",
@@ -1225,11 +1247,13 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
             b = s["bet"]
             sel = _sel_fr(b["sel"], s["home"], s["away"])
             ret = s["stake"] * b["odds"]
+            placed_tag = (_PLACED_BADGE
+                          if (str(s.get("match_id", "")).upper(), b["sel"]) in placed else "")
             # Ordre du ticket Winamax : sélection + cote, contexte, mise, retour
             # — la recopie se fait position à position, le calcul passe en détail.
             parts.extend([
-                "<article class='bet-card'>",
-                f"<div class='bet-sel-line'>{html.escape(sel)} <span class='bet-odds'>@ {b['odds']:.2f}</span></div>",
+                f"<article class='bet-card{' is-placed' if placed_tag else ''}'>",
+                f"<div class='bet-sel-line'>{html.escape(sel)} <span class='bet-odds'>@ {b['odds']:.2f}</span>{placed_tag}</div>",
                 "<div class='bet-context'>1N2</div>",
                 f"<div class='bet-context'>{html.escape(s['label'])}"
                 + (f" &middot; {html.escape(s['when'])}" if s.get("when") else "")
@@ -1263,9 +1287,11 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool) -> Li
             for idx, leg in enumerate(c["legs"], start=1):
                 pair = _split_match(leg["label"]) or (leg["label"], "")
                 sel_txt = _sel_fr(leg["sel"], pair[0], pair[1])
+                leg_tag = (_PLACED_BADGE
+                           if (str(leg.get("match_id", "")).upper(), leg["sel"]) in placed else "")
                 parts.append(
                     f"<div class='bet-context'>{idx}. <strong>{html.escape(sel_txt)}</strong> "
-                    f"<span class='bet-odds'>@ {leg['odds']:.2f}</span> &middot; {html.escape(leg['label'])}</div>"
+                    f"<span class='bet-odds'>@ {leg['odds']:.2f}</span> &middot; {html.escape(leg['label'])}{leg_tag}</div>"
                 )
             parts.append(
                 f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(c['stake'], 2)}</span> "
@@ -1733,7 +1759,8 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         # Baptiste vient consulter en premier. Indépendant du modèle/des cotes
         # (donnée historique), donc affiché même si la reco est bloquée.
         parts.extend(_render_suivi_paris(bets or []))
-        parts.extend(_render_paris(recommendations, bankroll, bet_blocked))
+        parts.extend(_render_paris(recommendations, bankroll, bet_blocked,
+                                   placed_picks=_placed_picks(bets)))
 
     elif safe_tab == "diagnostics":
         parts.append("<div class='topbar'><div><h1>Diagnostics</h1>"
