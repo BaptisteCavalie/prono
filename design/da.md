@@ -49,6 +49,9 @@ générique » (corporate Bootstrap), « dark mode racoleur »
 - **Mono** : `ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas` +
   `font-variant-numeric: tabular-nums` — sur TOUS les chiffres (probas, scores,
   cotes, mises, Elo). Le geste Decima Mono de FiveThirtyEight, sans webfont.
+- **Échelle** : hiérarchie forte — les **chiffres-clés** (proba du pick, ROI,
+  P&L, Elo) montent en grand et se lisent avant leur label ; le reste reste
+  dense. Le nombre porte l'écran, le mot le légende.
 - **Chargement** : aucun (stacks système).
 
 ## Couleur — deux zones
@@ -78,7 +81,12 @@ Le dashboard a deux territoires chromatiques distincts, et c'est délibéré.
 ## Densité & forme
 - **Densité** : dense — consultation rapide pré-match ; une ligne = un match,
   ordre chronologique, passés masquables.
-- **Layout** : sidebar fixe ~220 px à gauche, canvas fluide à droite.
+- **Layout** : sidebar fixe ~220 px à gauche, canvas fluide à droite —
+  panneaux en **colonnes** juxtaposés (liste · standings/récap · détail) sur
+  fond blanc dashboard.
+- **Identité équipe/pays** : l'**écusson — chez nous le drapeau** — prime, le
+  nom passe en secondaire (reconnaissance d'un coup d'œil). Vaut pour les
+  lignes de match comme pour le filtre pays.
 - **Radius** : doux — 12-14px cards/panels du canvas, 8px items de nav,
   pilules (999) pour chips de score et mises.
 - **Élévation** : plate — bordures 1px, pas d'ombres (réservées aux flottants).

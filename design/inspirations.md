@@ -82,3 +82,20 @@ Cinq dashboards sportifs, deux camps nets :
 Patterns réutilisables transverses : **filtre pays/sport en chips ou liste
 sidebar**, **sparkline dans la tuile** (valeur + tendance), **statut en
 pastille** plutôt qu'en bandeau.
+
+## Ce que Baptiste retient (2026-06-15)
+Réactions sur les 5 dashboards — traces de goût, validées.
+- **Écusson/drapeau > nom** : l'identité visuelle de l'équipe prime sur le
+  texte. À appliquer à nos **drapeaux** (filtre pays et lignes de match mènent
+  au drapeau, nom en secondaire). → porté dans `da.md`.
+- **Architecture des cards de match** : la hiérarchie d'info dans une carte
+  match (équipes · statut/minute · score · méta) — référence de composition
+  pour la liste Matchs. → pattern feature.
+- **Fonds blancs « dashboard » + colonnes** : panneaux juxtaposés sur canvas
+  clair — confirme le parti-pris. → déjà au DA, renforcé (layout colonnes).
+- **Chiffres-clés très mis en avant** : hiérarchie d'échelle forte sur les
+  nombres (proba, ROI, P&L). → porté dans `da.md` (Typographie).
+- **Gold / silver / copper light pour les Paris ?** : **OUVERT** — décision en
+  attente. Tension avec la règle « Paris neutre, aucune incitation » : le
+  médaillé glisse vite vers podium/casino (cliché bookmaker). Question posée à
+  Baptiste avant tout report au DA.
