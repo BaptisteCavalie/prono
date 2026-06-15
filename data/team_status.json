@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-14T08:55:52Z",
+  "as_of": "2026-06-15T04:34:15Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -93,7 +93,7 @@
       ]
     },
     "Netherlands": {
-      "form": 0.0,
+      "form": -0.04,
       "injury_impact": 0.08,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -102,7 +102,7 @@
       ]
     },
     "Ecuador": {
-      "form": 0.0,
+      "form": -1.0,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -120,7 +120,7 @@
       ]
     },
     "Germany": {
-      "form": 0.0,
+      "form": 0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -147,7 +147,7 @@
       ]
     },
     "Japan": {
-      "form": 0.0,
+      "form": 0.04,
       "injury_impact": 0.12,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -228,7 +228,7 @@
       ]
     },
     "Ivory Coast": {
-      "form": 0.0,
+      "form": 1.0,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -273,7 +273,7 @@
       ]
     },
     "Sweden": {
-      "form": 0.0,
+      "form": 0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -327,7 +327,7 @@
       ]
     },
     "Tunisia": {
-      "form": 0.0,
+      "form": -0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -417,7 +417,7 @@
       ]
     },
     "Curaçao": {
-      "form": 0.0,
+      "form": -0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
