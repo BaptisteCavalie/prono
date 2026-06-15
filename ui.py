@@ -1566,8 +1566,11 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
         parts.append(
             f"<li>Score le plus probable du modèle : {html.escape(r['mpp_modal_score'])}</li>"
         )
+    # Issue 1N2 la plus probable selon le modèle (transparence). L'indice Nutri
+    # n'est PAS accolé ici : il note le pick MPP (qui peut être une autre issue),
+    # pas ce favori modèle — l'y coller induirait deux issues sous une pastille.
     parts.append(
-        f"<li>Choix 1N2 le plus probable : {html.escape(r['pick_label'])} ({round(r['pick_prob'] * 100)}%), indice {html.escape(r['nutri'])}</li>"
+        f"<li>Issue 1N2 la plus probable (modèle) : {html.escape(r['pick_label'])} ({round(r['pick_prob'] * 100)}%)</li>"
     )
     parts.append(
         f"<li>Recommandation de pari actuelle : {html.escape(r['bet'])} ({r['bet_conf']}%{est})</li>"
