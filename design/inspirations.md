@@ -7,14 +7,13 @@
 > ou `anti-modèle` (gardée pour savoir ce qu'on refuse).
 >
 > Captures : les images vivent dans `design/references/<slug>.png` — le
-> design-critic les ouvre côte à côte avec le rendu. Les 5 ci-dessous ont été
-> partagées en chat (2026-06-15) et **restent à déposer** dans `references/`
-> sous les noms indiqués.
+> design-critic les ouvre côte à côte avec le rendu. Les 5 ci-dessous,
+> partagées en chat (2026-06-15), sont **déposées** dans `references/`.
 
 ---
 
 ## ScoreZone — scores live, sidebar par compétition + filtre pays
-- **Capture** : `design/references/scorezone-dark-scores.png` *(à déposer)*
+- **Capture** : `design/references/scorezone-dark-scores.png`
 - **Verdict** : `pattern feature` (sidebar/filtre) + `anti-modèle` (le reste)
 - **On vole** : la **sidebar listée par compétition** doublée d'un bloc
   **Countries avec drapeaux** — exactement notre geste cardinal (filtre pays
@@ -25,7 +24,7 @@
   qu'on rejette ; chez nous le sombre s'arrête à la nav.
 
 ## VELO — cockpit F1, canvas clair « instrument pro »
-- **Capture** : `design/references/velo-f1-light-cockpit.png` *(à déposer)*
+- **Capture** : `design/references/velo-f1-light-cockpit.png`
 - **Verdict** : `à curer` (forte affinité avec le parti-pris dashboard)
 - **On vole** : le **canvas papier clair encadré par une sidebar** (notre
   parti-pris exact) ; la **table Standings dense** (drapeau + nom + valeur
@@ -37,7 +36,7 @@
   F1 (circuit map, météo) hors-sujet.
 
 ## VitalView — santé, right-rail récap + cartes-stat
-- **Capture** : `design/references/vitalview-health-rightrail.png` *(à déposer)*
+- **Capture** : `design/references/vitalview-health-rightrail.png`
 - **Verdict** : `pattern feature` (récap latéral, hiérarchie du chiffre)
 - **On vole** : le **right-rail de récap** (mini-calendrier + stats de la
   période) si un récap latéral aide ; la **hiérarchie chiffre géant + unité**
@@ -47,7 +46,7 @@
   jamais la déco) ; le ton grand public et les illustrations de fond.
 
 ## Tips app (profil « Max Kembli ») — social betting vert
-- **Capture** : `design/references/bettingtips-green-social.png` *(à déposer)*
+- **Capture** : `design/references/bettingtips-green-social.png`
 - **Verdict** : `anti-modèle` (le specimen le plus pur de ce qu'on refuse)
 - **On vole** (rare) : la **liste de matchs à onglets de statut**
   (All · Live · Finished · Scheduled) — écho de notre fusion passés/futurs
@@ -59,7 +58,7 @@
   restent neutres, aucune incitation à parier.
 
 ## SPORTSTENSOR — prédictions + leaderboard ROI, canvas clair
-- **Capture** : `design/references/sportstensor-predictions-roi.png` *(à déposer)*
+- **Capture** : `design/references/sportstensor-predictions-roi.png`
 - **Verdict** : `à curer` (prolonge FiveThirtyEight, déjà au DA)
 - **On vole** : la **prédiction comme objet premier** (Total Predictions,
   Score Per Miner) ; le **leaderboard avec ROI chiffré** aligné (page Paris :
