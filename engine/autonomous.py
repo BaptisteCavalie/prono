@@ -191,11 +191,12 @@ def _refresh_prediction_snapshots(fixtures_payload: Dict, ratings_payload: Dict,
     if status_payload is not None:
         ratings_for_pred = team_signals.adjust_ratings_with_status(ratings_for_pred, status_payload)
     ratings_for_pred = expert_signals.apply_expert_priors(ratings_for_pred)
+    mpp_board = data.load_mpp_board()   # freeze the MPP-points-optimal pick, in lockstep with the UI
 
     for m in matches:
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
             continue
-        sl = prediction.scoreline(m, ratings_for_pred)
+        sl = prediction.scoreline(m, ratings_for_pred, mpp_board)
         if sl is None:
             continue
         ph, pa = sl

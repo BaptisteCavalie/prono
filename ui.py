@@ -330,6 +330,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
                   team_status: Optional[Dict] = None):
     rows = []
     expert_sources = expert_signals.load_sources()
+    mpp_board = data.load_mpp_board()
     for m in fixtures:
         home = m["home"]
         away = m["away"]
@@ -350,12 +351,19 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         odds = _find_match_odds(m, odds_board)
 
         # MPP-optimal prono: the scoreline that maximises expected Mon Petit Prono
-        # points (consistent with the favoured 1N2, then rarity-bonus aware), not
-        # just the single most-likely scoreline. Model-only on purpose (see
-        # engine/prediction.py): the calendar prono must match the frozen one,
-        # and odds-driven betting lives on the Paris tab, not here.
-        rec = mpp.recommend(out, knockout=mpp.is_knockout(m))
+        # points. When the real MPP barème points for this match are known
+        # (data/mpp_board.json, ask-Claude layer) the favoured 1N2 maximises
+        # P(outcome) × real points; otherwise it falls back to the model-only
+        # pick. This is NOT the bookmaker odds board — the prono never moves with
+        # betting odds (those live on the Paris tab). Same call as the freeze
+        # (engine/prediction.scoreline) so displayed and frozen can't drift.
+        mpp_points = mpp_board.get(str(m.get("id", "")).upper())
+        knockout = mpp.is_knockout(m)
+        rec = mpp.recommend(out, mpp_points=mpp_points, knockout=knockout)
         rsi, rsj = rec["score"]
+        # The "gros lot" : highest-paying outcome the model still rates plausible —
+        # the deliberate high-variance play for a trailing player (≠ the EV pick).
+        upside = mpp.upside_pick(out, mpp_points, knockout=knockout) if mpp_points else None
         live_predicted_score = f"{rsi}-{rsj}"
         frozen_home = _as_int(m.get("predicted_home"))
         frozen_away = _as_int(m.get("predicted_away"))
@@ -427,15 +435,14 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         elif not value_summaries:
             notes.append("Pas d'opportunité de value détectée avec les cotes actuelles.")
 
-        if rec["differs"]:
+        # Sans points MPP réels, on garde ces notes (le détail structuré
+        # « Prono Mon Petit Prono » + « Option à variance » ne s'affiche que
+        # quand les points sont chargés). Avec les points, ces lignes feraient
+        # doublon — et leur registre « pari risqué / X2 » serait redondant.
+        if not mpp_points and rec["differs"]:
             notes.append(
                 f"Prono optimisé Mon Petit Prono : {live_predicted_score} maximise les points "
                 f"attendus (bonus score exact +{rec['bonus']} {rec['tier']})."
-            )
-        if rec["bonus"] >= 70:
-            notes.append(
-                "Pari sur un score rare : gros bonus MPP mais probabilité plus faible. "
-                "Plus risqué — bon candidat pour le bonus X2."
             )
 
         rows.append({
@@ -479,7 +486,21 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "p_draw": round(out["p_draw"] * 100),
             "p_away": round(out["p_away"] * 100),
             "probs": {"home": out["p_home"], "draw": out["p_draw"], "away": out["p_away"]},
-            "nutri": _confidence_nutriscore(pick_prob, est),
+            # Nutri-prono = le prono MPP : la pastille note la CONFIANCE que le
+            # pick MPP tombe (proba de SON issue), pas la confiance du favori
+            # modèle. Un pick contrarian (nul/outsider) tombe donc logiquement en
+            # bas de l'échelle — c'est honnête (faible proba, gros lot).
+            "nutri": _confidence_nutriscore(rec["p_outcome"], est),
+            "mpp_outcome": rec["outcome"],
+            "mpp_pick_pct": round(rec["p_outcome"] * 100),
+            "mpp_base_points": (round(rec["base_points"]) if rec["base_points"] is not None else None),
+            "mpp_upside": ({
+                "score": f"{upside['score'][0]}-{upside['score'][1]}",
+                "label": {"home": f"Victoire {home_label}", "draw": "Match nul",
+                          "away": f"Victoire {away_label}"}[upside["outcome"]],
+                "base_points": round(upside["base_points"]),
+                "p_outcome": round(upside["p_outcome"] * 100),
+            } if upside and upside["outcome"] != rec["outcome"] else None),
             "completed": completed,
             "verdict": verdict,
             "est": est,
@@ -893,7 +914,7 @@ _CSS = "".join([
     "summary{cursor:pointer;font-size:.84rem;color:var(--brand);font-weight:700;display:inline-block;padding:6px 4px;border-radius:6px}",
     "summary:hover{text-decoration:underline}",
     "summary::marker{color:var(--brand)}",
-    ".note-list{margin:8px 0 0;padding:8px 10px 8px 24px;color:var(--muted);font-size:.8rem;line-height:1.3;background:var(--surface-3);border:1px solid var(--line);border-radius:10px}",
+    ".note-list{margin:8px 0 0;padding:8px 10px 8px 24px;color:var(--muted);font-size:.8rem;line-height:1.3;background:var(--surface-3);border:1px solid var(--line);border-radius:10px;max-width:75ch}",
     ".details-btn{background:none;border:0;cursor:pointer;font:inherit;font-size:.84rem;color:var(--brand);font-weight:700;padding:6px 4px;border-radius:6px}",
     ".details-btn:hover{text-decoration:underline}",
     "tr.note-row{border-top:0}",
@@ -1489,8 +1510,8 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     )
     nutri_chip = (
         f"<span class='nutri nutri-{html.escape(r['nutri'].lower())}' "
-        f"title='Indice de confiance {html.escape(r['nutri'])} (A = forte, E = faible)' "
-        f"aria-label='Confiance {html.escape(r['nutri'])} sur A à E'>{html.escape(r['nutri'])}</span>"
+        f"title='Confiance que le prono Mon Petit Prono tombe — {html.escape(r['nutri'])} (A = forte, E = faible)' "
+        f"aria-label='Confiance que le prono tombe {html.escape(r['nutri'])} sur A à E'>{html.escape(r['nutri'])}</span>"
     )
 
     delta_badge = ""
@@ -1523,9 +1544,24 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     # Sous-ligne pleine largeur repliée : le détail pousse verticalement,
     # sans jamais masquer l'en-tête du jour suivant (pattern liste-matchs-dense).
     parts.append(f"<tr class='note-row' id='{notes_id}' hidden><td colspan='6'><ul class='note-list'>")
-    parts.append(
-        f"<li>Prono recommandé (optimise les points Mon Petit Prono) : {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
-    )
+    if r.get("mpp_base_points") is not None:
+        # Score, confiance et points décrivent tous le pick LIVE (predicted_score_live) :
+        # les coller au score figé quand il a bougé donnerait un couple incohérent
+        # (le badge « Modifié » porte déjà l'écart figé → live).
+        parts.append(
+            f"<li>Prono Mon Petit Prono : {html.escape(r['predicted_score_live'])} — "
+            f"issue à {r['mpp_pick_pct']}%, {r['mpp_base_points']} pts au barème si elle tombe.</li>"
+        )
+    else:
+        parts.append(
+            f"<li>Prono recommandé (optimise les points Mon Petit Prono) : {html.escape(r['predicted_score'])} ({r['score_conf']}%)</li>"
+        )
+    if r.get("mpp_upside"):
+        up = r["mpp_upside"]
+        parts.append(
+            f"<li>Option à variance : {html.escape(up['label'])} {html.escape(up['score'])} — "
+            f"issue moins probable ({up['p_outcome']}%), mais {up['base_points']} pts si elle tombe.</li>"
+        )
     if r["mpp_differs"]:
         parts.append(
             f"<li>Score le plus probable du modèle : {html.escape(r['mpp_modal_score'])}</li>"

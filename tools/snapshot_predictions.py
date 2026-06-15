@@ -43,6 +43,7 @@ def main(argv=None) -> int:
 
     updated = 0
     now_iso = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    mpp_board = data.load_mpp_board()   # same MPP-points-optimal pick as the UI/freeze
 
     for m in sorted(fixtures, key=_sort_key):
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
@@ -52,7 +53,7 @@ def main(argv=None) -> int:
         if has_snapshot and not args.overwrite:
             continue
 
-        sl = prediction.scoreline(m, ratings)  # the one shared model-only prono
+        sl = prediction.scoreline(m, ratings, mpp_board)  # the one shared prono
         if sl is None:
             continue
         ph, pa = sl

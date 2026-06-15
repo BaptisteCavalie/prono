@@ -96,8 +96,12 @@ class PredictionConsistency(unittest.TestCase):
         rows_no = ui._analyse_rows(self.future, self.ratings, {}, team_status=self.team_status)
         rows_odds = ui._analyse_rows(self.future, self.ratings, board, team_status=self.team_status)
 
+        # The prono optimises the real MPP barème (data/mpp_board.json), so the
+        # freeze must be computed with the same board to match the displayed live
+        # one — what must NOT move it is the *bookmaker odds* board above.
+        mpp_board = data.load_mpp_board()
         for m, r0, r1 in zip(self.future, rows_no, rows_odds):
-            freeze = "%d-%d" % prediction.scoreline(m, self.ratings)
+            freeze = "%d-%d" % prediction.scoreline(m, self.ratings, mpp_board)
             self.assertEqual(r0["predicted_score_live"], freeze,
                              f"calendar prono != freeze for {m['home']} vs {m['away']}")
             self.assertEqual(r0["predicted_score_live"], r1["predicted_score_live"],

@@ -178,12 +178,20 @@ def mode_for_position(rank: Optional[int] = None, total: Optional[int] = None,
 
 
 def recommend(out: Dict, odds: Optional[List[float]] = None,
-              knockout: bool = False, mode: str = "ev") -> Dict:
+              knockout: bool = False, mode: str = "ev",
+              mpp_points: Optional[List[float]] = None) -> Dict:
     """Recommend the MPP expected-points-optimal scoreline for one match.
 
-    `odds` is an optional [home, draw, away] decimal triple. When present the
-    favoured outcome maximises P(outcome) x base_points; otherwise it falls back
-    to the model's most likely outcome.
+    The favoured outcome maximises P(outcome) x base_points; without base points
+    it falls back to the model's most likely outcome. Base points come from, in
+    order of fidelity:
+      * `mpp_points` — the [home, draw, away] *real* MPP "bon résultat" points
+        shown in the app (see data/mpp_board.json). This is the ground truth:
+        MPP's barème is proprietary and tracks the bookmaker cote in a way our
+        `base_points(odds)` only approximates, so when the real points are known
+        they win.
+      * `odds` — a [home, draw, away] decimal triple, mapped via base_points()
+        (≈ cote x 10) as a fallback proxy when the real points aren't loaded.
 
     `knockout=True` optimises on the 120-minute distribution (MPP counts extra
     time, never penalties). `mode` is one of MODES — see the module docstring.
@@ -199,7 +207,9 @@ def recommend(out: Dict, odds: Optional[List[float]] = None,
         p_out = {"home": out["p_home"], "draw": out["p_draw"], "away": out["p_away"]}
 
     base = None
-    if odds and len(odds) == 3:
+    if mpp_points and len(mpp_points) == 3:
+        base = {"home": mpp_points[0], "draw": mpp_points[1], "away": mpp_points[2]}
+    elif odds and len(odds) == 3:
         base = {
             "home": base_points(odds[0]),
             "draw": base_points(odds[1]),
@@ -210,7 +220,9 @@ def recommend(out: Dict, odds: Optional[List[float]] = None,
         # Protecting a lead: cover the field's most likely pick, ignore cotes.
         out_pick = max(p_out, key=lambda o: p_out[o])
     elif base and all(v is not None for v in base.values()):
-        out_pick = max(p_out, key=lambda o: p_out[o] * base[o])
+        # Tie-break ties in expected points by the more likely outcome — so two
+        # outcomes with equal P×points never flip silently on argument order.
+        out_pick = max(p_out, key=lambda o: (p_out[o] * base[o], p_out[o]))
     else:
         out_pick = max(p_out, key=lambda o: p_out[o])
 
@@ -252,6 +264,64 @@ def recommend(out: Dict, odds: Optional[List[float]] = None,
         "exp_points": exp_points,       # total expected MPP points
         "modal_score": modal,           # model's raw most-likely score
         "differs": tuple(score) != tuple(modal),
+    }
+
+
+UPSIDE_MIN_PROB = 0.10      # an outcome must be at least this likely to be a
+                            # sane "gros lot" — below it the gamble is a lottery,
+                            # not a calculated catch-up bet.
+
+
+def upside_pick(out: Dict, mpp_points: List[float], knockout: bool = False,
+                min_prob: float = UPSIDE_MIN_PROB) -> Optional[Dict]:
+    """The best *alternative* to the safe pick — the deliberate higher-variance
+    play a TRAILING player takes to claw back ground.
+
+    Among the outcomes that are NOT the expected-points-optimal pick and still
+    clear ``min_prob``, return the one with the highest expected points (its most
+    likely score). Ranking alternatives by E[points] — not raw payout — avoids
+    chasing a 10%-shot that pays one point more than a 25%-shot.
+
+    Distinct from ``mode="chase"`` in :func:`recommend`: chase keeps the *favoured
+    outcome* and only hunts a rarer high-bonus *score*; this switches the *outcome*
+    (typically the draw or the underdog). Returns None when the favourite is the
+    only sane call, or when no MPP points are supplied.
+    """
+    if not (mpp_points and len(mpp_points) == 3):
+        return None
+    dist = knockout_distribution(out) if knockout else score_distribution(out)
+    if knockout:
+        p_out = {o: sum(p for s, p in dist.items() if outcome_of(*s) == o)
+                 for o in ("home", "draw", "away")}
+    else:
+        p_out = {"home": out["p_home"], "draw": out["p_draw"], "away": out["p_away"]}
+    base = {"home": mpp_points[0], "draw": mpp_points[1], "away": mpp_points[2]}
+
+    # The "gros lot" is the best gamble that ISN'T the safe (expected-points-
+    # optimal) pick: among the OTHER outcomes still plausible enough (>= min_prob),
+    # the one with the highest expected points. Ranking by E[points] — not raw
+    # payout — stops it from chasing a 10%-shot that pays one point more than a
+    # 25%-shot. Returns None when the favourite is the only sane call.
+    ev_pick = max(("home", "draw", "away"),
+                  key=lambda o: (p_out[o] * base[o], p_out[o]))
+    alts = [o for o in ("home", "draw", "away")
+            if o != ev_pick and p_out[o] >= min_prob]
+    if not alts:
+        return None
+    out_pick = max(alts, key=lambda o: (p_out[o] * base[o], p_out[o]))
+
+    in_outcome = [(s, p) for s, p in dist.items() if outcome_of(*s) == out_pick]
+    score, p_exact = max(in_outcome, key=lambda sp: sp[1])
+    bonus = bonus_for_score(score)
+    return {
+        "score": score,
+        "outcome": out_pick,
+        "p_outcome": p_out[out_pick],
+        "p_exact": p_exact,
+        "base_points": base[out_pick],
+        "bonus": bonus,
+        "tier": tier_name(bonus),
+        "exp_points": p_out[out_pick] * base[out_pick] + p_exact * bonus,
     }
 
 

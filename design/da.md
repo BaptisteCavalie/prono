@@ -1,7 +1,7 @@
 # DA — prono (WC 2026)
 
-> Date : 2026-06-11 · Révisé 2026-06-12 (passage dashboard) · Validé par
-> Baptiste · S'amende via /retro
+> Date : 2026-06-11 · Révisé 2026-06-12 (passage dashboard) · Révisé 2026-06-15
+> (Nutri-prono = prono Mon Petit Prono) · Validé par Baptiste · S'amende via /retro
 
 ## Territoire
 Outil mono-utilisateur : Baptiste, seul, avant les matchs — analytique, pressé,
@@ -60,9 +60,10 @@ Le dashboard a deux territoires chromatiques distincts, et c'est délibéré.
   incitation à parier.
 - **Neutres** : encre `#1f2430`, secondaire `#5d6679` ; bordures froides
   discrètes (`#d8deea`).
-- **Sémantique** : ok/warn/alert réservés aux signaux ; la gamme Nutri A–E est
-  RÉSERVÉE aux verdicts de pari — jamais décorative ; la rampe récap
-  (`--recap-exact/bon/erreur`) réservée à la justesse des pronos.
+- **Sémantique** : ok/warn/alert réservés aux signaux ; la gamme Nutri A–E note
+  le **prono Mon Petit Prono** (confiance que le pick tombe) — jamais
+  décorative ; la rampe récap (`--recap-exact/bon/erreur`) réservée à la
+  justesse des pronos.
 
 ### Sidebar (châssis) — nouveau
 - **Surface** : sombre **chaude** `~#1d2330` (dérivée de l'encre `#1f2430`, ni
@@ -88,10 +89,15 @@ Fonctionnelle uniquement. Le « prono modifié » est un **état** persistant
 sa transition reste ≤ 200 ms et respecte `prefers-reduced-motion`.
 
 ## L'élément signature
-Le **verdict Nutri-prono** — la pastille A–E qui note chaque pari, empruntée à
-l'étiquetage alimentaire. Reconnaissable logo masqué. Intouchable. Le nouveau
-parti-pris de forme (canvas clair **encadré par un châssis sombre**) le met en
-scène sans le concurrencer : un cockpit de pronos, ni bookmaker, ni admin.
+Le **verdict Nutri-prono** — la pastille A–E, empruntée à l'étiquetage
+alimentaire. **C'EST le prono Mon Petit Prono** (décision Baptiste 2026-06-15) :
+l'outil ne sert qu'à optimiser MPP, donc la pastille note la **confiance que le
+pick MPP tombe** (A = quasi sûr, E = longshot). Le pick affiché maximise les
+points attendus au barème MPP (proba × points réels du barème) ; l'option « gros
+lot » (la meilleure alternative à variance pour remonter au classement) vit dans
+le détail, jamais en concurrence du verdict. Reconnaissable logo masqué.
+Intouchable. Le parti-pris de forme (canvas clair **encadré par un châssis
+sombre**) le met en scène : un cockpit de pronos, ni bookmaker, ni admin.
 
 ## On rejette
 - **Le dark mode sur la donnée de pari** — le sombre s'arrête à la nav ; le

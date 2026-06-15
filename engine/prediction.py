@@ -44,13 +44,25 @@ def analyse_match(match: Dict, ratings: Dict) -> Optional[Dict]:
     )
 
 
-def scoreline(match: Dict, ratings: Dict) -> Optional[Tuple[int, int]]:
-    """Return the model-only MPP-optimal ``(home, away)`` scoreline for one
-    fixture, or ``None`` if a team is missing. Deterministic given the prepared
-    ratings — this is exactly what gets displayed and frozen. Knockout fixtures
-    are optimised on the 120-minute distribution (MPP counts extra time)."""
+def scoreline(match: Dict, ratings: Dict,
+              mpp_board: Optional[Dict] = None) -> Optional[Tuple[int, int]]:
+    """Return the MPP-points-optimal ``(home, away)`` scoreline for one fixture,
+    or ``None`` if a team is missing. Deterministic given the prepared ratings —
+    this is exactly what gets displayed and frozen, so freeze and live can't
+    drift. Knockout fixtures are optimised on the 120-minute distribution (MPP
+    counts extra time).
+
+    ``mpp_board`` (``{FIXTURE_ID: [pts_home, pts_draw, pts_away]}``, see
+    ``data.load_mpp_board``) makes the pick optimise *real* MPP barème points
+    when known — the whole tool exists to win Mon Petit Prono. It is NOT the
+    bookmaker odds board: the prono never moves with betting odds (those live on
+    the Paris tab). Without points for this fixture it falls back to the
+    model-only pick, unchanged.
+    """
     out = analyse_match(match, ratings)
     if out is None:
         return None
-    ph, pa = mpp.recommend(out, knockout=mpp.is_knockout(match))["score"]
+    mpp_points = (mpp_board or {}).get(str(match.get("id", "")).upper())
+    ph, pa = mpp.recommend(out, mpp_points=mpp_points,
+                           knockout=mpp.is_knockout(match))["score"]
     return int(ph), int(pa)

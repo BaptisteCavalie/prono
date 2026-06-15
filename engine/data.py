@@ -81,6 +81,32 @@ def load_bets() -> List[Dict]:
     return [b for b in bets if isinstance(b, dict)] if isinstance(bets, list) else []
 
 
+def load_mpp_board() -> Dict[str, List[float]]:
+    """Real Mon Petit Prono "bon résultat" points per match (data/mpp_board.json),
+    written by the ask-Claude layer like scores/bets/odds.
+
+    Shape: ``{FIXTURE_ID: [points_home, points_draw, points_away]}`` — the three
+    point values shown under each outcome in the MPP app. MPP's barème is
+    proprietary (tracks the cote, compressed), so these real numbers beat any
+    odds-derived approximation when computing the points-optimal prono. Optional
+    file (absent → empty), tolerant of broken JSON: a malformed tracking file
+    must never crash the Matchs page. Keys are upper-cased to match fixture ids.
+    """
+    try:
+        with open(DATA_DIR / "mpp_board.json", encoding="utf-8") as f:
+            raw = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+    if not isinstance(raw, dict):
+        return {}
+    board: Dict[str, List[float]] = {}
+    for key, triple in raw.items():
+        if (isinstance(triple, list) and len(triple) == 3
+                and all(isinstance(x, (int, float)) for x in triple)):
+            board[str(key).upper()] = [float(x) for x in triple]
+    return board
+
+
 def resolve_team(name: str, ratings: Dict) -> Optional[str]:
     """Best-effort map of user input to a canonical team name."""
     if not name:
