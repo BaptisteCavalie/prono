@@ -67,15 +67,19 @@ Le dashboard a deux territoires chromatiques distincts, et c'est délibéré.
   le **prono Mon Petit Prono** (confiance que le pick tombe) — jamais
   décorative ; la rampe récap (`--recap-exact/bon/erreur`) réservée à la
   justesse des pronos.
-- **Métaux Paris** : la page Paris porte une **rampe métallique chaude et
-  claire** — `--bet-gold` (gagné), `--bet-silver` (remboursé), `--bet-copper`
-  (perdu) — qui lui donne une identité propre, distincte du teal du reste de
-  l'outil. Pâle et **mate** (le « light » des médaillons), jamais brillante ni
-  dégradée. Candidats à matérialiser et valider au build : or `#8a6d1f` /
-  `#f4e9c4`, argent `#6b7280` / `#e8ebf0`, cuivre `#9c5a3c` / `#f1ddd1`
-  (encre / fond). Outil **perso mono-utilisateur** : l'argument « incitation »
-  ne s'applique pas (Baptiste 2026-06-15) — le métallique est assumé sur la
-  donnée de pari.
+- **Paris — P&L & podium des gains** : sur la page Paris, le **montant** (P&L)
+  se colore **vert gain / rouge perte** (`--pnl-gain` / `--pnl-loss`, voisins
+  des signaux mais propres au P&L), remboursé en encre neutre. Par-dessus, les
+  **3 plus gros gains** du tournoi portent un **médaillon métallique mat** —
+  or 1er (`--bet-gold`), argent 2e (`--bet-silver`), cuivre 3e (`--bet-copper`)
+  — un petit **podium perso** des meilleurs paris, écho des médaillons de
+  classement repérés en référence. Le vert/rouge = la **direction** de chaque
+  ligne, le métal = le **rang** des 3 meilleures : pas de double encodage.
+  Métaux **pâles et mats** (le « light »), jamais brillants ni dégradés.
+  Candidats à matérialiser et valider au build : or `#8a6d1f` / `#f4e9c4`,
+  argent `#6b7280` / `#e8ebf0`, cuivre `#9c5a3c` / `#f1ddd1` (encre / fond).
+  Outil **perso mono-utilisateur** : la lisibilité prime, l'argument
+  « incitation » ne s'applique pas (Baptiste 2026-06-15).
 
 ### Sidebar (châssis) — nouveau
 - **Surface** : sombre **chaude** `~#1d2330` (dérivée de l'encre `#1f2430`, ni

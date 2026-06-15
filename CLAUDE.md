@@ -38,8 +38,12 @@ cumulé tournoi : **P&L (gain net) et ROI uniquement** — pas de bankroll
 évolutive à tenir à jour (décision Baptiste 2026-06-12). Un pari = une ligne,
 qu'il soit **simple ou combiné** (le combiné est une ligne unique : libellé
 + cote combinée + statut, sans détail par sélection). Ce bilan « argent réel »
-est distinct du récap justesse des pronos (1N2) et reste neutre (un net
-négatif s'affiche aussi sobrement qu'un positif — aucune incitation à parier).
+est distinct du récap justesse des pronos (1N2). Le résultat est **lisible d'un
+coup d'œil** : **gain en vert, perte en rouge** sur le P&L, et les **3 plus
+gros gains** du tournoi reçoivent un **médaillon or (1er) / argent (2e) /
+cuivre (3e)** — un podium perso des meilleurs paris. Outil perso
+mono-utilisateur : la lisibilité du résultat prime, l'argument « incitation »
+ne s'applique pas (décision Baptiste 2026-06-15).
 
 ## Kit
 

@@ -97,5 +97,6 @@ Réactions sur les 5 dashboards — traces de goût, validées.
   nombres (proba, ROI, P&L). → porté dans `da.md` (Typographie).
 - **Gold / silver / copper light pour les Paris** : **ADOPTÉ** (Baptiste
   2026-06-15) — « c'est un outil perso, je m'en fiche de l'incitation ».
-  Devient la rampe métallique de la page Paris (gagné / remboursé / perdu),
-  pâle et mate. → porté dans `da.md` (Couleur · Métaux Paris).
+  Devient le **médaillon podium des 3 plus gros gains** du tournoi (or 1er,
+  argent 2e, cuivre 3e), pâle et mat ; le P&L reste coloré **vert gain / rouge
+  perte**. → porté dans `da.md` (Couleur · Paris).
