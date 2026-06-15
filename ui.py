@@ -728,6 +728,12 @@ _CSS = "".join([
     # HORS ok/warn/alert (signaux) et hors gamme A–E (verdicts de pari) : une
     # erreur de prono n'est pas une faute morale du modèle.
     "--recap-exact:#0f5c78;--recap-bon:#5f97ab;--recap-erreur:#aab4c6;"
+    # Page Paris (argent réel) : P&L coloré (gain vert / perte rouge, propres au
+    # P&L, voisins des signaux) + podium métallique des 3 plus gros gains (or /
+    # argent / cuivre, pâle et mat). Lisibilité « outil perso » assumée (cf. DA).
+    "--pnl-gain:#1d7a40;--pnl-loss:#b02a37;"
+    "--bet-gold:#735914;--bet-gold-bg:#f4e9c4;--bet-silver:#595f6b;"
+    "--bet-silver-bg:#e8ebf0;--bet-copper:#85492c;--bet-copper-bg:#f1ddd1;"
     # Châssis dashboard (sidebar) : sombre CHAUD dérivé de l'encre, le sombre
     # s'arrête à la nav (jamais sur la donnée). Actif = teal lumineux (le teal
     # canvas est illisible sur sombre). Contrastes vérifiés AA au build.
@@ -804,9 +810,9 @@ _CSS = "".join([
     ".bet-why{margin-top:7px}",
     ".bet-why summary{font-size:.78rem;padding:3px 2px}",
     # Suivi des paris (argent réel) : bilan P&L/ROI + ledger. Distinct du récap
-    # justesse (segmented bar) : ici une grille de métriques + une table, et des
-    # chips de statut neutres (hors ok/warn/alert et hors gamme Nutri). Le chiffre
-    # de gain net est présenté à l'identique qu'il soit + ou − (neutralité ANJ).
+    # justesse (segmented bar) : ici une grille de métriques + une table, des
+    # chips de statut (hors ok/warn/alert et hors gamme Nutri), un P&L coloré
+    # (gain vert / perte rouge) et le podium métallique des 3 plus gros gains.
     ".suivi-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}",
     ".suivi-head h2{margin:0;font-size:1rem;font-weight:700}",
     ".suivi-sample{font-family:var(--font-mono);font-size:.82rem;color:var(--muted)}",
@@ -814,8 +820,8 @@ _CSS = "".join([
     ".pnl-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}",
     # Tuiles KPI : fond plein, SANS bordure — elles vivent déjà dans le panel
     # Suivi, pas de boîte-dans-boîte (cf. DA). La hiérarchie P&L > ROI/Mise vient
-    # de la taille de la valeur (.pnl-val vs .sub), pas d'un cadre, et reste
-    # neutre (un net négatif aussi sobre qu'un positif).
+    # de la taille de la valeur (.pnl-val vs .sub) ; le signe du P&L se colore
+    # gain vert / perte rouge (la valeur de Mise totale reste neutre).
     ".pnl-cell{flex:1 1 130px;border-radius:10px;padding:10px 12px;background:var(--surface-2)}",
     ".pnl-cell.lead{flex-basis:165px}",
     ".pnl-key{font-size:.68rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}",
@@ -849,6 +855,16 @@ _CSS = "".join([
     ".bet-status-encours{background:transparent;color:var(--muted);border-style:dashed}",
     ".b-net{font-family:var(--font-mono);font-weight:700;text-align:right;white-space:nowrap;color:var(--text)}",
     ".b-net-pending{color:var(--muted);font-weight:400}",
+    # P&L coloré : gain vert / perte rouge (le signe +/− double l'info, jamais
+    # la couleur seule). Sur le net cumulé/ROI et sur le net de chaque ligne.
+    ".b-net.is-gain,.pnl-val.is-gain{color:var(--pnl-gain)}",
+    ".b-net.is-loss,.pnl-val.is-loss{color:var(--pnl-loss)}",
+    # Podium des 3 plus gros gains : médaillon métallique mat (pâle), rang en
+    # mono. Le sens ne tient pas qu'à la couleur — rang chiffré + aria-label.
+    ".medal{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-family:var(--font-mono);font-weight:700;font-size:.7rem;line-height:1;margin-right:7px;vertical-align:middle;border:1px solid}",
+    ".medal-1{background:var(--bet-gold-bg);color:var(--bet-gold);border-color:color-mix(in srgb,var(--bet-gold) 35%,var(--line-2))}",
+    ".medal-2{background:var(--bet-silver-bg);color:var(--bet-silver);border-color:color-mix(in srgb,var(--bet-silver) 35%,var(--line-2))}",
+    ".medal-3{background:var(--bet-copper-bg);color:var(--bet-copper);border-color:color-mix(in srgb,var(--bet-copper) 35%,var(--line-2))}",
     ".suivi-note{margin:11px 0 0;font-size:.78rem;color:var(--muted);max-width:75ch;line-height:1.35}",
     # Mobile (hors cible, mais on évite le rendu cassé) : table en lignes
     # étiquetées plutôt que la dégradation générique sans en-têtes.
@@ -1360,13 +1376,37 @@ def _net_txt(value: float) -> str:
     return "0,00 €" if abs(value) < 0.005 else _eur_signed(value)
 
 
+def _net_class(value: Optional[float]) -> str:
+    """Classe couleur du P&L : gain (vert) / perte (rouge) / neutre (0 ou en cours).
+
+    Le signe ±  est déjà rendu dans le texte (_net_txt) : la couleur double
+    l'info, elle ne la porte jamais seule (a11y).
+    """
+    if value is None or abs(value) < 0.005:
+        return ""
+    return "is-gain" if value > 0 else "is-loss"
+
+
+def _medal_html(rank: int) -> str:
+    """Médaillon podium (1/2/3) pour les 3 plus gros gains du tournoi.
+
+    Le rang chiffré + l'aria-label portent le sens — pas seulement la couleur
+    du métal (or/argent/cuivre).
+    """
+    lab = {1: "1er", 2: "2e", 3: "3e"}.get(rank, str(rank))
+    return (f"<span class='medal medal-{rank}' "
+            f"aria-label='{lab} plus gros gain du tournoi' "
+            f"title='{lab} plus gros gain du tournoi'>{rank}</span>")
+
+
 def _render_suivi_paris(bets: List[Dict]) -> List[str]:
     """Suivi des paris réels (terminés + en cours) + bilan cumulé tournoi.
 
     Bilan « argent réel » (mise engagée, P&L net, ROI), distinct du récap
-    justesse des pronos (1N2) et neutre par construction : le gain net est
-    présenté tel quel, un négatif aussi sobrement qu'un positif. Données écrites
-    par la couche ask-Claude (data/bets.json), jamais saisies sur le site.
+    justesse des pronos (1N2). Lisibilité « outil perso » assumée (cf. DA) :
+    gain en vert / perte en rouge sur le P&L, et un médaillon or/argent/cuivre
+    sur les 3 plus gros gains du tournoi. Données écrites par la couche
+    ask-Claude (data/bets.json), jamais saisies sur le site.
     """
     if not bets:
         return [
@@ -1393,7 +1433,7 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
         "</div>",
     ]
 
-    # Bilan cumulé : P&L net et ROI en tête, neutres. Affiché dès qu'un pari est
+    # Bilan cumulé : P&L net et ROI en tête (gain vert / perte rouge). Affiché dès qu'un pari est
     # réglé ; sinon une ligne d'attente (les en cours n'ont pas de P&L).
     if n_set:
         roi_txt = (f"{agg['roi'] * 100:+.1f} %".replace(".", ",")
@@ -1402,10 +1442,10 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
         out.extend([
             "<div class='pnl-grid'>",
             "<div class='pnl-cell lead'><div class='pnl-key'>Gain net (P&amp;L)</div>"
-            f"<div class='pnl-val'>{html.escape(_net_txt(agg['net']))}</div></div>",
+            f"<div class='pnl-val {_net_class(agg['net'])}'>{html.escape(_net_txt(agg['net']))}</div></div>",
             "<div class='pnl-cell' title='ROI = gain net / mise totale engagée'>"
             "<div class='pnl-key'>ROI</div>"
-            f"<div class='pnl-val sub'>{html.escape(roi_txt)}</div>"
+            f"<div class='pnl-val sub {_net_class(agg['net'])}'>{html.escape(roi_txt)}</div>"
             f"<div class='pnl-sample'>{html.escape(roi_sample)}</div></div>",
             "<div class='pnl-cell'><div class='pnl-key'>Mise totale</div>"
             f"<div class='pnl-val sub'>{html.escape(_eur(agg['staked'], 2))}</div></div>",
@@ -1421,6 +1461,14 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
     else:
         out.append("<p class='muted' style='margin:8px 0 0'>Aucun pari réglé pour l'instant — "
                    "le bilan (P&amp;L, ROI) s'affiche dès le premier résultat.</p>")
+
+    # Podium des 3 plus gros gains : médaillon or/argent/cuivre sur les lignes
+    # au plus gros gain net (positif). Identité « ledger » de la page Paris,
+    # outil perso (cf. DA). Clé = identité d'objet (robuste aux paris sans id).
+    winners = [(n, b) for b in bets
+               if (n := common.bet_net(b)) is not None and n > 0.005]
+    winners.sort(key=lambda t: t[0], reverse=True)
+    podium = {id(b): rank for rank, (_n, b) in enumerate(winners[:3], start=1)}
 
     # Ledger dans le MÊME panel : un seul bloc « Suivi des paris » (bilan +
     # historique), pas deux cards juxtaposées. Plus récents en tête.
@@ -1447,22 +1495,24 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
         sel = str(b.get("sel") or "").strip()
         combo_tag = "<span class='combo-tag'>combiné</span>" if b.get("combo") else ""
         sel_html = f"<span class='b-sel'>{html.escape(sel)}</span>" if sel else ""
+        medal_html = _medal_html(podium[id(b)]) if id(b) in podium else ""
         net_html = ("<span class='b-net-pending'>—</span>" if net is None
                     else html.escape(_net_txt(net)))
         out.extend([
             "<tr>",
-            f"<td data-label='Pari' class='b-pari'>{html.escape(_bet_label(b))}{combo_tag}{sel_html}</td>",
+            f"<td data-label='Pari' class='b-pari'>{medal_html}{html.escape(_bet_label(b))}{combo_tag}{sel_html}</td>",
             f"<td data-label='Cote' class='b-num b-cote'>{odds_txt}</td>",
             f"<td data-label='Mise' class='b-num b-mise'>{html.escape(stake_txt)}</td>",
             f"<td data-label='Statut'><span class='bet-status {status_cls}'>{status_label}</span></td>",
-            f"<td data-label='Net' class='b-net'>{net_html}</td>",
+            f"<td data-label='Net' class='b-net {_net_class(net)}'>{net_html}</td>",
             "</tr>",
         ])
     out.append("</tbody></table>")
     out.append(
         "<p class='suivi-note'>Bilan « argent réel » (mises Winamax), distinct du récap "
-        "justesse des pronos. Le gain net est présenté tel quel, sans mise en avant — "
-        "parier reste un coût, pas un objectif.</p>"
+        "justesse des pronos. Gain en vert, perte en rouge ; les 3 plus gros gains du "
+        "tournoi portent un médaillon or, argent et cuivre. Outil perso : la lisibilité "
+        "du résultat prime.</p>"
     )
     out.append("</section>")
     return out

@@ -76,10 +76,12 @@ Le dashboard a deux territoires chromatiques distincts, et c'est délibéré.
   classement repérés en référence. Le vert/rouge = la **direction** de chaque
   ligne, le métal = le **rang** des 3 meilleures : pas de double encodage.
   Métaux **pâles et mats** (le « light »), jamais brillants ni dégradés.
-  Candidats à matérialiser et valider au build : or `#8a6d1f` / `#f4e9c4`,
-  argent `#6b7280` / `#e8ebf0`, cuivre `#9c5a3c` / `#f1ddd1` (encre / fond).
-  Outil **perso mono-utilisateur** : la lisibilité prime, l'argument
-  « incitation » ne s'applique pas (Baptiste 2026-06-15).
+  Valeurs matérialisées et contrastes **validés AA au build** (encre / fond) :
+  P&L gain `#1d7a40` / perte `#b02a37` (≥ 4,6:1 sur les surfaces) ; médaillons
+  or `#735914` / `#f4e9c4`, argent `#595f6b` / `#e8ebf0`, cuivre `#85492c` /
+  `#f1ddd1` (≥ 5:1, le rang chiffré reste lisible). Outil **perso
+  mono-utilisateur** : la lisibilité prime, l'argument « incitation » ne
+  s'applique pas (Baptiste 2026-06-15).
 
 ### Sidebar (châssis) — nouveau
 - **Surface** : sombre **chaude** `~#1d2330` (dérivée de l'encre `#1f2430`, ni
