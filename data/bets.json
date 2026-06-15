@@ -62,7 +62,7 @@
       "sel": "Belgique vainqueur",
       "odds": 1.58,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G37",
@@ -71,7 +71,8 @@
           "pick": "home",
           "odds": 1.58
         }
-      ]
+      ],
+      "settled_at": "2026-06-15T21:16:01Z"
     },
     {
       "id": 5,
@@ -145,7 +146,7 @@
       "sel": "Belgique vainqueur",
       "odds": 1.56,
       "stake": 10.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G37",
@@ -154,7 +155,8 @@
           "pick": "home",
           "odds": 1.56
         }
-      ]
+      ],
+      "settled_at": "2026-06-15T21:16:01Z"
     },
     {
       "id": 9,
