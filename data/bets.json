@@ -402,6 +402,168 @@
           "odds": 1.44
         }
       ]
+    },
+    {
+      "id": 20,
+      "ref": "6FBW8VRY",
+      "date": "2026-06-15",
+      "combo": true,
+      "label": "Croatie + Pays-Bas",
+      "odds": 1.82,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G70",
+          "home": "Panama",
+          "away": "Croatia",
+          "pick": "away",
+          "odds": 1.47
+        },
+        {
+          "match": "G35",
+          "home": "Tunisia",
+          "away": "Netherlands",
+          "pick": "away",
+          "odds": 1.24
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "ref": "6FBW81SC",
+      "date": "2026-06-15",
+      "combo": true,
+      "label": "Turquie + Allemagne",
+      "odds": 2.98,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G22",
+          "home": "Türkiye",
+          "away": "Paraguay",
+          "pick": "home",
+          "odds": 1.96
+        },
+        {
+          "match": "G27",
+          "home": "Germany",
+          "away": "Ivory Coast",
+          "pick": "home",
+          "odds": 1.52
+        }
+      ]
+    },
+    {
+      "id": 22,
+      "ref": null,
+      "date": "2026-06-15",
+      "combo": true,
+      "label": "Rép. tchèque + Uruguay",
+      "odds": 2.45,
+      "stake": 2.0,
+      "status": "en_cours",
+      "note": "réf coupée sur la capture — à confirmer",
+      "legs": [
+        {
+          "match": "G04",
+          "home": "Czechia",
+          "away": "South Africa",
+          "pick": "home",
+          "odds": 1.74
+        },
+        {
+          "match": "G46",
+          "home": "Uruguay",
+          "away": "Cape Verde",
+          "pick": "home",
+          "odds": 1.41
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "ref": "6FBW6HD7",
+      "date": "2026-06-15",
+      "combo": true,
+      "label": "Iran + Mexique",
+      "odds": 3.49,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G38",
+          "home": "Iran",
+          "away": "New Zealand",
+          "pick": "home",
+          "odds": 1.78
+        },
+        {
+          "match": "G03",
+          "home": "Mexico",
+          "away": "South Korea",
+          "pick": "home",
+          "odds": 1.96
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "ref": "6FBW5Z7X",
+      "date": "2026-06-15",
+      "label": "Panama – Croatie",
+      "sel": "Croatie vainqueur",
+      "odds": 1.47,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G70",
+          "home": "Panama",
+          "away": "Croatia",
+          "pick": "away",
+          "odds": 1.47
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "ref": "6FBW4SD9",
+      "date": "2026-06-15",
+      "label": "Allemagne – Côte d'Ivoire",
+      "sel": "Allemagne vainqueur",
+      "odds": 1.52,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G27",
+          "home": "Germany",
+          "away": "Ivory Coast",
+          "pick": "home",
+          "odds": 1.52
+        }
+      ]
+    },
+    {
+      "id": 26,
+      "ref": "6FBW4DGU",
+      "date": "2026-06-15",
+      "label": "Rép. tchèque – Afrique du Sud",
+      "sel": "Rép. tchèque vainqueur",
+      "odds": 1.74,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G04",
+          "home": "Czechia",
+          "away": "South Africa",
+          "pick": "home",
+          "odds": 1.74
+        }
+      ]
     }
   ]
 }
