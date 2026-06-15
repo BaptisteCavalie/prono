@@ -861,10 +861,16 @@ _CSS = "".join([
     ".b-net.is-loss,.pnl-val.is-loss{color:var(--pnl-loss)}",
     # Podium des 3 plus gros gains : médaillon métallique mat (pâle), rang en
     # mono. Le sens ne tient pas qu'à la couleur — rang chiffré + aria-label.
-    ".medal{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-family:var(--font-mono);font-weight:700;font-size:.7rem;line-height:1;margin-right:7px;vertical-align:middle;border:1px solid}",
+    ".medal{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-family:var(--font-mono);font-weight:700;font-size:.7rem;line-height:1;vertical-align:top;border:1px solid}",
     ".medal-1{background:var(--bet-gold-bg);color:var(--bet-gold);border-color:color-mix(in srgb,var(--bet-gold) 35%,var(--line-2))}",
     ".medal-2{background:var(--bet-silver-bg);color:var(--bet-silver);border-color:color-mix(in srgb,var(--bet-silver) 35%,var(--line-2))}",
     ".medal-3{background:var(--bet-copper-bg);color:var(--bet-copper);border-color:color-mix(in srgb,var(--bet-copper) 35%,var(--line-2))}",
+    # Le médaillon vit dans une gouttière de largeur FIXE présente sur TOUTES les
+    # lignes (vide hors podium) → les libellés gardent le même bord gauche, et le
+    # texte wrappé (combinés longs) s'aligne sous lui-même, pas sous le médaillon.
+    ".b-pari .pari-main{display:flex;align-items:flex-start;gap:7px}",
+    ".medal-slot{flex:none;width:18px;text-align:center}",
+    ".pari-text{flex:1;min-width:0}",
     ".suivi-note{margin:11px 0 0;font-size:.78rem;color:var(--muted);max-width:75ch;line-height:1.35}",
     # Mobile (hors cible, mais on évite le rendu cassé) : table en lignes
     # étiquetées plutôt que la dégradation générique sans en-têtes.
@@ -1433,8 +1439,8 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
         "</div>",
     ]
 
-    # Bilan cumulé : P&L net et ROI en tête (gain vert / perte rouge). Affiché dès qu'un pari est
-    # réglé ; sinon une ligne d'attente (les en cours n'ont pas de P&L).
+    # Bilan cumulé : P&L net et ROI en tête (gain vert / perte rouge). Affiché
+    # dès qu'un pari est réglé ; sinon une ligne d'attente (en cours = pas de P&L).
     if n_set:
         roi_txt = (f"{agg['roi'] * 100:+.1f} %".replace(".", ",")
                    if agg["roi"] is not None else "—")
@@ -1500,7 +1506,9 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
                     else html.escape(_net_txt(net)))
         out.extend([
             "<tr>",
-            f"<td data-label='Pari' class='b-pari'>{medal_html}{html.escape(_bet_label(b))}{combo_tag}{sel_html}</td>",
+            f"<td data-label='Pari' class='b-pari'><span class='pari-main'>"
+            f"<span class='medal-slot'>{medal_html}</span>"
+            f"<span class='pari-text'>{html.escape(_bet_label(b))}{combo_tag}{sel_html}</span></span></td>",
             f"<td data-label='Cote' class='b-num b-cote'>{odds_txt}</td>",
             f"<td data-label='Mise' class='b-num b-mise'>{html.escape(stake_txt)}</td>",
             f"<td data-label='Statut'><span class='bet-status {status_cls}'>{status_label}</span></td>",
@@ -1510,9 +1518,7 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
     out.append("</tbody></table>")
     out.append(
         "<p class='suivi-note'>Bilan « argent réel » (mises Winamax), distinct du récap "
-        "justesse des pronos. Gain en vert, perte en rouge ; les 3 plus gros gains du "
-        "tournoi portent un médaillon or, argent et cuivre. Outil perso : la lisibilité "
-        "du résultat prime.</p>"
+        "justesse des pronos (1N2).</p>"
     )
     out.append("</section>")
     return out
