@@ -18,7 +18,7 @@ FIXTURES_PATH = ROOT / "data" / "fixtures.json"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import data, expert_signals, prediction, team_signals, updater
+from engine import data, expert_signals, odds_fetch, prediction, team_signals, updater
 
 
 def _sort_key(match):
@@ -43,7 +43,8 @@ def main(argv=None) -> int:
 
     updated = 0
     now_iso = datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    mpp_board = data.load_mpp_board()   # same MPP-points-optimal pick as the UI/freeze
+    mpp_board = data.load_mpp_board()              # real MPP barème when dictated
+    odds_board = odds_fetch.load_cached_board()    # committed/cached odds proxy (same as UI + freeze)
 
     for m in sorted(fixtures, key=_sort_key):
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
@@ -53,7 +54,7 @@ def main(argv=None) -> int:
         if has_snapshot and not args.overwrite:
             continue
 
-        sl = prediction.scoreline(m, ratings, mpp_board)  # the one shared prono
+        sl = prediction.scoreline(m, ratings, mpp_board, odds_board)  # the one shared prono
         if sl is None:
             continue
         ph, pa = sl

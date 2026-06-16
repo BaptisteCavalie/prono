@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.request import urlopen
 
-from engine import data, expert_signals, prediction, team_signals, updater
+from engine import data, expert_signals, odds_fetch, prediction, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -191,12 +191,14 @@ def _refresh_prediction_snapshots(fixtures_payload: Dict, ratings_payload: Dict,
     if status_payload is not None:
         ratings_for_pred = team_signals.adjust_ratings_with_status(ratings_for_pred, status_payload)
     ratings_for_pred = expert_signals.apply_expert_priors(ratings_for_pred)
-    mpp_board = data.load_mpp_board()   # freeze the MPP-points-optimal pick, in lockstep with the UI
+    mpp_board = data.load_mpp_board()              # real MPP barème when dictated
+    odds_board = odds_fetch.load_cached_board()    # committed/cached odds proxy (read-only, no fetch)
+    # Both boards in lockstep with the UI so the frozen and displayed picks match.
 
     for m in matches:
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
             continue
-        sl = prediction.scoreline(m, ratings_for_pred, mpp_board)
+        sl = prediction.scoreline(m, ratings_for_pred, mpp_board, odds_board)
         if sl is None:
             continue
         ph, pa = sl

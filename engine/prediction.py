@@ -11,16 +11,19 @@ Two rules this module enforces, both of which were the source of real
 
 1. The model is always called with the same inputs: team ratings + the
    per-team attack/defense rows + the fixture's home advantage.
-2. The scoreline is model-only (no bookmaker odds). Odds move constantly and
-   cannot be re-frozen on a read-only host, so an odds-driven scoreline would
-   never match a frozen one. Odds-aware logic lives in ``engine.betting`` /
-   the Paris tab, never in the calendar prono.
+2. The scoreline maximises expected Mon Petit Prono points. Base points come
+   from the real MPP barème when known (``mpp_board``), else from the
+   **committed/cached** bookmaker odds (``odds_board`` — ``data/odds.json`` /
+   the odds cache), mapped ≈ cote×10. Using the *committed* board (never a live
+   per-render fetch) keeps freeze and live identical: both read the same file,
+   so the pick only moves when the committed odds are deliberately refreshed,
+   not on every page load. Live odds-chasing stays on the Paris tab.
 """
 from __future__ import annotations
 
 from typing import Dict, Optional, Tuple
 
-from engine import model, mpp
+from engine import common, model, mpp
 
 
 def analyse_match(match: Dict, ratings: Dict) -> Optional[Dict]:
@@ -45,24 +48,32 @@ def analyse_match(match: Dict, ratings: Dict) -> Optional[Dict]:
 
 
 def scoreline(match: Dict, ratings: Dict,
-              mpp_board: Optional[Dict] = None) -> Optional[Tuple[int, int]]:
+              mpp_board: Optional[Dict] = None,
+              odds_board: Optional[Dict] = None) -> Optional[Tuple[int, int]]:
     """Return the MPP-points-optimal ``(home, away)`` scoreline for one fixture,
-    or ``None`` if a team is missing. Deterministic given the prepared ratings —
-    this is exactly what gets displayed and frozen, so freeze and live can't
-    drift. Knockout fixtures are optimised on the 120-minute distribution (MPP
-    counts extra time).
+    or ``None`` if a team is missing. Deterministic given the prepared ratings +
+    the committed boards — this is exactly what gets displayed and frozen, so
+    freeze and live can't drift. Knockout fixtures are optimised on the
+    120-minute distribution (MPP counts extra time).
 
-    ``mpp_board`` (``{FIXTURE_ID: [pts_home, pts_draw, pts_away]}``, see
-    ``data.load_mpp_board``) makes the pick optimise *real* MPP barème points
-    when known — the whole tool exists to win Mon Petit Prono. It is NOT the
-    bookmaker odds board: the prono never moves with betting odds (those live on
-    the Paris tab). Without points for this fixture it falls back to the
-    model-only pick, unchanged.
+    Base-points source, by fidelity (the whole tool exists to win Mon Petit
+    Prono, where points follow the cote — a correct draw pays ~2× a short
+    favourite, so the pick must value the cote, not just the modal score):
+
+    * ``mpp_board`` (``{FIXTURE_ID: [pts_home, pts_draw, pts_away]}``) — the
+      *real* MPP barème when dictated (ask-Claude layer, ``data.load_mpp_board``).
+    * ``odds_board`` (``{key: [home, draw, away]}`` decimals) — the
+      **committed/cached** bookmaker odds as a proxy (``≈ cote×10``). Must be the
+      committed board, not a live fetch, or the frozen pick would never match a
+      re-render (cf. module docstring).
+
+    Without either for this fixture it falls back to the model-only modal pick.
     """
     out = analyse_match(match, ratings)
     if out is None:
         return None
     mpp_points = (mpp_board or {}).get(str(match.get("id", "")).upper())
-    ph, pa = mpp.recommend(out, mpp_points=mpp_points,
+    odds = common.find_match_odds(match, odds_board) if odds_board else None
+    ph, pa = mpp.recommend(out, odds=odds, mpp_points=mpp_points,
                            knockout=mpp.is_knockout(match))["score"]
     return int(ph), int(pa)

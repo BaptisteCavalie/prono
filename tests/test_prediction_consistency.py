@@ -6,17 +6,21 @@ recomputed the scoreline by hand, and two drifts crept in — making a future
 match show a frozen "3-0" while the same page said "model now 2-0":
 
   1. the freeze called model.analyse WITHOUT attack/defense (ad_home/ad_away);
-  2. the calendar used odds-aware mpp.recommend(out, odds) while the freeze used
-     odds-free mpp.recommend(out), so a cached odds board re-introduced the gap.
+  2. the calendar used an odds-aware pick while the freeze used an odds-free one,
+     so a cached odds board re-introduced the gap.
 
-Everything now funnels through engine.prediction (model-only). These tests fail
-if either drift comes back.
+The prono now MAXIMISES expected MPP points and is deliberately odds-aware: its
+base points come from the real MPP barème (data/mpp_board.json) or, as a proxy,
+the *committed/cached* bookmaker odds (≈ cote×10). The invariant that prevents
+the phantom-update bug is therefore no longer "model-only" but "display and
+freeze read the SAME committed boards" — everything funnels through
+engine.prediction.scoreline with the same mpp_board + odds_board. These tests
+fail if either drift comes back, or if the odds wiring goes dead (vacuous).
 
 Run: python3 tests/test_prediction_consistency.py   (or: python3 -m unittest)
 """
 from __future__ import annotations
 
-import inspect
 import sys
 import unittest
 from pathlib import Path
@@ -73,39 +77,42 @@ class PredictionConsistency(unittest.TestCase):
         self.assertGreater(differs, 0,
                            "attack/defense never changes a scoreline — ad not wired / guard vacuous")
 
-    def test_scoreline_is_odds_free_and_deterministic(self):
-        self.assertNotIn("odds", inspect.signature(prediction.scoreline).parameters,
-                         "scoreline must be model-only (no odds parameter)")
+    def test_scoreline_is_deterministic(self):
         m = self.future[0]
         self.assertEqual(prediction.scoreline(m, self.ratings),
                          prediction.scoreline(m, self.ratings))
-        self.assertEqual(prediction.scoreline(m, self.ratings),
-                         mpp.recommend(prediction.analyse_match(m, self.ratings))["score"])
+        board = {str(m.get("id", "")).upper(): [1.5, 4.0, 7.0]}
+        self.assertEqual(prediction.scoreline(m, self.ratings, None, board),
+                         prediction.scoreline(m, self.ratings, None, board))
 
-    def test_calendar_prono_ignores_odds_and_matches_freeze(self):
+    def test_calendar_prono_matches_freeze_with_same_board(self):
         """The displayed calendar prono must equal the frozen (shared-helper)
-        scoreline and must NOT move when a bookmaker odds board is present."""
-        flip = [1.5, 4.0, 7.0]  # long away price -> would flip an odds-aware pick
+        scoreline when both are fed the SAME odds board — and also when neither
+        is. This is the phantom-update guard under the odds-aware design: the two
+        can only stay in lockstep by going through prediction.scoreline with the
+        same inputs."""
+        mpp_board = data.load_mpp_board()
+        board = {str(m.get("id", "")).upper(): [1.6, 3.9, 5.4] for m in self.future}
 
-        # Non-vacuous guard: prove this board *can* flip an odds-aware recommend.
-        coin = model.analyse(1500.0, 1500.0, home_adv=0.0)
-        self.assertNotEqual(mpp.recommend(coin, flip)["score"], mpp.recommend(coin)["score"],
-                            "odds board is not potent enough to be a real guard")
+        for odds in (board, {}):
+            rows = ui._analyse_rows(self.future, self.ratings, odds, team_status=self.team_status)
+            for m, r in zip(self.future, rows):
+                freeze = "%d-%d" % prediction.scoreline(m, self.ratings, mpp_board, odds)
+                self.assertEqual(r["predicted_score_live"], freeze,
+                                 f"calendar prono != freeze for {m['home']} vs {m['away']}")
 
+    def test_prono_is_actually_odds_aware(self):
+        """Non-vacuous guard: a potent odds board MUST move the prono vs no board
+        (else the EV wiring is dead and we'd be back to the modal-favourite pick
+        that loses MPP)."""
+        flip = [1.5, 4.0, 7.0]  # long away price -> EV pick should swing toward away
         board = {str(m.get("id", "")).upper(): list(flip) for m in self.future}
         rows_no = ui._analyse_rows(self.future, self.ratings, {}, team_status=self.team_status)
         rows_odds = ui._analyse_rows(self.future, self.ratings, board, team_status=self.team_status)
-
-        # The prono optimises the real MPP barème (data/mpp_board.json), so the
-        # freeze must be computed with the same board to match the displayed live
-        # one — what must NOT move it is the *bookmaker odds* board above.
-        mpp_board = data.load_mpp_board()
-        for m, r0, r1 in zip(self.future, rows_no, rows_odds):
-            freeze = "%d-%d" % prediction.scoreline(m, self.ratings, mpp_board)
-            self.assertEqual(r0["predicted_score_live"], freeze,
-                             f"calendar prono != freeze for {m['home']} vs {m['away']}")
-            self.assertEqual(r0["predicted_score_live"], r1["predicted_score_live"],
-                             f"calendar prono moved with odds for {m['home']} vs {m['away']}")
+        differs = sum(1 for a, b in zip(rows_no, rows_odds)
+                      if a["predicted_score_live"] != b["predicted_score_live"])
+        self.assertGreater(differs, 0,
+                           "odds never move the prono — EV wiring is dead (vacuous)")
 
 
 if __name__ == "__main__":

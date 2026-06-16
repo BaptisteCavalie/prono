@@ -401,15 +401,15 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         odds = _find_match_odds(m, odds_board)
 
         # MPP-optimal prono: the scoreline that maximises expected Mon Petit Prono
-        # points. When the real MPP barème points for this match are known
-        # (data/mpp_board.json, ask-Claude layer) the favoured 1N2 maximises
-        # P(outcome) × real points; otherwise it falls back to the model-only
-        # pick. This is NOT the bookmaker odds board — the prono never moves with
-        # betting odds (those live on the Paris tab). Same call as the freeze
+        # points. Base points come from the real MPP barème when known
+        # (data/mpp_board.json, ask-Claude layer), else from the committed/cached
+        # bookmaker odds (≈ cote×10) — points follow the cote, so a correct draw
+        # pays ~2× a short favourite and the pick must value that, not just the
+        # modal score. Same call (and same committed odds) as the freeze
         # (engine/prediction.scoreline) so displayed and frozen can't drift.
         mpp_points = mpp_board.get(str(m.get("id", "")).upper())
         knockout = mpp.is_knockout(m)
-        rec = mpp.recommend(out, mpp_points=mpp_points, knockout=knockout)
+        rec = mpp.recommend(out, odds=odds, mpp_points=mpp_points, knockout=knockout)
         rsi, rsj = rec["score"]
         # The "gros lot" : highest-paying outcome the model still rates plausible —
         # the deliberate high-variance play for a trailing player (≠ the EV pick).
