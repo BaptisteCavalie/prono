@@ -164,6 +164,56 @@ def _confidence_nutriscore(prob: float, est: bool) -> str:
     return "E"
 
 
+# Verdict confiance/risque d'un match, dérivé de la distribution 1N2. Sa raison
+# d'être : la plupart des matchs ont un favori net (p_top médian ~74 %), donc
+# « le favori gagne » n'apporte rien — la valeur est de pointer les matchs où le
+# favori est FRAGILE pour ne PAS le miser. Quatre tiers, décision-orientés :
+#   - solide : favori net, marge confortable → mise défendable
+#   - serre  : favori, mais avantage mince → prudence
+#   - piege  : favori d'une ÉQUIPE mais nul très probable → le piège classique
+#   - ouvert : aucune issue ne se détache → pile ou face, à éviter
+# Entrées en POURCENTAGES entiers (comme stockés sur la ligne). Fonction pure :
+# c'est une aide à la décision de pari, donc testée (tests/test_confidence.py).
+_VERDICT_LABELS = {
+    "solide": "Favori solide",
+    "serre": "Favori léger",
+    "piege": "Piège : nul probable",
+    "ouvert": "Pile ou face",
+}
+
+
+def _verdict_counts(rows: List[Dict]) -> Dict[str, int]:
+    """Compte les verdicts confiance/risque sur un lot de matchs (à venir).
+    Sert le bandeau récap : voir d'un coup combien de favoris sont solides
+    (rien à décider) vs combien sont à examiner — c'est là que l'outil sert."""
+    counts = {"solide": 0, "serre": 0, "piege": 0, "ouvert": 0}
+    for r in rows:
+        if r.get("p_home") is None:
+            continue
+        tier = _confidence_verdict(r["p_home"], r["p_draw"], r["p_away"])["tier"]
+        counts[tier] += 1
+    return counts
+
+
+def _confidence_verdict(p_home: int, p_draw: int, p_away: int) -> Dict[str, str]:
+    probs = {"1": int(p_home), "N": int(p_draw), "2": int(p_away)}
+    pick = max(probs, key=lambda k: probs[k])
+    top = probs[pick]
+    second = sorted(probs.values(), reverse=True)[1]
+    margin = top - second
+    team_pick = pick in ("1", "2")
+
+    if top < 45:
+        tier, why = "ouvert", "aucune issue ne se détache — à éviter"
+    elif team_pick and p_draw >= 30:
+        tier, why = "piege", f"favori à {top}% mais nul à {p_draw}%"
+    elif top >= 60 and margin >= 22:
+        tier, why = "solide", "favori nettement devant"
+    else:
+        tier, why = "serre", "avantage mince — prudence"
+    return {"tier": tier, "label": _VERDICT_LABELS[tier], "why": why}
+
+
 def _iso_to_flag(code: str) -> str:
     if not code or len(code) != 2:
         return "🏳"
@@ -913,6 +963,30 @@ _CSS = "".join([
     ".team-name{display:inline}",
     ".team-sep{color:var(--muted);margin:0 7px}",
     ".score-chip{display:inline-flex;align-items:center;justify-content:center;min-width:64px;padding:6px 10px;border-radius:999px;background:var(--surface-2);color:var(--text);border:1px solid var(--line-2);font-weight:700;font-size:.95rem;line-height:1;font-family:var(--font-mono)}",
+    # Recentrage confiance/risque : le verdict mène la colonne « Pronostic », le
+    # score sec passe en sous-ligne discrète. Chips SOBRES (pas de rouge promo,
+    # cf. DA) : solide = teal calme (la donnée), serré = neutre, piège/ouvert =
+    # signal de prudence (warn ambré sobre / neutre pointillé), jamais d'urgence.
+    # Bandeau récap confiance : combien de favoris solides (rien à décider) vs à
+    # examiner — pour aller droit aux matchs où l'analyse sert. Sobre, scannable.
+    ".conf-summary{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:12px}",
+    ".cs-chip{font-weight:700;font-size:.84rem;padding:4px 11px;border-radius:999px;white-space:nowrap}",
+    ".cs-solide{background:var(--surface-2);color:var(--text);border:1px solid var(--line-2)}",
+    ".cs-watch{background:var(--warn-bg);color:var(--warn-text);border:1px solid var(--warn-line)}",
+    ".cs-note{font-size:.8rem;color:var(--muted)}",
+    ".verdict-line{display:block}",
+    # La COULEUR ne signale que le RISQUE : piège/ouvert en ambré (à examiner),
+    # solide/serré neutres — pour ne pas faire doublon avec le badge Nutri (la
+    # note de confiance signature, cf. DA). Le verdict mène la colonne (0.9rem/700)
+    # nettement au-dessus du score démoté (0.75rem).
+    ".conf-verdict{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:700;font-size:.9rem;line-height:1.15;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text)}",
+    ".cv-solide{background:var(--surface-2);color:var(--text);border-color:var(--line-2)}",
+    ".cv-serre{background:var(--surface-2);color:var(--muted);border-color:var(--line-2)}",
+    ".cv-piege{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
+    ".cv-ouvert{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line);border-style:dashed}",
+    ".score-sub-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}",
+    ".score-sub-line .delta{margin-top:0}",
+    ".score-sub{font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}",
     ".delta{display:flex;width:max-content;align-items:center;gap:6px;margin-top:5px;padding:3px 8px;border-radius:6px;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-text);font-size:.76rem;font-weight:700;white-space:nowrap}",
     ".delta::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}",
     ".delta .delta-scores{font-family:var(--font-mono)}",
@@ -1662,16 +1736,28 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
             f"Modifié <span class='delta-scores'>{html.escape(r['predicted_score'])} &rarr; "
             f"{html.escape(r['predicted_score_live'])}</span></span>"
         )
-    # Le mot « Prono » est porté par l'en-tête de colonne — chip = score seul,
-    # mais on porte le sens en title/aria pour ne jamais le lire comme un
-    # résultat (la distribution 1N2 reste l'objet premier, cf. DA).
-    score_block = (
-        f"<span class='score-chip' title='Prono : score le plus probable' "
-        f"aria-label='Prono {html.escape(r['score'])}'>{html.escape(r['score'])}</span>"
+    # Recentrage confiance/risque : le VERDICT (sur quel favori miser / pas miser)
+    # est la tête d'affiche de la colonne ; le score sec passe en sous-ligne — il
+    # reste pour reporter dans MPP, mais il n'est plus présenté comme « la »
+    # prédiction (le score du favori, Baptiste le sort de tête ; la valeur est
+    # ailleurs). La distribution 1N2 reste l'objet premier (cf. DA).
+    conf_verdict = _confidence_verdict(ph, pd, pa)
+    verdict_block = (
+        f"<span class='conf-verdict cv-{conf_verdict['tier']}' "
+        f"title='{html.escape(conf_verdict['why'])}' "
+        f"aria-label='{html.escape(conf_verdict['label'])} — {html.escape(conf_verdict['why'])}'>"
+        f"{html.escape(conf_verdict['label'])}</span>"
+    )
+    score_sub = (
+        f"<span class='score-sub' title='Score le plus probable — à reporter dans MPP' "
+        f"aria-label='Score prono {html.escape(r['score'])}'>prono {html.escape(r['score'])}</span>"
     )
 
     parts = [row_open, meta_cell, teams_cell]
-    parts.append(f"<td class='cell-prono'>{score_block}{delta_badge}</td>")
+    parts.append(
+        f"<td class='cell-prono'><span class='verdict-line'>{verdict_block}</span>"
+        f"<span class='score-sub-line'>{score_sub}{delta_badge}</span></td>"
+    )
     parts.append(f"<td class='cell-nutri'>{nutri_chip}</td>")
     parts.append(f"<td class='cell-prob'>{prob_block}</td>")
 
@@ -1891,9 +1977,10 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         parts.append(
             "<div class='topbar'>"
             "<div><h1>Matchs</h1>"
-            "<p class='subtitle'>Ordre chronologique : les passés (repliés) en tête, puis les à venir. "
-            "Indice de confiance <strong>A</strong>&rarr;<strong>E</strong>, barre 1·N·2, "
-            "badge <strong>Modifié</strong> = prono recalculé.</p></div>"
+            "<p class='subtitle'>Chaque match porte un <strong>verdict</strong> — favori solide, "
+            "léger, piège (nul probable) ou pile ou face — pour voir d'un coup <strong>sur quel "
+            "favori ne PAS miser</strong>. Distribution 1·N·2 et confiance <strong>A</strong>&rarr;<strong>E</strong> "
+            "à l'appui ; le score reste en second (pour MPP).</p></div>"
             "<div class='filter-wrap'>"
             "<label class='sr-only' for='country-filter'>Filtrer par pays</label>"
             "<input id='country-filter' class='country-filter' type='search' "
@@ -1923,6 +2010,26 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
             parts.append("</div></details>")
 
         if future_rows:
+            vc = _verdict_counts(future_rows)
+            watch = vc["serre"] + vc["piege"] + vc["ouvert"]
+            n_sol = vc["solide"]
+            sol_txt = f"{n_sol} favori solide" if n_sol == 1 else f"{n_sol} favoris solides"
+            details = []
+            if vc["piege"]:
+                details.append(f"{vc['piege']} piège{'s' if vc['piege'] > 1 else ''}-nul")
+            if vc["ouvert"]:
+                details.append(f"{vc['ouvert']} pile ou face")
+            if vc["serre"]:
+                details.append(f"{vc['serre']} serré{'s' if vc['serre'] > 1 else ''}")
+            note = (f"<span class='cs-note'>dont {html.escape(', '.join(details))}</span>"
+                    if details else "")
+            parts.append(
+                "<div class='conf-summary' role='status'>"
+                f"<span class='cs-chip cs-solide'>{html.escape(sol_txt)}</span>"
+                f"<span class='cs-chip cs-watch'>{watch} à examiner</span>"
+                f"{note}"
+                "</div>"
+            )
             parts.extend(_render_day_sections(_group_rows_by_matchday(future_rows), past=False))
         else:
             parts.append("<div class='panel'><div class='muted'>Aucun match à venir à afficher.</div></div>")
