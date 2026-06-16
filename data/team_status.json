@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-15T21:16:01Z",
+  "as_of": "2026-06-16T04:33:40Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -165,7 +165,7 @@
       ]
     },
     "Uruguay": {
-      "form": 0.0,
+      "form": -0.15,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -210,7 +210,7 @@
       ]
     },
     "Iran": {
-      "form": 0.0,
+      "form": -0.15,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -381,7 +381,7 @@
       ]
     },
     "Saudi Arabia": {
-      "form": 0.0,
+      "form": 0.15,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -426,7 +426,7 @@
       ]
     },
     "New Zealand": {
-      "form": 0.0,
+      "form": 0.15,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,

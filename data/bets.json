@@ -43,7 +43,7 @@
       "sel": "Iran vainqueur",
       "odds": 1.8,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G38",
@@ -52,7 +52,8 @@
           "pick": "home",
           "odds": 1.8
         }
-      ]
+      ],
+      "settled_at": "2026-06-16T04:33:43Z"
     },
     {
       "id": 4,
@@ -490,7 +491,7 @@
       "label": "Iran + Mexique",
       "odds": 3.49,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G38",
@@ -506,7 +507,8 @@
           "pick": "home",
           "odds": 1.96
         }
-      ]
+      ],
+      "settled_at": "2026-06-16T04:33:43Z"
     },
     {
       "id": 24,
