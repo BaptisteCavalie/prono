@@ -195,21 +195,6 @@ def _verdict_counts(rows: List[Dict]) -> Dict[str, int]:
     return counts
 
 
-def _prono_divergence_note(out: Dict, pick_outcome: str) -> Optional[str]:
-    """Phrase courte quand le prono EV-points NE suit PAS le favori 1N2 — sinon
-    « Favori solide » à côté d'un « prono 0-0 » paraît cassé. La vraie histoire :
-    le pick maximise les POINTS MPP (les points suivent la cote), donc un favori
-    trop court vaut moins que le nul, et un outsider sous-coté peut payer plus.
-    ``None`` quand le pick suit le favori (cas normal, rien à expliquer)."""
-    probs = {"home": out["p_home"], "draw": out["p_draw"], "away": out["p_away"]}
-    favourite = max(probs, key=lambda o: probs[o])
-    if pick_outcome == favourite:
-        return None
-    if pick_outcome == "draw":
-        return "Favori trop court : le nul rapporte plus de points"
-    return "Valeur : l'outsider est sous-coté au barème"
-
-
 def _confidence_verdict(p_home: int, p_draw: int, p_away: int) -> Dict[str, str]:
     probs = {"1": int(p_home), "N": int(p_draw), "2": int(p_away)}
     pick = max(probs, key=lambda k: probs[k])
@@ -227,6 +212,26 @@ def _confidence_verdict(p_home: int, p_draw: int, p_away: int) -> Dict[str, str]
     else:
         tier, why = "serre", "avantage mince — prudence"
     return {"tier": tier, "label": _VERDICT_LABELS[tier], "why": why}
+
+
+def _pick_verdict(p_home: int, p_draw: int, p_away: int, pick_outcome: str) -> Dict[str, str]:
+    """Verdict de la LIGNE = la DÉCISION réellement jouée (le pick MPP), pas un
+    favori qu'on ne joue pas. Quand le pick suit le favori 1N2, c'est le tier de
+    confiance (solide/léger/piège/pile ou face). Quand il diverge — favori trop
+    court → on joue le nul, ou outsider sous-coté → on joue l'outsider — le
+    verdict PORTE la décision, pour que verdict + score « prono 0-0 » + pastille
+    Nutri racontent une seule histoire (le pick contrarian, peu probable mais
+    payant), au lieu de « Favori solide » + « E » qui se lisent contradictoires
+    (design-critic 2026-06-16)."""
+    fav = max(("home", "draw", "away"),
+              key=lambda o: {"home": p_home, "draw": p_draw, "away": p_away}[o])
+    if pick_outcome == fav:
+        return _confidence_verdict(p_home, p_draw, p_away)
+    if pick_outcome == "draw":
+        return {"tier": "nul", "label": "Jouer le nul",
+                "why": "favori trop court — le nul rapporte plus de points au barème"}
+    return {"tier": "valeur", "label": "Jouer l'outsider",
+            "why": "outsider sous-coté — il rapporte plus de points au barème"}
 
 
 def _iso_to_flag(code: str) -> str:
@@ -558,12 +563,6 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "nutri": _confidence_nutriscore(rec["p_outcome"], est),
             "mpp_outcome": rec["outcome"],
             "mpp_pick_pct": round(rec["p_outcome"] * 100),
-            # Quand le pick EV diverge du favori 1N2 (favori trop court → le nul
-            # paie plus ; ou outsider sous-coté), on l'explique : sinon « Favori
-            # solide + prono 0-0 » a l'air cassé. C'est l'inverse — c'est le pick
-            # qui MAXIMISE les points MPP, justement parce qu'on ne joue pas le
-            # favori trop court. Pas de note quand pick == favori (cas normal).
-            "prono_note": _prono_divergence_note(out, rec["outcome"]),
             "mpp_base_points": (round(rec["base_points"]) if rec["base_points"] is not None else None),
             "mpp_upside": ({
                 "score": f"{upside['score'][0]}-{upside['score'][1]}",
@@ -1005,12 +1004,13 @@ _CSS = "".join([
     ".cv-serre{background:var(--surface-2);color:var(--muted);border-color:var(--line-2)}",
     ".cv-piege{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
     ".cv-ouvert{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line);border-style:dashed}",
+    # Picks contrarian (le pick EV ne suit pas le favori) : même ambré « non
+    # trivial, regarde » — verdict + score nul + Nutri E racontent une histoire.
+    ".cv-nul{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
+    ".cv-valeur{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
     ".score-sub-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}",
     ".score-sub-line .delta{margin-top:0}",
     ".score-sub{font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}",
-    # Note quand le prono EV diverge du favori (favori trop court → nul, etc.) :
-    # transforme l'apparente incohérence « solide + 0-0 » en intention assumée.
-    ".prono-note{display:block;margin-top:3px;font-size:.72rem;line-height:1.3;color:var(--brand-dark);max-width:22ch}",
     ".delta{display:flex;width:max-content;align-items:center;gap:6px;margin-top:5px;padding:3px 8px;border-radius:6px;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-text);font-size:.76rem;font-weight:700;white-space:nowrap}",
     ".delta::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}",
     ".delta .delta-scores{font-family:var(--font-mono)}",
@@ -1765,28 +1765,25 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     # reste pour reporter dans MPP, mais il n'est plus présenté comme « la »
     # prédiction (le score du favori, Baptiste le sort de tête ; la valeur est
     # ailleurs). La distribution 1N2 reste l'objet premier (cf. DA).
-    conf_verdict = _confidence_verdict(ph, pd, pa)
+    # Verdict de la décision JOUÉE (le pick MPP), pas le favori 1N2 : sur un pick
+    # contrarian (nul/outsider) il dit « Jouer le nul » et non « Favori solide »,
+    # pour qu'il s'accorde avec le score « prono 0-0 » et la pastille Nutri E.
+    pick_verdict = _pick_verdict(ph, pd, pa, r.get("mpp_outcome", ""))
     verdict_block = (
-        f"<span class='conf-verdict cv-{conf_verdict['tier']}' "
-        f"title='{html.escape(conf_verdict['why'])}' "
-        f"aria-label='{html.escape(conf_verdict['label'])} — {html.escape(conf_verdict['why'])}'>"
-        f"{html.escape(conf_verdict['label'])}</span>"
+        f"<span class='conf-verdict cv-{pick_verdict['tier']}' "
+        f"title='{html.escape(pick_verdict['why'])}' "
+        f"aria-label='{html.escape(pick_verdict['label'])} — {html.escape(pick_verdict['why'])}'>"
+        f"{html.escape(pick_verdict['label'])}</span>"
     )
     score_sub = (
         f"<span class='score-sub' title='Prono à reporter dans MPP (maximise les points)' "
         f"aria-label='Prono {html.escape(r['score'])}'>prono {html.escape(r['score'])}</span>"
     )
-    # Note de divergence : le pick EV ne suit pas le favori (favori trop court →
-    # nul, ou outsider sous-coté). Désamorce le « Favori solide + prono 0-0 ».
-    prono_note = (
-        f"<span class='prono-note'>{html.escape(r['prono_note'])}</span>"
-        if r.get("prono_note") else ""
-    )
 
     parts = [row_open, meta_cell, teams_cell]
     parts.append(
         f"<td class='cell-prono'><span class='verdict-line'>{verdict_block}</span>"
-        f"<span class='score-sub-line'>{score_sub}{delta_badge}</span>{prono_note}</td>"
+        f"<span class='score-sub-line'>{score_sub}{delta_badge}</span></td>"
     )
     parts.append(f"<td class='cell-nutri'>{nutri_chip}</td>")
     parts.append(f"<td class='cell-prob'>{prob_block}</td>")

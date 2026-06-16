@@ -69,25 +69,31 @@ class ConfidenceVerdict(unittest.TestCase):
             self.assertIn(tier, ui._VERDICT_LABELS)
 
 
-class PronoDivergenceNote(unittest.TestCase):
-    """Quand le pick EV ne suit pas le favori 1N2, on l'explique (sinon
-    « Favori solide » + « prono 0-0 » paraît cassé)."""
+class PickVerdict(unittest.TestCase):
+    """Le verdict de ligne porte la DÉCISION jouée (le pick MPP), pas le favori
+    1N2 — sinon « Favori solide » + « prono 0-0 » + Nutri E se contredisent."""
 
-    def test_no_note_when_pick_follows_favourite(self):
-        out = {"p_home": 0.78, "p_draw": 0.15, "p_away": 0.07}
-        self.assertIsNone(ui._prono_divergence_note(out, "home"))
+    def test_pick_follows_favourite_is_confidence_tier(self):
+        # pick == favori -> on retombe sur le tier de confiance 1N2
+        v = ui._pick_verdict(75, 18, 7, "home")
+        self.assertEqual(v["tier"], "solide")
 
-    def test_short_favourite_draw_pick_explained(self):
-        out = {"p_home": 0.78, "p_draw": 0.15, "p_away": 0.07}
-        note = ui._prono_divergence_note(out, "draw")
-        self.assertIsNotNone(note)
-        self.assertIn("nul", note)
+    def test_short_favourite_draw_pick_says_play_draw(self):
+        # favori (home) mais pick = nul -> « Jouer le nul »
+        v = ui._pick_verdict(78, 15, 7, "draw")
+        self.assertEqual(v["tier"], "nul")
+        self.assertIn("nul", v["label"].lower())
 
-    def test_underdog_value_pick_explained(self):
-        out = {"p_home": 0.55, "p_draw": 0.25, "p_away": 0.20}
-        note = ui._prono_divergence_note(out, "away")
-        self.assertIsNotNone(note)
-        self.assertIn("outsider", note)
+    def test_underdog_value_pick_says_play_underdog(self):
+        # favori (home) mais pick = outsider (away) -> « Jouer l'outsider »
+        v = ui._pick_verdict(55, 25, 20, "away")
+        self.assertEqual(v["tier"], "valeur")
+        self.assertIn("outsider", v["label"].lower())
+
+    def test_draw_favourite_drawn_pick_is_not_divergent(self):
+        # si le NUL est lui-même le favori et qu'on joue le nul -> pas divergent
+        v = ui._pick_verdict(28, 45, 27, "draw")
+        self.assertNotIn(v["tier"], ("nul", "valeur"))
 
 
 if __name__ == "__main__":
