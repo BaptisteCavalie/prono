@@ -46,9 +46,9 @@
       "kickoff_utc": "2026-06-19T01:00:00Z",
       "actual_home": null,
       "actual_away": null,
-      "predicted_home": 2,
+      "predicted_home": 0,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 65.0
     },
     {
@@ -65,7 +65,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -82,7 +82,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": -65.0
     },
     {
@@ -99,7 +99,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -150,7 +150,7 @@
       "actual_away": null,
       "predicted_home": 3,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 65.0
     },
     {
@@ -167,7 +167,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -184,7 +184,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": -65.0
     },
     {
@@ -201,7 +201,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -252,7 +252,7 @@
       "actual_away": null,
       "predicted_home": 5,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -268,8 +268,8 @@
       "actual_home": null,
       "actual_away": null,
       "predicted_home": 0,
-      "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_away": 0,
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -286,7 +286,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -303,7 +303,7 @@
       "actual_away": null,
       "predicted_home": 3,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -354,7 +354,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 65.0
     },
     {
@@ -371,7 +371,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -388,7 +388,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": -65.0
     },
     {
@@ -405,7 +405,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -456,7 +456,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -473,7 +473,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -490,7 +490,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -507,7 +507,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -558,7 +558,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -575,7 +575,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -592,7 +592,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -609,7 +609,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -660,7 +660,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -677,7 +677,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -694,7 +694,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -711,7 +711,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -762,7 +762,7 @@
       "actual_away": null,
       "predicted_home": 5,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -779,7 +779,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -796,7 +796,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -813,7 +813,7 @@
       "actual_away": null,
       "predicted_home": 1,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -830,7 +830,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -847,7 +847,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -864,7 +864,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -881,7 +881,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -898,7 +898,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -915,7 +915,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -932,7 +932,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -949,7 +949,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -966,7 +966,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -983,7 +983,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1000,7 +1000,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1017,7 +1017,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1034,7 +1034,7 @@
       "actual_away": null,
       "predicted_home": 3,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1051,7 +1051,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1068,7 +1068,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1085,7 +1085,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1102,7 +1102,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1119,7 +1119,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1136,7 +1136,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1153,7 +1153,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1170,7 +1170,7 @@
       "actual_away": null,
       "predicted_home": 3,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1187,7 +1187,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1204,7 +1204,7 @@
       "actual_away": null,
       "predicted_home": 0,
       "predicted_away": 2,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     },
     {
@@ -1221,7 +1221,7 @@
       "actual_away": null,
       "predicted_home": 2,
       "predicted_away": 0,
-      "predicted_at": "2026-06-16T10:01:35Z",
+      "predicted_at": "2026-06-16T10:14:49Z",
       "home_adv": 0.0
     }
   ]

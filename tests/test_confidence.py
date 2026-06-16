@@ -69,5 +69,26 @@ class ConfidenceVerdict(unittest.TestCase):
             self.assertIn(tier, ui._VERDICT_LABELS)
 
 
+class PronoDivergenceNote(unittest.TestCase):
+    """Quand le pick EV ne suit pas le favori 1N2, on l'explique (sinon
+    « Favori solide » + « prono 0-0 » paraît cassé)."""
+
+    def test_no_note_when_pick_follows_favourite(self):
+        out = {"p_home": 0.78, "p_draw": 0.15, "p_away": 0.07}
+        self.assertIsNone(ui._prono_divergence_note(out, "home"))
+
+    def test_short_favourite_draw_pick_explained(self):
+        out = {"p_home": 0.78, "p_draw": 0.15, "p_away": 0.07}
+        note = ui._prono_divergence_note(out, "draw")
+        self.assertIsNotNone(note)
+        self.assertIn("nul", note)
+
+    def test_underdog_value_pick_explained(self):
+        out = {"p_home": 0.55, "p_draw": 0.25, "p_away": 0.20}
+        note = ui._prono_divergence_note(out, "away")
+        self.assertIsNotNone(note)
+        self.assertIn("outsider", note)
+
+
 if __name__ == "__main__":
     unittest.main()
