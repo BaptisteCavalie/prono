@@ -44,6 +44,17 @@ gros gains** du tournoi reçoivent un **médaillon or (1er) / argent (2e) /
 cuivre (3e)** — un podium perso des meilleurs paris. Outil perso
 mono-utilisateur : la lisibilité du résultat prime, l'argument « incitation »
 ne s'applique pas (décision Baptiste 2026-06-15).
+La page Paris affiche **aussi** un bloc **Recommandations de paris** : une
+sélection *value* calculée depuis le modèle et les cotes (probas ramenées vers
+le marché, mises en quart-Kelly plafonnées, combinés ≤ 2 sélections), présentée
+en **tableau aligné** — même grammaire que le suivi (Sélection · Cote · Mise ·
+Retour), recopiable dans Winamax ; les paris **déjà posés** y sont **atténués
+et regroupés** pour ne mettre en avant que le reste à jouer. Le champ
+« bankroll » est un **paramètre de calibrage des mises** (quart-Kelly), pas une
+bankroll évolutive à tenir à jour — la décision « pas de bankroll » porte sur
+le *suivi*, pas sur ce calibrage. Cette feature est **conservée** : on recadre
+sa présentation (sortie de l'esthétique en bloc/cards vers le tableau), on ne
+la supprime pas (décision Baptiste 2026-06-17).
 
 ## Kit
 
