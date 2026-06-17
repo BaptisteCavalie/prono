@@ -1085,16 +1085,30 @@ _CSS = "".join([
     ".guard-msg{margin-top:10px;padding:9px 10px;border-radius:10px;border:1px dashed var(--warn-line);background:var(--warn-bg);color:var(--warn-text);font-size:.84rem}",
     ".info-grid{display:grid;grid-template-columns:repeat(2,minmax(240px,1fr));gap:10px;margin-top:8px}",
     ".info-card{border:1px solid var(--line);border-radius:10px;background:var(--surface-3);padding:10px}",
-    ".info-card h4{margin:0 0 6px;font-size:.88rem}",
+    ".info-card h3{margin:0 0 6px;font-size:.88rem}",
     ".info-list{margin:0;padding-left:17px;color:var(--muted);font-size:.82rem;line-height:1.35}",
     ".info-line{font-size:.82rem;color:var(--muted);margin:2px 0}",
+    # Diagnostics : deux cartes côte à côte ; chacune sort score + KPI clés du
+    # repli (densité « poste de pilotage »), le détail exhaustif reste en <details>.
+    ".diag-grid{display:grid;grid-template-columns:repeat(2,minmax(280px,1fr));gap:14px;align-items:start}",
+    ".diag-card{margin-bottom:0}",
+    ".diag-head{display:flex;justify-content:space-between;align-items:center;gap:10px}",
+    ".diag-head h2{margin:0;font-size:1.05rem}",
+    ".diag-score{display:flex;align-items:baseline;gap:6px;margin:10px 0 2px}",
+    ".diag-num{font-family:var(--font-mono);font-size:2rem;font-weight:700;line-height:1;color:var(--text)}",
+    ".diag-den{font-family:var(--font-mono);color:var(--muted);font-size:.95rem}",
+    ".diag-kpis{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 2px}",
+    ".diag-kpi{flex:1 1 90px;background:var(--surface-2);border-radius:8px;padding:8px 10px}",
+    ".diag-kpi-val{display:block;font-family:var(--font-mono);font-weight:700;font-size:1.05rem;color:var(--text);line-height:1.1}",
+    ".diag-kpi-key{display:block;font-size:.66rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-top:3px}",
+    ".diag-card details{margin-top:10px}",
     ".bankroll-form{display:flex;align-items:flex-end;gap:8px;margin-top:10px;flex-wrap:wrap}",
     ".bankroll-form .field{display:flex;flex-direction:column;gap:4px}",
     ".bankroll-form label{font-size:.78rem;font-weight:700;color:var(--muted)}",
     ".bankroll-form input{width:120px;padding:9px 10px;border:1px solid var(--line-2);border-radius:8px;font-size:.95rem;background:var(--surface);color:var(--text)}",
     ".bankroll-form button{padding:10px 14px;border:0;border-radius:8px;background:var(--brand);color:var(--brand-ink);font-weight:700;font-size:.85rem;cursor:pointer}",
     ".bankroll-form button:hover{background:var(--brand-dark)}",
-    "@media (max-width:860px){.info-grid{grid-template-columns:1fr}}",
+    "@media (max-width:860px){.info-grid{grid-template-columns:1fr}.diag-grid{grid-template-columns:1fr}}",
     "@media (max-width:760px){.app{grid-template-columns:1fr}.sidebar{position:static;height:auto;flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap}.side-nav{flex-direction:row;margin:0}.sidebar-foot{display:none}.canvas{padding:14px 10px 20px}.panel{padding:11px 10px}"
     ".md-title{position:static;margin:-11px -10px 4px;padding:10px 10px 8px}"
     "table,tbody{display:block;width:100%}thead{display:none}"
@@ -1187,28 +1201,43 @@ def _render_day_sections(grouped, past: bool = False) -> List[str]:
 
 def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
                         solidity_report: Optional[Dict], data_info: Optional[Dict]) -> List[str]:
-    parts: List[str] = []
+    cards: List[str] = []
+
     if health:
         level_label = {
             "good": "Bon",
             "warning": "À surveiller",
             "critical": "Critique",
         }.get(health.get("level"), "Inconnu")
-        parts.extend([
-            "<div class='panel'>",
-            f"<strong>Qualité des données : {health.get('score')}/100 ({level_label})</strong> ",
-            f"<span class='health-pill {health_meta['class']}' style='margin-left:8px'><span class='health-dot'></span>{health_meta['label']}</span>",
-            "<details style='margin-top:8px'><summary>Pourquoi ce score ?</summary><ul class='note-list'>",
+        alerts = health.get("alerts", [])
+        rating_age = health.get("ratings_age_days")
+        status_age = health.get("status_age_days")
+        rating_age_txt = "n/a" if rating_age is None else f"{rating_age} j"
+        status_age_txt = "n/a" if status_age is None else f"{status_age} j"
+        cards.extend([
+            "<section class='panel diag-card' aria-labelledby='diag-data-title'>",
+            "<div class='diag-head'>",
+            "<h2 id='diag-data-title'>Qualité des données</h2>",
+            f"<span class='health-pill {health_meta['class']}'><span class='health-dot'></span>{html.escape(health_meta['label'])}</span>",
+            "</div>",
+            f"<div class='diag-score'><span class='diag-num'>{html.escape(str(health.get('score')))}</span>"
+            f"<span class='diag-den'>/100 · {html.escape(level_label)}</span></div>",
+            "<div class='diag-kpis'>",
+            f"<div class='diag-kpi'><span class='diag-kpi-val'>{html.escape(rating_age_txt)}</span><span class='diag-kpi-key'>Âge ratings</span></div>",
+            f"<div class='diag-kpi'><span class='diag-kpi-val'>{html.escape(status_age_txt)}</span><span class='diag-kpi-key'>Âge signaux</span></div>",
+            f"<div class='diag-kpi'><span class='diag-kpi-val'>{len(alerts)}</span><span class='diag-kpi-key'>Alerte{'s' if len(alerts) != 1 else ''}</span></div>",
+            "</div>",
+            "<details><summary>Pourquoi ce score ?</summary><ul class='note-list'>",
             f"<li>Dates manquantes : {health.get('fixtures_missing_dates', 0)}</li>",
             f"<li>Matchs passés sans score final : {health.get('fixtures_past_without_score', 0)}</li>",
             f"<li>Âge ratings (jours) : {health.get('ratings_age_days')}</li>",
             f"<li>Âge signaux équipes (jours) : {health.get('status_age_days')}</li>",
         ])
-        if not health.get("alerts"):
-            parts.append("<li>Aucune alerte : les données sont cohérentes pour l'analyse actuelle.</li>")
-        for a in health.get("alerts", []):
-            parts.append(f"<li>{html.escape(a)}</li>")
-        parts.append("</ul></details>")
+        if not alerts:
+            cards.append("<li>Aucune alerte : les données sont cohérentes pour l'analyse actuelle.</li>")
+        for a in alerts:
+            cards.append(f"<li>{html.escape(a)}</li>")
+        cards.append("</ul></details>")
 
         if data_info:
             quality_map = {
@@ -1223,35 +1252,35 @@ def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
             status_cov_txt = "n/a" if status_cov is None else f"{round(status_cov * 100)}%"
             home_adv_cov_txt = "n/a" if home_adv_cov is None else f"{round(home_adv_cov * 100)}%"
 
-            parts.extend([
-                "<details style='margin-top:8px'><summary>Info données (sources + fraîcheur)</summary>",
+            cards.extend([
+                "<details><summary>Info données (sources + fraîcheur)</summary>",
                 "<div class='info-grid'>",
                 "<section class='info-card'>",
-                "<h4>Sources de données</h4>",
+                "<h3>Sources de données</h3>",
                 "<ul class='info-list'>",
             ])
             for row in data_info.get("data_sources", []):
-                parts.append(f"<li>{html.escape(str(row))}</li>")
-            parts.extend([
+                cards.append(f"<li>{html.escape(str(row))}</li>")
+            cards.extend([
                 "</ul>",
                 "</section>",
                 "<section class='info-card'>",
-                "<h4>Sources d'information</h4>",
+                "<h3>Sources d'information</h3>",
                 "<ul class='info-list'>",
             ])
             for row in data_info.get("information_sources", []):
-                parts.append(f"<li>{html.escape(str(row))}</li>")
-            parts.extend([
+                cards.append(f"<li>{html.escape(str(row))}</li>")
+            cards.extend([
                 "</ul>",
                 "</section>",
                 "<section class='info-card'>",
-                "<h4>Date de dernière mise à jour</h4>",
+                "<h3>Date de dernière mise à jour</h3>",
                 f"<div class='info-line'>ratings.as_of : {html.escape(str((data_info.get('last_updates') or {}).get('ratings_as_of')))}</div>",
                 f"<div class='info-line'>team_status.as_of : {html.escape(str((data_info.get('last_updates') or {}).get('team_status_as_of')))}</div>",
                 f"<div class='info-line'>dernier snapshot prédiction : {html.escape(str((data_info.get('last_updates') or {}).get('latest_prediction_snapshot')))}</div>",
                 "</section>",
                 "<section class='info-card'>",
-                "<h4>Qualité + infos pertinentes</h4>",
+                "<h3>Qualité + infos pertinentes</h3>",
                 f"<div class='info-line'>Qualité des données : {html.escape(str(q_score))}/100 ({html.escape(q_level)})</div>",
                 f"<div class='info-line'>Ratings live : {html.escape(str((data_info.get('other') or {}).get('live_ratings', 0)))}/{html.escape(str((data_info.get('other') or {}).get('ratings_total', 0)))}</div>",
                 f"<div class='info-line'>Ratings estimés : {html.escape(str((data_info.get('other') or {}).get('estimated_ratings', 0)))}</div>",
@@ -1263,7 +1292,7 @@ def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
                 "</details>",
             ])
 
-        parts.append("</div>")
+        cards.append("</section>")
 
     if solidity_report:
         level_label = {
@@ -1272,11 +1301,36 @@ def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
             "fragile": "Fragile",
             "insufficient": "Insuffisant",
         }.get(solidity_report.get("level"), "Inconnu")
+        # Pastille de statut AUSSI sur la solidité (symétrie avec Qualité) :
+        # un 35/100 « Fragile » mérite l'ambre/rouge, pas du texte plat.
+        sol_pill = {
+            "solid": ("health-good", "Solide"),
+            "mixed": ("health-warning", "Moyenne"),
+            "fragile": ("health-critical", "Fragile"),
+            "insufficient": ("health-warning", "Insuffisant"),
+        }.get(solidity_report.get("level"), ("health-warning", "Inconnu"))
         score_text = "n/a" if solidity_report.get("score") is None else str(solidity_report.get("score"))
-        parts.extend([
-            "<div class='panel'>",
-            f"<strong>Solidité du système : {score_text}/100 ({level_label})</strong>",
-            "<details style='margin-top:8px'><summary>Comment ce score est calculé ?</summary><ul class='note-list'>",
+        den = "" if score_text == "n/a" else "/100"
+        acc = solidity_report.get("result_accuracy")
+        exact = solidity_report.get("exact_score_hit")
+        gap = solidity_report.get("calibration_gap")
+        acc_txt = "n/a" if acc is None else f"{round(acc * 100)}%"
+        exact_txt = "n/a" if exact is None else f"{round(exact * 100)}%"
+        gap_txt = "n/a" if gap is None else f"{gap * 100:+.0f} pt"
+        cards.extend([
+            "<section class='panel diag-card' aria-labelledby='diag-sol-title'>",
+            "<div class='diag-head'>",
+            "<h2 id='diag-sol-title'>Solidité du système</h2>",
+            f"<span class='health-pill {sol_pill[0]}'><span class='health-dot'></span>{html.escape(sol_pill[1])}</span>",
+            "</div>",
+            f"<div class='diag-score'><span class='diag-num'>{html.escape(score_text)}</span>"
+            f"<span class='diag-den'>{den} · {html.escape(level_label)}</span></div>",
+            "<div class='diag-kpis'>",
+            f"<div class='diag-kpi'><span class='diag-kpi-val'>{html.escape(acc_txt)}</span><span class='diag-kpi-key'>Précision 1N2</span></div>",
+            f"<div class='diag-kpi'><span class='diag-kpi-val'>{html.escape(exact_txt)}</span><span class='diag-kpi-key'>Score exact</span></div>",
+            f"<div class='diag-kpi'><span class='diag-kpi-val'>{html.escape(gap_txt)}</span><span class='diag-kpi-key'>Écart calibration</span></div>",
+            "</div>",
+            "<details><summary>Comment ce score est calculé ?</summary><ul class='note-list'>",
             f"<li>Matchs évalués : {solidity_report.get('matches', 0)}</li>",
             f"<li>Précision 1N2 : {('n/a' if solidity_report.get('result_accuracy') is None else str(round(solidity_report.get('result_accuracy') * 100)) + '%')}</li>",
             f"<li>Score exact touché : {('n/a' if solidity_report.get('exact_score_hit') is None else str(round(solidity_report.get('exact_score_hit') * 100)) + '%')}</li>",
@@ -1286,25 +1340,27 @@ def _render_diagnostics(health: Optional[Dict], health_meta: Dict[str, str],
             f"<li>Confiance moyenne des picks : {('n/a' if solidity_report.get('avg_pick_conf') is None else str(round(solidity_report.get('avg_pick_conf') * 100)) + '%')}</li>",
         ])
         if solidity_report.get("calibration_gap") is not None:
-            parts.append(
+            cards.append(
                 f"<li>Écart calibration (confiance - précision) : {(solidity_report.get('calibration_gap') * 100):+.1f} point(s)</li>"
             )
         else:
-            parts.append("<li>Écart calibration (confiance - précision) : n/a</li>")
+            cards.append("<li>Écart calibration (confiance - précision) : n/a</li>")
         buckets = solidity_report.get("confidence_buckets") or []
         if buckets:
-            parts.append("<li>Calibration par tranche de confiance :</li>")
+            cards.append("<li>Calibration par tranche de confiance :</li>")
             for b in buckets:
-                parts.append(
+                cards.append(
                     f"<li>{b['range']} | n={b['count']} | hit {round(b['hit_rate'] * 100)}% | conf {round(b['avg_conf'] * 100)}% | gap {(b['gap'] * 100):+.1f}pt</li>"
                 )
         else:
-            parts.append("<li>Calibration par tranche de confiance : n/a (aucun match terminé)</li>")
+            cards.append("<li>Calibration par tranche de confiance : n/a (aucun match terminé)</li>")
         for a in solidity_report.get("alerts", []):
-            parts.append(f"<li>{html.escape(a)}</li>")
-        parts.extend(["</ul></details>", "</div>"])
+            cards.append(f"<li>{html.escape(a)}</li>")
+        cards.extend(["</ul></details>", "</section>"])
 
-    return parts
+    if not cards:
+        return []
+    return ["<div class='diag-grid'>"] + cards + ["</div>"]
 
 
 def _placed_picks(bets: Optional[List[Dict]]) -> Dict[str, set]:
