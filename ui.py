@@ -864,21 +864,15 @@ _CSS = "".join([
     "h1{margin:0;font-size:clamp(1.3rem,2vw,1.7rem);letter-spacing:.2px;line-height:1.1}",
     ".subtitle{margin:5px 0 0;color:var(--muted);font-size:.9rem;max-width:70ch}",
     ".panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;margin-bottom:14px}",
-    # Galerie de paris : titre + grille de cards posés directement sur le canvas
-    # (pas de panel autour — une seule épaisseur de bordure, cf. DA « élévation
-    # plate »). Les cards SONT la surface, pas une boîte dans une boîte.
-    ".bet-section{margin-bottom:18px}",
-    ".bet-section>h3{margin:0 2px 2px}",
-    ".bet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px;margin-top:10px}",
-    ".bet-card{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface-3)}",
-    ".bet-sel-line{font-size:1.02rem;font-weight:700;line-height:1.3}",
-    ".bet-odds{font-family:var(--font-mono);color:var(--brand-dark);white-space:nowrap}",
-    ".bet-context{font-size:.8rem;color:var(--muted);margin-top:3px;line-height:1.35}",
-    ".bet-stake-line{display:flex;align-items:center;gap:9px;margin-top:9px;flex-wrap:wrap}",
-    ".bet-stake{display:inline-block;padding:6px 11px;border-radius:6px;background:var(--surface-2);color:var(--text);border:1px solid var(--line-2);font-weight:700;font-size:.92rem;font-family:var(--font-mono)}",
-    ".bet-return{font-size:.8rem;color:var(--muted)}",
-    ".bet-why{margin-top:7px}",
-    ".bet-why summary{font-size:.78rem;padding:3px 2px}",
+    # Recommandations : en-tête plat (titre + bankroll) puis tableau aligné
+    # (réutilise .bets-table). Pas de panel-dans-panel ni de mur de cards.
+    ".reco-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}",
+    ".reco-sub{margin:0;color:var(--muted);font-size:.85rem;max-width:60ch;line-height:1.4}",
+    ".reco-summary{display:flex;flex-wrap:wrap;gap:4px 18px;margin:12px 0 2px;font-size:.82rem;color:var(--muted)}",
+    ".reco-summary strong{color:var(--text);font-family:var(--font-mono);font-weight:700}",
+    ".reco-ev{color:var(--muted)}",
+    ".reco-table .reco-why{display:block;font-size:.72rem;color:var(--muted);margin-top:2px;font-family:var(--font-mono);line-height:1.3}",
+    ".reco-table .reco-empty{color:var(--muted);font-size:.86rem;text-align:left}",
     # Suivi des paris (argent réel) : bilan P&L/ROI + ledger. Distinct du récap
     # justesse (segmented bar) : ici une grille de métriques + une table, des
     # chips de statut (hors ok/warn/alert et hors gamme Nutri), un P&L coloré
@@ -896,6 +890,9 @@ _CSS = "".join([
     ".encours-fig{display:flex;flex-direction:column;gap:2px}",
     ".encours-key{font-size:.66rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)}",
     ".encours-val{font-family:var(--font-mono);font-weight:700;font-size:1.02rem;color:var(--text);line-height:1.1}",
+    # Gain seulement possible : démoté (plus petit, encre atténuée) pour rester
+    # sous la mise réelle et loin du P&L — pas de dramatisation du potentiel.
+    ".encours-val.is-soft{font-weight:600;font-size:.84rem;color:var(--muted)}",
     ".pnl-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}",
     # Tuiles KPI : fond plein, SANS bordure — elles vivent déjà dans le panel
     # Suivi, pas de boîte-dans-boîte (cf. DA). La hiérarchie P&L > ROI/Mise vient
@@ -909,6 +906,10 @@ _CSS = "".join([
     ".pnl-sample{font-size:.65rem;color:var(--muted);margin-top:3px;letter-spacing:.01em}",
     ".bets-table{margin-top:14px}",
     ".bets-table td{font-size:.92rem}",
+    # Séparateur de groupe du ledger (« En cours » sous les réglés) : sous-titre
+    # discret, ligne pleine largeur, pas de hover.
+    ".bets-table .ledger-sep td{padding:12px 8px 4px;font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line)}",
+    ".bets-table .ledger-sep:hover{background:transparent}",
     ".bets-table tbody tr:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
     ".bets-table .b-pari{line-height:1.3}",
     ".bets-table .b-sel{display:block;font-size:.78rem;color:var(--muted);margin-top:2px}",
@@ -922,7 +923,6 @@ _CSS = "".join([
     ".bets-table th.col-num{text-align:right}",
     ".combo-tag{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line-2);font-size:.66rem;font-family:var(--font-mono);color:var(--slate);vertical-align:middle}",
     ".bet-placed{display:inline-block;margin-left:8px;padding:1px 8px;border-radius:999px;background:var(--surface-2);color:var(--slate);border:1px solid var(--line-2);font-size:.66rem;font-weight:700;vertical-align:middle;white-space:nowrap}",
-    ".bet-card.is-placed{border-color:var(--line-2);background:var(--surface-2)}",
     ".bet-status{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:.78rem;font-weight:700;border:1px solid var(--line-2);white-space:nowrap}",
     # Pastille seulement sur « Gagné » : micro-signal teal (la couleur donnée du
     # projet). Sur les statuts neutres, label + contour suffisent — pas
@@ -957,8 +957,6 @@ _CSS = "".join([
     ".bets-table td::before{content:attr(data-label);color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;text-align:left;font-weight:700}"
     ".bets-table .b-sel{text-align:right}}",
     "a:focus-visible,summary:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid color-mix(in srgb,var(--brand) 45%,white);outline-offset:2px;border-radius:6px}",
-    ".stats{display:flex;gap:8px;flex-wrap:wrap}",
-    ".stamp{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;font-size:.78rem;color:var(--muted)}",
     "table{width:100%;border-collapse:collapse;table-layout:fixed}",
     "th,td{padding:9px 8px;vertical-align:middle}",
     "thead th{text-align:left;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:4px}",
@@ -1337,66 +1335,76 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
                   placed_picks: Optional[Dict[str, set]] = None) -> List[str]:
     placed = placed_picks or {"singles": set(), "combos": set()}
     bk = (rec.get("bankroll") if rec else bankroll) or bankroll
+    # En-tête plat (titre + contrôle bankroll), puis la même grammaire visuelle
+    # que le suivi : un seul panel, un tableau aligné — pas de panel-dans-panel
+    # ni de mur de cards. Les paris se recopient ligne à ligne dans Winamax.
     parts = [
-        "<section class='panel'>",
-        "<h2 style='margin:0 0 4px'>Recommandations de paris — stratégie prudente</h2>",
-        "<p class='subtitle'>Sélection calculée automatiquement : uniquement de la <strong>value</strong> "
-        "(le modèle bat la cote dé-marginée), probabilités <strong>ramenées vers le marché</strong> pour "
-        "corriger l'excès de confiance, mises en <strong>quart-Kelly plafonnées</strong>, combinés limités "
-        "à <strong>2 sélections</strong>.</p>",
+        "<section class='panel' aria-labelledby='reco-title'>",
+        "<div class='reco-head'>",
+        "<div><h2 id='reco-title' style='margin:0 0 4px'>Recommandations de paris</h2>",
+        "<p class='reco-sub'>Value uniquement (le modèle bat la cote dé-marginée), probas ramenées "
+        "vers le marché, mises quart-Kelly plafonnées, combinés à 2 sélections max.</p></div>",
         "<form method='get' class='bankroll-form'>",
         "<input type='hidden' name='tab' value='paris'>",
         "<div class='field'><label for='bankroll'>Bankroll (€)</label>",
         f"<input id='bankroll' name='bankroll' type='number' min='1' max='100000' step='1' value='{bk:.0f}' inputmode='numeric'></div>",
-        "<button type='submit'>Recalculer les mises</button>",
+        "<button type='submit'>Recalculer</button>",
         "</form>",
-        _odds_source_note(),
-        "</section>",
+        "</div>",
     ]
 
     if bet_blocked:
-        parts.append("<div class='panel'><div class='muted'>Recommandations indisponibles : qualité des données critique. Mettez à jour fixtures, ratings et team_status.</div></div>")
+        parts.append("<p class='muted' style='margin:8px 0 0'>Recommandations indisponibles : qualité des données critique. Mettez à jour fixtures, ratings et team_status.</p>")
+        parts.append("</section>")
         return parts
     if not rec:
-        parts.append("<div class='panel'><div class='muted'>Aucun match à venir : rien à parier pour l'instant.</div></div>")
+        parts.append("<p class='muted' style='margin:8px 0 0'>Aucun match à venir : rien à parier pour l'instant.</p>")
+        parts.append("</section>")
         return parts
 
     if rec["n_with_odds"] == 0:
         # Pas de cotes : aucune analyse n'a pu tourner — un seul état vide qui
         # guide vers l'action, plutôt que des stats à zéro contradictoires.
         parts.extend([
-            "<div class='panel'>",
-            "<strong>Aucune cote bookmaker chargée.</strong>",
-            "<p class='muted' style='margin:6px 0 0'>Les recommandations comparent le modèle aux cotes du marché : "
-            "sans cotes, aucune value n'est calculable. Connectez une source de cotes gratuite (The Odds API) "
-            "pour activer cette page.</p>",
+            "<p class='muted' style='margin:8px 0 0'><strong>Aucune cote bookmaker chargée.</strong> "
+            "Les recommandations comparent le modèle aux cotes du marché : sans cotes, aucune value "
+            "n'est calculable.</p>",
             "<details style='margin-top:8px'><summary>Comment connecter les cotes ?</summary><ul class='note-list'>",
             "<li>Créez une clé gratuite sur the-odds-api.com.</li>",
-            "<li>Renseignez-la dans la variable d'environnement <code>ODDS_API_KEY</code> ou le fichier <code>data/odds_api_key.txt</code>.</li>",
-            "<li>Rechargez cette page : les cotes se récupèrent automatiquement dès leur publication.</li>",
+            "<li>Renseignez-la dans <code>ODDS_API_KEY</code> ou <code>data/odds_api_key.txt</code>.</li>",
+            "<li>Rechargez : les cotes se récupèrent dès leur publication.</li>",
             "</ul></details>",
-            "</div>",
+            "</section>",
         ])
         return parts
 
-    parts.extend([
-        "<div class='panel'>",
-        "<div class='stats'>",
-        f"<div class='stamp'>Matchs analysés : {rec['n_future']}</div>",
-        f"<div class='stamp'>Avec cotes : {rec['n_with_odds']}</div>",
-        f"<div class='stamp'>Paris simples value : {len(rec['singles'])}</div>",
-        f"<div class='stamp'>Combinés : {len(rec['combos'])}</div>",
-        f"<div class='stamp'>Mise totale : {_eur(rec['total_stake'], 2)}</div>",
-        f"<div class='stamp'>Gain attendu (modèle) : {_eur_signed(rec['ev_profit'])}</div>",
-        "</div>",
-        "<div class='legend'>Le \"gain attendu\" est l'espérance du modèle : fiable seulement dans la mesure où le modèle est bien calibré (il a tendance à être trop confiant). Misez petit.</div>",
-        "</div>",
-    ])
+    # Résumé fin (plus de chips chunky) : couverture + mise engagée. Le « gain
+    # attendu » est démoté (espérance d'un modèle surconfiant — jamais un
+    # objectif à valoriser, cf. domaine paris-sportifs).
+    n_s, n_c = len(rec["singles"]), len(rec["combos"])
+    ev_tip = ("Espérance du modèle, fiable seulement s'il est bien calibré "
+              "(il a tendance à être trop confiant). Misez petit.")
+    parts.append(
+        "<p class='reco-summary'>"
+        f"<span>{rec['n_with_odds']}/{rec['n_future']} matchs avec cotes</span>"
+        f"<span>{n_s} simple{'s' if n_s != 1 else ''} · {n_c} combiné{'s' if n_c != 1 else ''}</span>"
+        f"<span>Mise totale <strong>{html.escape(_eur(rec['total_stake'], 2))}</strong></span>"
+        f"<span class='reco-ev' title='{html.escape(ev_tip)}'>gain attendu "
+        f"{html.escape(_eur_signed(rec['ev_profit']))}</span>"
+        "</p>"
+    )
 
+    # Tableau aligné — même grammaire que le ledger du suivi. Colonnes recopiables
+    # dans Winamax (sélection · cote · mise · retour) ; le calcul reste visible en
+    # sous-ligne atténuée (transparence du modèle).
     parts.extend([
-        "<section class='bet-section'>",
-        "<h3>Paris simples (value uniquement)</h3>",
-        "<div class='bet-grid'>",
+        "<table class='bets-table reco-table'>",
+        "<colgroup><col style='width:52%'><col style='width:13%'><col style='width:15%'>"
+        "<col style='width:20%'></colgroup>",
+        "<thead><tr><th>Sélection</th><th class='col-num'>Cote</th><th class='col-num'>Mise</th>"
+        "<th class='col-num'>Retour si gagné</th></tr></thead>",
+        "<tbody>",
+        "<tr class='ledger-sep'><td colspan='4'>Paris simples · value</td></tr>",
     ])
     if rec["singles"]:
         for s in rec["singles"]:
@@ -1405,68 +1413,62 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
             ret = s["stake"] * b["odds"]
             placed_tag = (_PLACED_BADGE
                           if (str(s.get("match_id", "")).upper(), b["sel"]) in placed["singles"] else "")
-            # Ordre du ticket Winamax : sélection + cote, contexte, mise, retour
-            # — la recopie se fait position à position, le calcul passe en détail.
+            ctx = html.escape(s["label"]) + (f" · {html.escape(s['when'])}" if s.get("when") else "")
+            why = (f"marché {round(b['fair']*100)}% → modèle {round(b['model']*100)}% "
+                   f"(ajusté {round(b['shrunk']*100)}%) · avantage +{round(b['edge']*100)} pt · "
+                   f"EV {b['ev']*100:+.1f}%")
+            cote_txt = f"{b['odds']:.2f}".replace(".", ",")
             parts.extend([
-                f"<article class='bet-card{' is-placed' if placed_tag else ''}'>",
-                f"<div class='bet-sel-line'>{html.escape(sel)} <span class='bet-odds'>@ {b['odds']:.2f}</span>{placed_tag}</div>",
-                "<div class='bet-context'>1N2</div>",
-                f"<div class='bet-context'>{html.escape(s['label'])}"
-                + (f" &middot; {html.escape(s['when'])}" if s.get("when") else "")
-                + "</div>",
-                f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(s['stake'], 2)}</span> "
-                f"<span class='bet-return'>retour si gagné ~{_eur(ret, 2)}</span></div>",
-                "<details class='bet-why'><summary>Détail du calcul</summary><ul class='note-list'>",
-                f"<li>Modèle {round(b['model']*100)}% &rarr; ajusté {round(b['shrunk']*100)}% "
-                f"(juste marché {round(b['fair']*100)}%)</li>",
-                f"<li>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</li>",
-                "</ul></details>",
-                "</article>",
+                "<tr>",
+                f"<td data-label='Sélection' class='b-pari'><span class='pari-text'>{html.escape(sel)}{placed_tag}</span>"
+                f"<span class='b-sel'>{ctx}</span><span class='reco-why'>{why}</span></td>",
+                f"<td data-label='Cote' class='b-num b-cote'>{cote_txt}</td>",
+                f"<td data-label='Mise' class='b-num b-mise'>{html.escape(_eur(s['stake'], 2))}</td>",
+                f"<td data-label='Retour si gagné' class='b-num'>{html.escape('~' + _eur(ret, 2))}</td>",
+                "</tr>",
             ])
     else:
-        parts.append("<div class='muted'>Aucune value détectée — ne pas parier ce créneau (c'est fréquent, et c'est sain).</div>")
-    parts.extend(["</div>", "</section>"])
+        parts.append("<tr><td colspan='4' class='muted reco-empty'>Aucune value détectée — "
+                     "ne pas parier ce créneau (c'est fréquent, et c'est sain).</td></tr>")
 
-    parts.extend([
-        "<section class='bet-section'>",
-        "<h3>Combinés (2 sélections max &middot; mise minime)</h3>",
-        "<div class='bet-grid'>",
-    ])
+    parts.append("<tr class='ledger-sep'><td colspan='4'>Combinés · 2 sélections max</td></tr>")
     if rec["combos"]:
         for c in rec["combos"]:
             ret = c["stake"] * c["combined_odds"]
-            # « déjà joué » porte sur le combiné ENTIER : un seul badge, en tête
-            # de la card, et seulement si ce combiné-là (même jeu de jambes) a
-            # été pris — pas si ses jambes l'ont été séparément en simples.
+            # « déjà joué » porte sur le combiné ENTIER (même jeu de jambes), pas
+            # si ses jambes ont été jouées séparément en simples.
             legs_key = frozenset((str(leg.get("match_id", "")).upper(), leg["sel"])
                                  for leg in c["legs"])
             placed_tag = _PLACED_BADGE if legs_key in placed["combos"] else ""
-            parts.append(f"<article class='bet-card{' is-placed' if placed_tag else ''}'>")
-            parts.append(
-                f"<div class='bet-sel-line'>Combiné {len(c['legs'])} sélections "
-                f"<span class='bet-odds'>@ {c['combined_odds']:.2f}</span>{placed_tag}</div>"
-            )
-            for idx, leg in enumerate(c["legs"], start=1):
+            leg_bits = []
+            for leg in c["legs"]:
                 pair = _split_match(leg["label"]) or (leg["label"], "")
                 sel_txt = _sel_fr(leg["sel"], pair[0], pair[1])
-                parts.append(
-                    f"<div class='bet-context'>{idx}. <strong>{html.escape(sel_txt)}</strong> "
-                    f"<span class='bet-odds'>@ {leg['odds']:.2f}</span> &middot; {html.escape(leg['label'])}</div>"
-                )
-            parts.append(
-                f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(c['stake'], 2)}</span> "
-                f"<span class='bet-return'>retour si gagné ~{_eur(ret, 2)}</span></div>"
-            )
-            parts.append(
-                "<details class='bet-why'><summary>Détail du calcul</summary><ul class='note-list'>"
-                f"<li>EV {c['ev']*100:+.1f}% &middot; proba modèle {round(c['combined_prob']*100)}%</li>"
-                "</ul></details>"
-            )
-            parts.append("</article>")
+                odd = f"{leg['odds']:.2f}".replace(".", ",")
+                leg_bits.append(f"{html.escape(sel_txt)} @{odd}")
+            legs_html = " + ".join(leg_bits)
+            why = f"EV {c['ev']*100:+.1f}% · proba modèle {round(c['combined_prob']*100)}%"
+            cote_txt = f"{c['combined_odds']:.2f}".replace(".", ",")
+            parts.extend([
+                "<tr>",
+                f"<td data-label='Sélection' class='b-pari'><span class='pari-text'>Combiné {len(c['legs'])} sél.{placed_tag}</span>"
+                f"<span class='b-sel'>{legs_html}</span><span class='reco-why'>{why}</span></td>",
+                f"<td data-label='Cote' class='b-num b-cote'>{cote_txt}</td>",
+                f"<td data-label='Mise' class='b-num b-mise'>{html.escape(_eur(c['stake'], 2))}</td>",
+                f"<td data-label='Retour si gagné' class='b-num'>{html.escape('~' + _eur(ret, 2))}</td>",
+                "</tr>",
+            ])
     else:
-        parts.append("<div class='muted'>Aucun combiné ne passe le filtre prudent — sautez les combinés (ils ont perdu ~69% au backtest WC2022).</div>")
-    parts.extend(["</div>", "</section>"])
+        parts.append("<tr><td colspan='4' class='muted reco-empty'>Aucun combiné ne passe le filtre "
+                     "prudent — sautez les combinés (ils ont perdu ~69 % au backtest WC2022).</td></tr>")
+    parts.append("</tbody></table>")
 
+    note = _odds_source_note()
+    if note:
+        parts.append(note)
+    parts.append("<p class='suivi-note'>« Gain attendu » = espérance d'un modèle plutôt surconfiant : "
+                 "misez petit, ce n'est pas une promesse.</p>")
+    parts.append("</section>")
     return parts
 
 
@@ -1586,8 +1588,10 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
             "<div class='encours-figs'>",
             "<div class='encours-fig'><span class='encours-key'>Mise totale en cours</span>"
             f"<span class='encours-val'>{html.escape(_eur(agg['staked_pending'], 2))}</span></div>",
-            "<div class='encours-fig'><span class='encours-key'>Gain total possible</span>"
-            f"<span class='encours-val'>{html.escape(_eur(agg['potential_pending'], 2))}</span></div>",
+            # Gain seulement *possible* (si tout passe) : démoté typographiquement
+            # pour ne pas rivaliser avec le P&L réel ni dramatiser le potentiel.
+            "<div class='encours-fig'><span class='encours-key'>Gain possible si tout passe</span>"
+            f"<span class='encours-val is-soft'>{html.escape(_eur(agg['potential_pending'], 2))}</span></div>",
             "</div></div>",
         ])
 
@@ -1599,17 +1603,7 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
     winners.sort(key=lambda t: t[0], reverse=True)
     podium = {id(b): rank for rank, (_n, b) in enumerate(winners[:3], start=1)}
 
-    # Ledger dans le MÊME panel : un seul bloc « Suivi des paris » (bilan +
-    # historique), pas deux cards juxtaposées. Plus récents en tête.
-    out.extend([
-        "<table class='bets-table'>",
-        "<colgroup><col style='width:40%'><col style='width:12%'><col style='width:13%'>"
-        "<col style='width:19%'><col style='width:16%'></colgroup>",
-        "<thead><tr><th>Pari</th><th class='col-num'>Cote</th><th class='col-num'>Mise</th>"
-        "<th>Statut</th><th class='col-num'>Net</th></tr></thead>",
-        "<tbody>",
-    ])
-    for b in reversed(bets):
+    def _bet_row(b: Dict) -> List[str]:
         status = common.bet_status(b)
         status_label, status_cls = _BET_STATUS_UI[status]
         net = common.bet_net(b)
@@ -1627,7 +1621,7 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
         medal_html = _medal_html(podium[id(b)]) if id(b) in podium else ""
         net_html = ("<span class='b-net-pending'>—</span>" if net is None
                     else html.escape(_net_txt(net)))
-        out.extend([
+        return [
             "<tr>",
             f"<td data-label='Pari' class='b-pari'><span class='pari-main'>"
             f"<span class='medal-slot'>{medal_html}</span>"
@@ -1637,7 +1631,29 @@ def _render_suivi_paris(bets: List[Dict]) -> List[str]:
             f"<td data-label='Statut'><span class='bet-status {status_cls}'>{status_label}</span></td>",
             f"<td data-label='Net' class='b-net {_net_class(net)}'>{net_html}</td>",
             "</tr>",
-        ])
+        ]
+
+    # Ledger dans le MÊME panel : un seul bloc « Suivi des paris » (bilan +
+    # historique). Réglés en tête — leur P&L coloré est le « d'un coup d'œil »
+    # (priorité #1) — puis les paris en cours sous un séparateur ; récents
+    # d'abord dans chaque groupe.
+    settled = [b for b in bets if common.bet_status(b) in common.SETTLED_STATUSES]
+    pending = [b for b in bets if common.bet_status(b) not in common.SETTLED_STATUSES]
+    out.extend([
+        "<table class='bets-table'>",
+        "<colgroup><col style='width:40%'><col style='width:12%'><col style='width:13%'>"
+        "<col style='width:19%'><col style='width:16%'></colgroup>",
+        "<thead><tr><th>Pari</th><th class='col-num'>Cote</th><th class='col-num'>Mise</th>"
+        "<th>Statut</th><th class='col-num'>Net</th></tr></thead>",
+        "<tbody>",
+    ])
+    for b in reversed(settled):
+        out.extend(_bet_row(b))
+    if pending:
+        if settled:   # séparateur seulement si des réglés précèdent
+            out.append("<tr class='ledger-sep'><td colspan='5'>En cours</td></tr>")
+        for b in reversed(pending):
+            out.extend(_bet_row(b))
     out.append("</tbody></table>")
     out.append(
         "<p class='suivi-note'>Bilan « argent réel » (mises Winamax), distinct du récap "
