@@ -374,7 +374,7 @@
       "sel": "Argentine vainqueur",
       "odds": 1.36,
       "stake": 10.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G55",
@@ -383,7 +383,8 @@
           "pick": "home",
           "odds": 1.36
         }
-      ]
+      ],
+      "settled_at": "2026-06-17T04:35:11Z"
     },
     {
       "id": 19,
@@ -393,7 +394,7 @@
       "sel": "France vainqueur",
       "odds": 1.44,
       "stake": 10.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G49",
@@ -402,7 +403,8 @@
           "pick": "home",
           "odds": 1.44
         }
-      ]
+      ],
+      "settled_at": "2026-06-17T04:35:11Z"
     },
     {
       "id": 20,
