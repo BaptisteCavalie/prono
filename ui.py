@@ -873,6 +873,11 @@ _CSS = "".join([
     ".reco-ev{color:var(--muted)}",
     ".reco-table .reco-why{display:block;font-size:.72rem;color:var(--muted);margin-top:2px;font-family:var(--font-mono);line-height:1.3}",
     ".reco-table .reco-empty{color:var(--muted);font-size:.86rem;text-align:left}",
+    # Pari déjà posé sur Winamax : ligne atténuée (fond discret + encre muette,
+    # cote/mise dégraissées) pour que les paris RESTANT à jouer ressortent.
+    ".reco-table .is-placed{background:var(--surface-2)}",
+    ".reco-table .is-placed .pari-text{color:var(--muted);font-weight:600}",
+    ".reco-table .is-placed .b-num,.reco-table .is-placed .b-cote{color:var(--muted);font-weight:400}",
     # Suivi des paris (argent réel) : bilan P&L/ROI + ledger. Distinct du récap
     # justesse (segmented bar) : ici une grille de métriques + une table, des
     # chips de statut (hors ok/warn/alert et hors gamme Nutri), un P&L coloré
@@ -1406,40 +1411,54 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
         "<tbody>",
         "<tr class='ledger-sep'><td colspan='4'>Paris simples · value</td></tr>",
     ])
+    def _reco_row(pari_cell: str, cote_txt: str, stake: float, ret: float, is_placed: bool) -> List[str]:
+        tr_cls = " class='is-placed'" if is_placed else ""
+        return [
+            f"<tr{tr_cls}>",
+            f"<td data-label='Sélection' class='b-pari'>{pari_cell}</td>",
+            f"<td data-label='Cote' class='b-num b-cote'>{cote_txt}</td>",
+            f"<td data-label='Mise' class='b-num b-mise'>{html.escape(_eur(stake, 2))}</td>",
+            f"<td data-label='Retour si gagné' class='b-num'>{html.escape('~' + _eur(ret, 2))}</td>",
+            "</tr>",
+        ]
+
+    # Dans chaque groupe : ce qu'il reste À JOUER en tête (pleine encre), puis
+    # les paris DÉJÀ POSÉS sur Winamax regroupés en bas et atténués — la valeur
+    # du marquage, c'est de voir le reste à faire d'un coup d'œil.
     if rec["singles"]:
+        todo, done = [], []
         for s in rec["singles"]:
             b = s["bet"]
             sel = _sel_fr(b["sel"], s["home"], s["away"])
             ret = s["stake"] * b["odds"]
-            placed_tag = (_PLACED_BADGE
-                          if (str(s.get("match_id", "")).upper(), b["sel"]) in placed["singles"] else "")
+            is_placed = (str(s.get("match_id", "")).upper(), b["sel"]) in placed["singles"]
+            placed_tag = _PLACED_BADGE if is_placed else ""
             ctx = html.escape(s["label"]) + (f" · {html.escape(s['when'])}" if s.get("when") else "")
             why = (f"marché {round(b['fair']*100)}% → modèle {round(b['model']*100)}% "
                    f"(ajusté {round(b['shrunk']*100)}%) · avantage +{round(b['edge']*100)} pt · "
                    f"EV {b['ev']*100:+.1f}%")
             cote_txt = f"{b['odds']:.2f}".replace(".", ",")
-            parts.extend([
-                "<tr>",
-                f"<td data-label='Sélection' class='b-pari'><span class='pari-text'>{html.escape(sel)}{placed_tag}</span>"
-                f"<span class='b-sel'>{ctx}</span><span class='reco-why'>{why}</span></td>",
-                f"<td data-label='Cote' class='b-num b-cote'>{cote_txt}</td>",
-                f"<td data-label='Mise' class='b-num b-mise'>{html.escape(_eur(s['stake'], 2))}</td>",
-                f"<td data-label='Retour si gagné' class='b-num'>{html.escape('~' + _eur(ret, 2))}</td>",
-                "</tr>",
-            ])
+            pari_cell = (f"<span class='pari-text'>{html.escape(sel)}{placed_tag}</span>"
+                         f"<span class='b-sel'>{ctx}</span><span class='reco-why'>{why}</span>")
+            (done if is_placed else todo).append(
+                _reco_row(pari_cell, cote_txt, s["stake"], ret, is_placed))
+        for row in todo + done:
+            parts.extend(row)
     else:
         parts.append("<tr><td colspan='4' class='muted reco-empty'>Aucune value détectée — "
                      "ne pas parier ce créneau (c'est fréquent, et c'est sain).</td></tr>")
 
     parts.append("<tr class='ledger-sep'><td colspan='4'>Combinés · 2 sélections max</td></tr>")
     if rec["combos"]:
+        todo, done = [], []
         for c in rec["combos"]:
             ret = c["stake"] * c["combined_odds"]
             # « déjà joué » porte sur le combiné ENTIER (même jeu de jambes), pas
             # si ses jambes ont été jouées séparément en simples.
             legs_key = frozenset((str(leg.get("match_id", "")).upper(), leg["sel"])
                                  for leg in c["legs"])
-            placed_tag = _PLACED_BADGE if legs_key in placed["combos"] else ""
+            is_placed = legs_key in placed["combos"]
+            placed_tag = _PLACED_BADGE if is_placed else ""
             leg_bits = []
             for leg in c["legs"]:
                 pair = _split_match(leg["label"]) or (leg["label"], "")
@@ -1449,15 +1468,12 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
             legs_html = " + ".join(leg_bits)
             why = f"EV {c['ev']*100:+.1f}% · proba modèle {round(c['combined_prob']*100)}%"
             cote_txt = f"{c['combined_odds']:.2f}".replace(".", ",")
-            parts.extend([
-                "<tr>",
-                f"<td data-label='Sélection' class='b-pari'><span class='pari-text'>Combiné {len(c['legs'])} sél.{placed_tag}</span>"
-                f"<span class='b-sel'>{legs_html}</span><span class='reco-why'>{why}</span></td>",
-                f"<td data-label='Cote' class='b-num b-cote'>{cote_txt}</td>",
-                f"<td data-label='Mise' class='b-num b-mise'>{html.escape(_eur(c['stake'], 2))}</td>",
-                f"<td data-label='Retour si gagné' class='b-num'>{html.escape('~' + _eur(ret, 2))}</td>",
-                "</tr>",
-            ])
+            pari_cell = (f"<span class='pari-text'>Combiné {len(c['legs'])} sél.{placed_tag}</span>"
+                         f"<span class='b-sel'>{legs_html}</span><span class='reco-why'>{why}</span>")
+            (done if is_placed else todo).append(
+                _reco_row(pari_cell, cote_txt, c["stake"], ret, is_placed))
+        for row in todo + done:
+            parts.extend(row)
     else:
         parts.append("<tr><td colspan='4' class='muted reco-empty'>Aucun combiné ne passe le filtre "
                      "prudent — sautez les combinés (ils ont perdu ~69 % au backtest WC2022).</td></tr>")
