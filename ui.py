@@ -18,22 +18,6 @@ from engine import autonomous, betting, common, data, data_quality, expert_signa
 ROOT = Path(__file__).resolve().parent
 
 
-class UiError(ValueError):
-    """Erreur métier dont le message est rédigé pour l'utilisateur final."""
-
-
-def _split_match(s: str) -> Optional[Tuple[str, str]]:
-    for sep in (" vs ", " VS ", " v ", "/", " - "):
-        if sep in s:
-            a, b = s.split(sep, 1)
-            return a.strip(), b.strip()
-    return None
-
-
-def _parse_date(s: str) -> date:
-    return datetime.strptime(s[:10], "%Y-%m-%d").date()
-
-
 def _as_int(value) -> Optional[int]:
     try:
         return int(value)
@@ -64,42 +48,6 @@ def _effective_date(match: Dict) -> Optional[str]:
     return d.isoformat()
 
 
-def _load_odds_board(path: Optional[str]) -> Dict[str, List[float]]:
-    if not path:
-        return {}
-
-    # Confine manual odds files to data/ — the parameter is reachable from the URL.
-    resolved = (ROOT / path).resolve()
-    data_dir = (ROOT / "data").resolve()
-    if not (resolved.is_relative_to(data_dir) and resolved.is_file()):
-        raise UiError("Fichier de cotes introuvable : indiquez un fichier JSON du dossier data/ (ex. data/odds.json).")
-
-    try:
-        with open(resolved, encoding="utf-8") as f:
-            raw = json.load(f)
-    except json.JSONDecodeError:
-        raise UiError(f"Fichier de cotes illisible ({path}) : le contenu n'est pas du JSON valide.")
-
-    board = {}
-    for key, triple in raw.items():
-        if (not isinstance(triple, list) or len(triple) != 3
-                or not all(isinstance(x, (int, float)) for x in triple)):
-            raise UiError(f"Cotes invalides pour {key!r} : attendu [domicile, nul, extérieur].")
-
-        if key.lower().startswith("g"):
-            board[key.upper()] = [float(x) for x in triple]
-            continue
-
-        pair = _split_match(key)
-        if pair:
-            board[f"{pair[0].lower()}|{pair[1].lower()}"] = [float(x) for x in triple]
-            continue
-
-        raise UiError(f"Clé de cotes invalide {key!r} : utilisez l'identifiant du match (ex. G1) ou « Domicile vs Extérieur ».")
-
-    return board
-
-
 def _apply_paris_kickoffs(fixtures: List[Dict]) -> None:
     """Rewrite each fixture's date to its Europe/Paris (France) calendar date using
     the kickoff time — the jetlag fix, so a US-evening game shows on the next day
@@ -120,21 +68,13 @@ def _apply_paris_kickoffs(fixtures: List[Dict]) -> None:
             m["kickoff_paris"] = t
 
 
-def _match_key(match: Dict) -> str:
-    return f"{match['home'].lower()}|{match['away'].lower()}"
-
-
-def _find_match_odds(match: Dict, board: Dict[str, List[float]]) -> Optional[List[float]]:
-    return board.get(str(match.get("id", "")).upper()) or board.get(_match_key(match))
-
-
 def _select_fixtures(fixtures: List[Dict], date_value: str, matchday: str) -> List[Dict]:
     def sort_key(m: Dict):
         return (_effective_date(m) or "9999-99-99", m.get("matchday") or 99, m.get("id") or "")
 
     if date_value:
-        target = _parse_date(date_value)
-        selected = [m for m in fixtures if _effective_date(m) and _parse_date(_effective_date(m)) == target]
+        target = common.parse_date(date_value)
+        selected = [m for m in fixtures if _effective_date(m) and common.parse_date(_effective_date(m)) == target]
         return sorted(selected, key=sort_key)
 
     if not matchday:
@@ -418,7 +358,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         if completed:
             actual_score = f"{m.get('actual_home')}-{m.get('actual_away')}"
 
-        odds = _find_match_odds(m, odds_board)
+        odds = common.find_match_odds(m, odds_board)
 
         # MPP-optimal prono: the scoreline that maximises expected Mon Petit Prono
         # points. Base points come from the real MPP barème when known
@@ -476,14 +416,6 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
                     f"{side} @ {val['odds']:.2f} (EV {val['ev'] * 100:+.1f}%)"
                 )
 
-        pick_odds = None
-        if odds:
-            pick_odds = {
-                "home": odds[0],
-                "draw": odds[1],
-                "away": odds[2],
-            }[pick_sel]
-
         notes = [_fr_strategy_flag(x) for x in strategies.flags(m, home, away, rh, ra, out)]
         for team, team_lbl, row in ((home, home_label, rh), (away, away_label, ra)):
             delta = float(row.get("status_delta", 0.0) or 0.0)
@@ -532,9 +464,6 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "score_conf": round(rec["p_exact"] * 100),
             "predicted_score": predicted_score,
             "predicted_score_live": live_predicted_score,
-            "mpp_bonus": rec["bonus"],
-            "mpp_tier": rec["tier"],
-            "mpp_exp_points": round(rec["exp_points"], 1),
             "mpp_modal_score": f"{si}-{sj}",
             "mpp_differs": rec["differs"],
             "prediction_saved": bool(preserved_predicted_score),
@@ -548,7 +477,6 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "pick_label": pick_label,
             "pick_sel": pick_sel,
             "pick_prob": pick_prob,
-            "pick_odds": pick_odds,
             "odds": odds,
             "value_summaries": value_summaries,
             "notes": notes,
@@ -605,7 +533,7 @@ def _fr_date_label(iso_date: str) -> str:
         11: "novembre",
         12: "décembre",
     }
-    d = _parse_date(iso_date)
+    d = common.parse_date(iso_date)
     return f"{d.day} {months[d.month]} {d.year}"
 
 
@@ -620,9 +548,7 @@ def _eur_signed(value: float) -> str:
     return f"{value:+.2f}".replace(".", ",") + " €"
 
 
-def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
-                           market_weight: Optional[float] = None,
-                           kelly: Optional[float] = None):
+def _build_recommendations(rows: List[Dict], bankroll: float = 50.0):
     """Safe betting plan from the analysed rows (see engine/betting.py).
 
     Only value bets survive (model edge over the de-vigged price, on probabilities
@@ -630,8 +556,8 @@ def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
     hard-capped, sized off a deliberately small bankroll for a low-stakes crash
     test. Combos are limited to 2 independent value legs with a tiny ring-fenced
     stake. Built on the WC2022 backtest (tools/backtest_wc2022*)."""
-    mw = betting.MARKET_WEIGHT if market_weight is None else market_weight
-    kf = betting.KELLY_FRACTION if kelly is None else kelly
+    mw = betting.MARKET_WEIGHT
+    kf = betting.KELLY_FRACTION
 
     future_rows = [r for r in rows if not r.get("completed")]
     if not future_rows:
@@ -677,8 +603,6 @@ def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
         "singles": singles,
         "combos": combos,
         "bankroll": bankroll,
-        "market_weight": mw,
-        "kelly": kf,
         "n_future": len(future_rows),
         "n_with_odds": n_with_odds,
         "single_stake": single_stake,
@@ -828,7 +752,7 @@ _CSS = "".join([
     ".sidebar-foot{margin-top:auto;display:flex;flex-direction:column;gap:6px;font-size:.76rem}",
     ".nav-health{display:flex;align-items:center;gap:7px;padding:8px 10px;border:1px solid var(--nav-line);border-radius:8px;color:var(--nav-text)}",
     ".nav-dot{width:8px;height:8px;border-radius:50%;flex:none}",
-    ".nav-stat{color:var(--nav-text);opacity:.75;padding:0 4px;font-family:var(--font-mono)}",
+    ".nav-stat{color:var(--nav-text);opacity:.85;padding:0 4px;font-family:var(--font-mono)}",
     ".nav-mod{color:var(--nav-active-text);opacity:1}",
     ".canvas{padding:22px 28px 44px;max-width:1180px;min-width:0}",
     ".topbar{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:14px}",
@@ -1028,6 +952,7 @@ _CSS = "".join([
     ".score-dual{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap}",
     ".score-chip-real{background:var(--ok);color:var(--on-accent);border-color:transparent;font-size:.86rem;min-width:88px}",
     ".score-chip-prono{font-size:.86rem;min-width:98px}",
+    ".score-chip.is-empty{color:var(--muted);border-style:dashed}",
     # Verdict par match (table des passés) : même rampe que le récap justesse.
     # Pleine couleur pour exact/bon, atténué pour erreur — neutre, descriptif.
     ".cell-verdict{white-space:nowrap}",
@@ -1524,7 +1449,7 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
             placed_tag = _PLACED_BADGE if is_placed else ""
             leg_bits = []
             for leg in c["legs"]:
-                pair = _split_match(leg["label"]) or (leg["label"], "")
+                pair = common.split_match(leg["label"]) or (leg["label"], "")
                 sel_txt = _sel_fr(leg["sel"], pair[0], pair[1])
                 odd = f"{leg['odds']:.2f}".replace(".", ",")
                 leg_bits.append(f"{html.escape(sel_txt)} @{odd}")
@@ -1772,7 +1697,7 @@ def _render_past_table(past_rows: List[Dict]) -> List[str]:
     fois le match joué, l'info utile est Match · Réel/Prono · Verdict. L'ordre
     chronologique des lignes est conservé (past_rows arrive déjà trié)."""
     out: List[str] = [
-        "<section class='panel day-section past-table'>",
+        "<section class='panel day-section'>",
         "<table><thead><tr>",
         "<th>Match</th><th style='width:32%'>Réel · Prono</th>"
         "<th style='width:16%'>Verdict</th>",
@@ -1802,9 +1727,9 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     meta_cell = f"<td class='cell-meta'>{kick_html}<span class='meta-sub'>{meta_sub}</span></td>"
     teams_cell = (
         f"<td class='cell-teams'>"
-        f"<span class='flag'>{r['home_flag']}</span> <span class='team-name'>{html.escape(home_label)}</span>"
+        f"<span class='flag' aria-hidden='true'>{r['home_flag']}</span> <span class='team-name'>{html.escape(home_label)}</span>"
         f"<span class='team-sep'>&ndash;</span>"
-        f"<span class='team-name'>{html.escape(away_label)}</span> <span class='flag'>{r['away_flag']}</span>"
+        f"<span class='team-name'>{html.escape(away_label)}</span> <span class='flag' aria-hidden='true'>{r['away_flag']}</span>"
         f"</td>"
     )
 
@@ -1813,10 +1738,18 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     # seule compte la lecture réel vs prono et « ai-je eu bon ». La confiance et
     # les probas (prévisions d'avant-match) n'ont plus de valeur ici.
     if past:
+        # Prono affiché SEULEMENT s'il a été figé avant le coup d'envoi : sinon
+        # `predicted_score` est un prono recalculé après le résultat (sans valeur)
+        # — on montre « Prono — », cohérent avec le verdict « — » à côté.
+        if r.get("prediction_saved"):
+            prono_chip = f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['predicted_score'])}</span>"
+        else:
+            prono_chip = ("<span class='score-chip score-chip-prono is-empty' "
+                          "title='Aucun prono figé avant le match'>Prono —</span>")
         score_block = (
             f"<span class='score-dual'>"
             f"<span class='score-chip score-chip-real'>Réel {html.escape(r['actual_score'] or r['score'])}</span>"
-            f"<span class='score-chip score-chip-prono'>Prono {html.escape(r['predicted_score'])}</span>"
+            f"{prono_chip}"
             f"</span>"
         )
         return [
@@ -2202,8 +2135,6 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         "input.addEventListener('input',apply);",
         "if(clearBtn){clearBtn.addEventListener('click',function(){input.value='';apply();input.focus();});}",
         "}",
-        # Survol du chart Justesse (segment ou légende) : surligne les matchs
-        # de la catégorie dans la liste des passés juste en dessous.
         # Survol du chart Justesse (segment ou légende) : petit tooltip listant
         # les matchs de la catégorie. N'ouvre rien, ne déplace rien.
         "var tip=document.getElementById('recap-tip');",
@@ -2251,7 +2182,7 @@ def handle_request(params: Dict[str, str]) -> bytes:
     error = ""
     if date_value:
         try:
-            _parse_date(date_value)
+            common.parse_date(date_value)
         except ValueError:
             error = f"Date invalide « {date_value} » : utilisez le format AAAA-MM-JJ (ex. 2026-06-15)."
             date_value = ""
@@ -2296,7 +2227,7 @@ def handle_request(params: Dict[str, str]) -> bytes:
             elif matchday:
                 error = f"Aucun match pour la journée {matchday}."
         if odds_file:                                  # manual override (advanced)
-            odds_board = _load_odds_board(odds_file)
+            odds_board = common.load_odds_board(odds_file, root=ROOT)
         elif tab == "paris":                           # betting page: auto-fetch (cooldown + credit-capped)
             odds_board = odds_fetch.ensure_board(ratings, fixtures)
         else:                                          # other tabs: read cache only, never spend credits
@@ -2307,7 +2238,7 @@ def handle_request(params: Dict[str, str]) -> bytes:
         rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
         if tab == "paris" and (health or {}).get("level") != "critical":
             recommendations = _build_recommendations(rows, bankroll=bankroll)
-    except UiError as exc:
+    except common.UserFacingError as exc:
         error = str(exc)          # message métier déjà rédigé pour l'utilisateur
     except Exception:
         traceback.print_exc()     # détail côté serveur uniquement
