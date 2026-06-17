@@ -841,9 +841,14 @@ _CSS = "".join([
     ".link-btn{background:none;border:0;padding:0;color:var(--brand);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}",
     ".sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}",
     ".past-disclosure{margin:0 0 14px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}",
-    ".past-summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-weight:700;list-style:none}",
+    ".past-summary{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-weight:700;list-style:none;border-radius:14px}",
+    # Toute la barre est cliquable : hover visible sur la ligne entière.
+    ".past-summary:hover{background:var(--surface-2)}",
+    ".past-disclosure[open] .past-summary{border-radius:14px 14px 0 0}",
     ".past-summary::-webkit-details-marker{display:none}",
-    ".past-summary::after{content:'\\25be';color:var(--muted);margin-left:14px;transition:transform .18s ease}",
+    # Chevron accolé au libellé (l'affordance d'ouverture est au plus près du
+    # titre, pas reléguée à l'autre bout de la barre).
+    ".past-summary::after{content:'\\25be';color:var(--muted);order:-1;margin-right:2px;transition:transform .18s ease}",
     ".past-disclosure[open] .past-summary::after{transform:rotate(180deg)}",
     ".past-label{display:flex;align-items:center;gap:9px}",
     ".past-count{font-family:var(--font-mono);background:var(--surface-2);border:1px solid var(--line-2);border-radius:999px;padding:2px 9px;font-size:.82rem}",
@@ -1003,14 +1008,16 @@ _CSS = "".join([
     # note de confiance signature, cf. DA). Le verdict mène la colonne (0.9rem/700)
     # nettement au-dessus du score démoté (0.75rem).
     ".conf-verdict{display:inline-block;padding:4px 10px;border-radius:999px;font-weight:700;font-size:.9rem;line-height:1.15;border:1px solid var(--line-2);background:var(--surface-2);color:var(--text)}",
+    # Verdicts TOUS neutres (fond surface, encre/contour neutres) : la couleur de
+    # confiance vit dans la SEULE pastille Nutri (élément signature), pas en double.
+    # Les verdicts « à examiner » (piège/ouvert/nul/valeur) gardent un indice SANS
+    # couleur — bordure pointillée — pour rester repérables sans rivaliser avec Nutri.
     ".cv-solide{background:var(--surface-2);color:var(--text);border-color:var(--line-2)}",
     ".cv-serre{background:var(--surface-2);color:var(--muted);border-color:var(--line-2)}",
-    ".cv-piege{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
-    ".cv-ouvert{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line);border-style:dashed}",
-    # Picks contrarian (le pick EV ne suit pas le favori) : même ambré « non
-    # trivial, regarde » — verdict + score nul + Nutri E racontent une histoire.
-    ".cv-nul{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
-    ".cv-valeur{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
+    ".cv-piege{background:var(--surface-2);color:var(--text);border-color:var(--line-2);border-style:dashed}",
+    ".cv-ouvert{background:var(--surface-2);color:var(--muted);border-color:var(--line-2);border-style:dashed}",
+    ".cv-nul{background:var(--surface-2);color:var(--text);border-color:var(--line-2);border-style:dashed}",
+    ".cv-valeur{background:var(--surface-2);color:var(--text);border-color:var(--line-2);border-style:dashed}",
     ".score-sub-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}",
     ".score-sub-line .delta{margin-top:0}",
     ".score-sub{font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}",
