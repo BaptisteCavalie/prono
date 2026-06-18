@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-17T04:35:08Z",
+  "as_of": "2026-06-18T04:35:42Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -57,7 +57,7 @@
       ]
     },
     "England": {
-      "form": 0.0,
+      "form": 0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -75,7 +75,7 @@
       ]
     },
     "Portugal": {
-      "form": 0.0,
+      "form": -0.15,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -84,7 +84,7 @@
       ]
     },
     "Colombia": {
-      "form": 0.0,
+      "form": 0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -111,7 +111,7 @@
       ]
     },
     "Croatia": {
-      "form": 0.0,
+      "form": -0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -282,7 +282,7 @@
       ]
     },
     "DR Congo": {
-      "form": 0.0,
+      "form": 0.15,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -318,7 +318,7 @@
       ]
     },
     "Ghana": {
-      "form": 0.0,
+      "form": 1.0,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -345,7 +345,7 @@
       ]
     },
     "Uzbekistan": {
-      "form": 0.0,
+      "form": -0.7,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -372,7 +372,7 @@
       ]
     },
     "Panama": {
-      "form": 0.0,
+      "form": -1.0,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
