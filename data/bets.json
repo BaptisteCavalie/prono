@@ -355,7 +355,7 @@
       "sel": "Mexique vainqueur",
       "odds": 1.72,
       "stake": 10.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G03",
@@ -364,7 +364,8 @@
           "pick": "home",
           "odds": 1.72
         }
-      ]
+      ],
+      "settled_at": "2026-06-19T04:34:10Z"
     },
     {
       "id": 18,
@@ -466,7 +467,7 @@
       "label": "Rép. tchèque + Uruguay",
       "odds": 2.45,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "note": "réf coupée sur la capture — à confirmer",
       "legs": [
         {
@@ -483,7 +484,8 @@
           "pick": "home",
           "odds": 1.41
         }
-      ]
+      ],
+      "settled_at": "2026-06-19T04:34:10Z"
     },
     {
       "id": 23,
@@ -558,7 +560,7 @@
       "sel": "Rép. tchèque vainqueur",
       "odds": 1.74,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G04",
@@ -567,7 +569,8 @@
           "pick": "home",
           "odds": 1.74
         }
-      ]
+      ],
+      "settled_at": "2026-06-19T04:34:10Z"
     }
   ]
 }
