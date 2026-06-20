@@ -17,7 +17,7 @@
       "label": "Nul USA-Australie + Nul Cap-Vert-Arabie S.",
       "odds": 12.32,
       "stake": 1.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G21",
@@ -33,7 +33,8 @@
           "pick": "draw",
           "odds": 3.2
         }
-      ]
+      ],
+      "settled_at": "2026-06-20T04:35:36Z"
     },
     {
       "id": 3,
@@ -83,7 +84,7 @@
       "label": "Nul USA-Australie + Türkiye",
       "odds": 7.33,
       "stake": 1.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G21",
@@ -99,7 +100,8 @@
           "pick": "home",
           "odds": 1.88
         }
-      ]
+      ],
+      "settled_at": "2026-06-20T04:35:36Z"
     },
     {
       "id": 6,
@@ -109,7 +111,7 @@
       "sel": "Türkiye vainqueur",
       "odds": 1.88,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G22",
@@ -118,7 +120,8 @@
           "pick": "home",
           "odds": 1.88
         }
-      ]
+      ],
+      "settled_at": "2026-06-20T04:35:36Z"
     },
     {
       "id": 7,
@@ -128,7 +131,7 @@
       "sel": "Match nul (Penalty World)",
       "odds": 3.9,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G21",
@@ -137,7 +140,8 @@
           "pick": "draw",
           "odds": 3.9
         }
-      ]
+      ],
+      "settled_at": "2026-06-20T04:35:36Z"
     },
     {
       "id": 8,
@@ -441,7 +445,7 @@
       "label": "Turquie + Allemagne",
       "odds": 2.98,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G22",
@@ -457,7 +461,8 @@
           "pick": "home",
           "odds": 1.52
         }
-      ]
+      ],
+      "settled_at": "2026-06-20T04:35:36Z"
     },
     {
       "id": 22,
