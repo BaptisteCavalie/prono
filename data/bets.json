@@ -546,7 +546,7 @@
       "sel": "Allemagne vainqueur",
       "odds": 1.52,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G27",
@@ -555,7 +555,8 @@
           "pick": "home",
           "odds": 1.52
         }
-      ]
+      ],
+      "settled_at": "2026-06-21T04:33:37Z"
     },
     {
       "id": 26,
