@@ -1,5 +1,38 @@
 # Project Work Log
 
+## 2026-06-23 (bis) — Contexte compétition (enjeu / motivation J3)
+
+### Summary
+- **Le modèle ignorait l'état de la compétition** : il notait la *force* (Elo),
+  jamais la *situation*. D'où des « value » sur des équipes que le tableau avait
+  déjà réglées (ex. Türkiye éliminée poussée à miser).
+- **Effet motivation chiffré sur l'historique** (CDM 2022, J3, 32 perfs
+  classées par enjeu vs attente Elo) :
+  - déjà **QUALIFIÉE** (fait tourner) : **−1,68 pt/match** (1 v / 4) — effet le + fort
+  - **ÉLIMINÉE** (baroud d'honneur) : −0,62 pt/match (0 v / 3)
+  - **en lice** (doit gagner) : +0,44 pt/match (+19 % de victoires)
+  - Contre-intuitif et confirmé par le qualitatif (France 2022 : 9 changements →
+    battue par la Tunisie ; Brésil/Portugal 2022 ; 2018 Russie 0-3, Angleterre 0-1).
+    Le côté qui ne joue plus rien sous-performe ; le **qualifié qui se repose**
+    plus encore que l'éliminé.
+- **`engine/standings.py`** (nouveau) : classements de groupe + **simulation
+  exhaustive** des matchs restants (≤81 combos) → statut exact `qualified` /
+  `eliminated` / `contention`. Malus motivation replié dans le différentiel Elo :
+  **qualifiée −85, éliminée −45, en lice 0** (≈ moitié de l'effet brut, prudent,
+  ajustable). `apply_stakes` ne touche que les matchs **à venir** → backtest intact.
+- Câblage : `ui._analyse_rows` (prono + 1N2 + Nutri reflètent l'enjeu) et le
+  **gel** (`autonomous._refresh_prediction_snapshots`) appliquent le MÊME ajust →
+  affiché == gelé. **Garde-fou paris** : un *match-poubelle* (deux côtés sans
+  enjeu) ne propose **aucun pari** ; un seul côté → autorisé mais **tag**.
+  Chip « Sans enjeu » + notes pour la transparence.
+- Validation : G23 Türkiye–USA, G53 Norvège–France, etc. → dead rubbers, paris
+  bloqués ; G24 Paraguay–Australie (vraie lutte) reste un match normal. 130 tests
+  OK (`tests/test_standings.py`), 3 onglets rendent, backtest inchangé.
+
+### Key Files Added/Updated
+- engine/standings.py (nouveau), tests/test_standings.py (nouveau)
+- ui.py (_analyse_rows + stakes, garde-fou paris, chip + CSS), engine/autonomous.py
+
 ## 2026-06-23 — Contre-analyse paris + calibration du modèle
 
 ### Summary

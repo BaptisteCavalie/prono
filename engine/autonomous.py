@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.request import urlopen
 
-from engine import data, expert_signals, odds_fetch, prediction, team_signals, updater
+from engine import data, expert_signals, odds_fetch, prediction, standings, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "data"
@@ -198,7 +198,10 @@ def _refresh_prediction_snapshots(fixtures_payload: Dict, ratings_payload: Dict,
     for m in matches:
         if m.get("actual_home") is not None and m.get("actual_away") is not None:
             continue
-        sl = prediction.scoreline(m, ratings_for_pred, mpp_board, odds_board)
+        # Apply the competition-state ('stakes') nudge for this fixture so the
+        # frozen prono matches what the UI shows live (engine/standings.py).
+        ratings_m, _ = standings.apply_stakes(ratings_for_pred, m, matches)
+        sl = prediction.scoreline(m, ratings_m, mpp_board, odds_board)
         if sl is None:
             continue
         ph, pa = sl
