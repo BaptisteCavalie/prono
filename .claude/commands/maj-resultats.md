@@ -29,26 +29,41 @@ complet ci-dessous.
 
 ## Règle d'or
 En cas de **doute** (score divergent entre sources, match arrêté / reporté /
-en cours, équipe mal appariée), **on NE saisit PAS** ce match : on le laisse
-vide et on le **signale** dans le rapport final pour saisie manuelle. Mieux vaut
-un trou qu'un faux score — les scores nourrissent le rating **et les value bets
-réels** (cf. `engine/updater.apply_completed_results`).
+**pas encore commencé** ou en cours, équipe mal appariée), **on NE saisit PAS**
+ce match : on le laisse vide et on le **signale** dans le rapport final pour
+saisie manuelle. Un match dont le **coup d'envoi (`kickoff_utc`) est dans le
+futur** n'a par définition pas de score : ne jamais l'inscrire, même si une
+source en affiche un (pronostic, autre match, confusion d'appariement). Mieux
+vaut un trou qu'un faux score — les scores nourrissent le rating **et les value
+bets réels** (cf. `engine/updater.apply_completed_results`).
 
 ## Procédure
 
 ### A. Scores des matchs joués
 
-1. **Cibler les matchs à saisir.** Lister les fixtures dont la date est
-   aujourd'hui ou avant ET dont `actual_home`/`actual_away` sont `null` :
+1. **Cibler les matchs à saisir.** Lister les fixtures **dont le coup d'envoi
+   est déjà passé** (donc plausiblement terminées) ET dont
+   `actual_home`/`actual_away` sont `null`. On compare l'instant **`kickoff_utc`**
+   à maintenant — surtout **pas** la date calendaire seule : un match du jour qui
+   ne démarre que ce soir a `date == aujourd'hui` mais n'a pas encore eu lieu, et
+   le saisir produit un **faux score** (cf. Règle d'or). Marge de ~2 h après le
+   coup d'envoi pour viser un match réellement fini :
    ```bash
    python3 -c "
    import json, datetime
-   today = datetime.date.today().isoformat()
+   now = datetime.datetime.now(datetime.timezone.utc)
    m = json.load(open('data/fixtures.json'))['matches']
-   todo = [x for x in m if (x.get('date') or '9999') <= today
-           and x.get('actual_home') is None and x.get('actual_away') is None]
+   def joue(x):
+       ko = x.get('kickoff_utc')
+       if ko:  # coup d'envoi connu : exiger qu'il soit passé depuis ~2 h
+           t = datetime.datetime.fromisoformat(ko.replace('Z', '+00:00'))
+           return now >= t + datetime.timedelta(hours=2)
+       # horaire inconnu : repli prudent sur la veille ou avant (jamais aujourd'hui)
+       return (x.get('date') or '9999') < now.date().isoformat()
+   todo = [x for x in m if x.get('actual_home') is None
+           and x.get('actual_away') is None and joue(x)]
    for x in todo:
-       print(x['id'], x['date'], x['home'], 'vs', x['away'])
+       print(x['id'], x.get('kickoff_utc') or x['date'], x['home'], 'vs', x['away'])
    print('---', len(todo), 'match(s) à vérifier')
    "
    ```
