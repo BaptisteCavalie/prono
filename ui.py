@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, calibration, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -387,11 +387,11 @@ def _fr_strategy_flag(text: str) -> str:
     return out
 
 
-def _best_selection(home_label: str, away_label: str, out: Dict) -> Tuple[str, str, float]:
+def _best_selection(home_label: str, away_label: str, probs: Dict[str, float]) -> Tuple[str, str, float]:
     return max(
-        (("home", f"Victoire {home_label}", out["p_home"]),
-         ("draw", "Match nul", out["p_draw"]),
-         ("away", f"Victoire {away_label}", out["p_away"])),
+        (("home", f"Victoire {home_label}", probs["home"]),
+         ("draw", "Match nul", probs["draw"]),
+         ("away", f"Victoire {away_label}", probs["away"])),
         key=lambda x: x[2],
     )
 
@@ -409,7 +409,12 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         rh = ratings["teams"][home]
         ra = ratings["teams"][away]
         out = prediction.analyse_match(m, ratings)
-        pick_sel, pick_label, pick_prob = _best_selection(home_label, away_label, out)
+        # Calibrated 1X2 = the honest confidence the whole page reads off (bar,
+        # verdict, Nutri pastille, value EV). Temperature scaling is monotone, so
+        # the favourite never flips; only the confidence is pulled toward honesty
+        # (engine/calibration.py). The MPP scoreline (rec) stays on the raw grid.
+        cal = calibration.calibrated_probs(out)
+        pick_sel, pick_label, pick_prob = _best_selection(home_label, away_label, cal)
 
         (si, sj), sp = out["top_scores"][0]  # modal score (kept for the note below)
         est = rh.get("source") != "live" or ra.get("source") != "live"
@@ -552,17 +557,20 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "odds": odds,
             "value_summaries": value_summaries,
             "notes": notes,
-            "p_home": round(out["p_home"] * 100),
-            "p_draw": round(out["p_draw"] * 100),
-            "p_away": round(out["p_away"] * 100),
-            "probs": {"home": out["p_home"], "draw": out["p_draw"], "away": out["p_away"]},
+            "p_home": round(cal["home"] * 100),
+            "p_draw": round(cal["draw"] * 100),
+            "p_away": round(cal["away"] * 100),
+            "probs": dict(cal),
             # Nutri-prono = le prono MPP : la pastille note la CONFIANCE que le
             # pick MPP tombe (proba de SON issue), pas la confiance du favori
             # modèle. Un pick contrarian (nul/outsider) tombe donc logiquement en
-            # bas de l'échelle — c'est honnête (faible proba, gros lot).
-            "nutri": _confidence_nutriscore(rec["p_outcome"], est),
+            # bas de l'échelle — c'est honnête (faible proba, gros lot). Proba
+            # calibrée (cohérente avec le bandeau) ; en KO, la proba 120' de rec
+            # n'a pas d'équivalent calibré → on garde le brut.
+            "nutri": _confidence_nutriscore(
+                rec["p_outcome"] if knockout else cal[rec["outcome"]], est),
             "mpp_outcome": rec["outcome"],
-            "mpp_pick_pct": round(rec["p_outcome"] * 100),
+            "mpp_pick_pct": round((rec["p_outcome"] if knockout else cal[rec["outcome"]]) * 100),
             "mpp_base_points": (round(rec["base_points"]) if rec["base_points"] is not None else None),
             "mpp_upside": ({
                 "score": f"{upside['score'][0]}-{upside['score'][1]}",

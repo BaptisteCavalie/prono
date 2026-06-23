@@ -5,7 +5,7 @@ import copy
 import math
 from typing import Dict, Iterable, Tuple
 
-from engine import model
+from engine import calibration, model
 
 K_FACTOR = 24.0
 
@@ -25,14 +25,6 @@ def _sort_key(match: Dict) -> Tuple:
 
 def _goal_mult(goal_diff: int, rating_diff: float) -> float:
     return math.log(abs(goal_diff) + 1.0) * (2.2 / (abs(rating_diff) * 0.001 + 2.2))
-
-
-def _outcome_probs(out: Dict) -> Dict[str, float]:
-    return {
-        "home": float(out.get("p_home", 0.0)),
-        "draw": float(out.get("p_draw", 0.0)),
-        "away": float(out.get("p_away", 0.0)),
-    }
 
 
 def _actual_outcome(gh: int, ga: int) -> str:
@@ -93,7 +85,11 @@ def assess_model_solidity(fixtures: Iterable[Dict], ratings: Dict, min_sample: i
         out = model.analyse(rh, ra, home_adv=home_adv,
                             ad_home=model.ad_from_row(teams[home]),
                             ad_away=model.ad_from_row(teams[away]))
-        probs = _outcome_probs(out)
+        # Judge the model on its *calibrated* probabilities — the same confidence
+        # the UI shows. Temperature scaling is monotone, so the pick (and therefore
+        # accuracy / exact-score) is unchanged; only Brier / log-loss / RPS and the
+        # calibration gap reflect the honest confidence (see engine/calibration.py).
+        probs = calibration.calibrated_probs(out)
         pick = max(probs.items(), key=lambda kv: kv[1])[0]
         actual = _actual_outcome(gh, ga)
 
