@@ -770,6 +770,77 @@
           "odds": 3.3
         }
       ]
+    },
+    {
+      "id": 36,
+      "ref": "6FMKZ4AN",
+      "date": "2026-06-23",
+      "label": "Équateur – Allemagne",
+      "sel": "Match nul",
+      "odds": 3.85,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G29",
+          "home": "Ecuador",
+          "away": "Germany",
+          "pick": "draw",
+          "odds": 3.85
+        }
+      ]
+    },
+    {
+      "id": 37,
+      "ref": "6FMKZO2I",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Nul Équateur-Allemagne + Australie",
+      "odds": 14.25,
+      "stake": 1.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G29",
+          "home": "Ecuador",
+          "away": "Germany",
+          "pick": "draw",
+          "odds": 3.85
+        },
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 3.7
+        }
+      ]
+    },
+    {
+      "id": 38,
+      "ref": "6FML0FZ1",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Croatie + Algérie",
+      "odds": 4.92,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G72",
+          "home": "Croatia",
+          "away": "Ghana",
+          "pick": "home",
+          "odds": 1.49
+        },
+        {
+          "match": "G60",
+          "home": "Algeria",
+          "away": "Austria",
+          "pick": "home",
+          "odds": 3.3
+        }
+      ]
     }
   ]
 }
