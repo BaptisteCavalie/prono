@@ -56,6 +56,24 @@ def load_fixtures() -> List[Dict]:
     return matches
 
 
+def load_bracket() -> Dict:
+    """WC 2026 knockout bracket structure (data/bracket.json).
+
+    Static FIFA-defined tree (R32 → final): R32 slots reference group positions
+    (``{w,r,t}``), later rounds reference earlier match winners (``{win}``). The
+    eligibility-respecting third-place allocation is resolved at simulation time
+    in :mod:`engine.tournament`.
+    """
+    return {k: v for k, v in _load("bracket.json").items()
+            if not k.startswith("_")}
+
+
+def load_history() -> Dict:
+    """Historical World Cup base rates (data/history.json) used to ground and
+    calibrate the knockout model."""
+    return _load("history.json")
+
+
 def load_team_status() -> Dict:
     path = DATA_DIR / "team_status.json"
     if not path.is_file():

@@ -1,0 +1,5 @@
+{
+  "_comment": "Cotes outright/long-terme du bookmaker (Winamax), écrites par la couche ask-Claude comme les scores/cotes/paris — jamais saisies dans l'UI, jamais inventées. La page Paris compare ces cotes à la proba simulée (engine/tournament.py) pour flaguer la value. Marchés reconnus : 'champion', 'finalist'/'reach_final', 'reach_sf', 'reach_qf', 'reach_r16', 'qualify'/'advance', et 'winner_group_X' (X = lettre du groupe). Chaque marché = {Équipe: cote_décimale}. Donnez TOUTES les sélections d'un marché (pour pouvoir retirer la marge). Tant que 'markets' est vide, aucun pari outright n'est proposé.",
+  "_as_of": null,
+  "markets": {}
+}

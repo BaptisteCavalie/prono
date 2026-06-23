@@ -1,0 +1,45 @@
+{
+  "_comment": "WC 2026 knockout bracket (FIFA pre-planned structure for the 32-team round). Source: Wikipedia '2026 FIFA World Cup knockout stage' + FIFA match schedule. R32 slots: {w:'X'}=winner group X, {r:'X'}=runner-up group X, {t:[...]}=best-third from one of these groups (FIFA's 5-group eligibility set per slot). KO rounds: {win:N}=winner of match N. Match 79 = Winner Group A (Mexico's slot), Match 74 = Winner Group E (Germany's slot). 3rd-place play-off (match 103) intentionally omitted (no MPP/bet relevance).",
+  "third_slots_note": "Eight of twelve third-placed teams advance. Each '3rd' slot below lists the FIFA-eligible groups; engine/tournament.py assigns the eight qualifying thirds to these slots respecting eligibility (FIFA publishes one allocation per 495-combination; the engine finds a valid eligibility-respecting matching, which matches FIFA for the vast majority of combinations and is immaterial to aggregate probabilities).",
+  "r32": [
+    {"m": 73, "a": {"r": "A"}, "b": {"r": "B"}},
+    {"m": 74, "a": {"w": "E"}, "b": {"t": ["A", "B", "C", "D", "F"]}},
+    {"m": 75, "a": {"w": "F"}, "b": {"r": "C"}},
+    {"m": 76, "a": {"w": "C"}, "b": {"r": "F"}},
+    {"m": 77, "a": {"w": "I"}, "b": {"t": ["C", "D", "F", "G", "H"]}},
+    {"m": 78, "a": {"r": "E"}, "b": {"r": "I"}},
+    {"m": 79, "a": {"w": "A"}, "b": {"t": ["C", "E", "F", "H", "I"]}},
+    {"m": 80, "a": {"w": "L"}, "b": {"t": ["E", "H", "I", "J", "K"]}},
+    {"m": 81, "a": {"w": "D"}, "b": {"t": ["B", "E", "F", "I", "J"]}},
+    {"m": 82, "a": {"w": "G"}, "b": {"t": ["A", "E", "H", "I", "J"]}},
+    {"m": 83, "a": {"r": "K"}, "b": {"r": "L"}},
+    {"m": 84, "a": {"w": "H"}, "b": {"r": "J"}},
+    {"m": 85, "a": {"w": "B"}, "b": {"t": ["E", "F", "G", "I", "J"]}},
+    {"m": 86, "a": {"w": "J"}, "b": {"r": "H"}},
+    {"m": 87, "a": {"w": "K"}, "b": {"t": ["D", "E", "I", "J", "L"]}},
+    {"m": 88, "a": {"r": "D"}, "b": {"r": "G"}}
+  ],
+  "r16": [
+    {"m": 89, "a": {"win": 73}, "b": {"win": 75}},
+    {"m": 90, "a": {"win": 74}, "b": {"win": 77}},
+    {"m": 91, "a": {"win": 76}, "b": {"win": 78}},
+    {"m": 92, "a": {"win": 79}, "b": {"win": 80}},
+    {"m": 93, "a": {"win": 83}, "b": {"win": 84}},
+    {"m": 94, "a": {"win": 81}, "b": {"win": 82}},
+    {"m": 95, "a": {"win": 86}, "b": {"win": 88}},
+    {"m": 96, "a": {"win": 85}, "b": {"win": 87}}
+  ],
+  "qf": [
+    {"m": 97, "a": {"win": 89}, "b": {"win": 90}},
+    {"m": 98, "a": {"win": 93}, "b": {"win": 94}},
+    {"m": 99, "a": {"win": 91}, "b": {"win": 92}},
+    {"m": 100, "a": {"win": 95}, "b": {"win": 96}}
+  ],
+  "sf": [
+    {"m": 101, "a": {"win": 97}, "b": {"win": 98}},
+    {"m": 102, "a": {"win": 99}, "b": {"win": 100}}
+  ],
+  "final": [
+    {"m": 104, "a": {"win": 101}, "b": {"win": 102}}
+  ]
+}

@@ -13,7 +13,7 @@ import json
 import sys
 from typing import Dict
 
-from engine import autonomous, common, data, data_quality, expert_signals, mpp, prediction, report, solidity, strategies, team_signals, x2
+from engine import autonomous, common, data, data_quality, expert_signals, mpp, outrights, prediction, report, solidity, strategies, team_signals, tournament, x2
 from engine import odds as oddsmod
 from engine import updater
 
@@ -277,6 +277,68 @@ def _print_coverage_report(health: Dict, fixture_count: int) -> None:
     print()
 
 
+def _pct(x) -> str:
+    return f"{x * 100:5.1f}%" if x is not None else "   - "
+
+
+def _print_simulation(sim: Dict) -> None:
+    print("SIMULATION TOURNOI (Monte-Carlo)")
+    print("=" * 78)
+    print(f"simulations : {sim['n_sims']}")
+    print("calibration vs historique CdM (data/history.json) :")
+    for r in tournament.calibration_check(sim):
+        flag = "ok " if r["ok"] else "OFF"
+        got = f"{r['realized']:.3f}" if r["realized"] is not None else "?"
+        print(f"  [{flag}] {r['metric']:28s} sim {got}  cible {r['target']}")
+    print()
+    rows = sorted(sim["teams"].items(), key=lambda kv: -kv[1]["p_champion"])
+    print(f"{'Équipe':16s} {'Gr':2s} {'Qualif':>7s} {'8e':>7s} {'4e':>7s} "
+          f"{'1/2':>7s} {'Finale':>7s} {'Titre':>7s}")
+    print("-" * 78)
+    for t, p in rows[:24]:
+        print(f"{t:16s} {p['group']:2s} {_pct(p['p_qualify'])} {_pct(p['p_r16'])} "
+              f"{_pct(p['p_qf'])} {_pct(p['p_sf'])} {_pct(p['p_final'])} "
+              f"{_pct(p['p_champion'])}")
+    print()
+
+
+def _print_bracket(sim: Dict, args) -> None:
+    pb = sim["projected_bracket"]
+    print("BRACKET PROJETÉ — scénario le plus probable (planification, pas un pronostic)")
+    print("=" * 78)
+    teams = sim["teams"]
+    for g in sorted(pb["winners"]):
+        w, r = pb["winners"][g], pb["runners"][g]
+        print(f"  Groupe {g} : 1er {w} ({_pct(teams[w]['p_first']).strip()})  "
+              f"· 2e {r} ({_pct(teams[r]['p_second']).strip()})")
+    print()
+    print("  16es de finale (R32) projetés :")
+    for m in pb["r32"]:
+        print(f"   M{m['m']:>3}  {str(m['home']):>22s}  vs  {str(m['away'])}")
+    print()
+    adv = x2.advise(args.x2_stage or "r16",
+                    points_behind=args.points_behind or 0.0, leading=args.leading)
+    print(f"  Plan x2 ({args.x2_stage or 'r16'}) : {adv['action'].upper()} — {adv['reason']}")
+    print()
+
+
+def _print_outrights(sim: Dict) -> None:
+    print("PARIS VALUE — marchés long-terme (outrights)")
+    print("=" * 78)
+    rows = outrights.find_value(sim)
+    if not rows:
+        print("  Aucune cote outright chargée (data/outrights.json vide) ou aucune value.")
+        print("  Faites dicter les cotes Winamax à Claude pour activer la détection.")
+        print()
+        return
+    for r in rows:
+        print(f"  {r['label']:18s} {r['team']:14s} cote {r['odds']:.2f}  "
+              f"sim {_pct(r['sim']).strip()}  fair {_pct(r['fair']).strip()}  "
+              f"edge {r['edge'] * 100:.1f}pt  EV {r['ev'] * 100:.0f}%  "
+              f"mise {r['stake_frac'] * 100:.2f}% du budget")
+    print()
+
+
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="WC2026 prediction engine")
     p.add_argument("--match", help='two teams, e.g. "France vs Senegal"')
@@ -328,6 +390,14 @@ def main(argv=None) -> int:
     p.add_argument("--backtest-last", type=int, default=0,
                    help="restrict backtest to the last N completed matches (0 = all)")
     p.add_argument("--list", action="store_true", help="list groups")
+    p.add_argument("--simulate", action="store_true",
+                   help="Monte-Carlo du tournoi : proba de qualif / parcours / titre par équipe")
+    p.add_argument("--bracket", action="store_true",
+                   help="bracket projeté (scénario le plus probable) + plan x2 phases finales")
+    p.add_argument("--outrights", action="store_true",
+                   help="paris value sur les marchés long-terme (data/outrights.json)")
+    p.add_argument("--sims", type=int, default=tournament.DEFAULT_SIMS,
+                   help="nombre de simulations Monte-Carlo (défaut %(default)s)")
     args = p.parse_args(argv)
 
     auto_report = None
@@ -424,6 +494,19 @@ def main(argv=None) -> int:
     if args.list:
         for g, teams in sorted(data.load_groups().items()):
             print(f"Group {g}: " + ", ".join(teams))
+        return 0
+
+    if args.simulate or args.bracket or args.outrights:
+        if args.sims < 1:
+            print("--sims must be >= 1", file=sys.stderr)
+            return 2
+        sim = tournament.project(n_sims=args.sims, ratings=ratings, fixtures=fixtures)
+        if args.simulate:
+            _print_simulation(sim)
+        if args.bracket:
+            _print_bracket(sim, args)
+        if args.outrights:
+            _print_outrights(sim)
         return 0
 
     mode = args.mpp_mode

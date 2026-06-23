@@ -1,0 +1,40 @@
+{
+  "_comment": "Historical FIFA World Cup base rates used to GROUND and CALIBRATE the knockout model (engine/tournament.py, engine/mpp.py). These are the 'chiffres des coupes du monde' the knockout sim is checked against — not inputs the model blindly copies, but targets the Elo/Poisson + extra-time machinery must reproduce within tolerance (see engine/history.py:calibration_check).",
+  "sources": [
+    "Wikipedia — List of FIFA World Cup penalty shoot-outs",
+    "Opta Analyst — World Cup Penalty Shootouts: The Facts",
+    "ESPN / Wikipedia — 2026 FIFA World Cup format & knockout stage"
+  ],
+  "format_2026": {
+    "teams": 48,
+    "groups": 12,
+    "advance_per_group": 2,
+    "best_thirds_advancing": 8,
+    "knockout_teams": 32,
+    "knockout_rounds": ["r32", "r16", "qf", "sf", "final"],
+    "host_nations": ["United States", "Mexico", "Canada"]
+  },
+  "knockout_base_rates": {
+    "_comment": "Empirical knockout-stage rates across World Cup history. Used as calibration targets; tolerances are deliberately wide (small samples, format changes).",
+    "share_to_extra_time": 0.25,
+    "share_to_extra_time_note": "~1 in 4 World Cup knockout ties are level after 90' and go to extra time. The Poisson+Dixon-Coles draw probability for an even tie sits ~0.25-0.27, so the model reproduces this without a special rule.",
+    "share_to_penalties": 0.13,
+    "share_to_penalties_note": "~1 in 8 knockout ties are still level after 120' and decided on penalties (2022 was an outlier high at 5 of 16 = 0.31).",
+    "goals_per_game_group": 2.55,
+    "goals_per_game_knockout": 2.50,
+    "goals_per_game_note": "World Cup knockout games (R16 onward, historically) average ~2.4-2.6 goals over 90'. The 2026 format adds a Round of 32 with eight winner-vs-third ties that are MORE lopsided than any historic knockout round, so the simulation's 90' average runs a touch hotter (~2.7) — expected, not a miscalibration. Calibration tolerance is wide accordingly.",
+    "favourite_advance_rate": 0.66,
+    "favourite_advance_rate_note": "The higher-rated side advances ~2/3 of the time over a knockout tie (incl. ET/pens) — knockouts are materially more random than a single result suggests, which is why outright/stage probabilities must come from a full simulation, never from chaining single-match favourites."
+  },
+  "penalty_shootout": {
+    "_comment": "Shootouts are close to a coin-flip; skill leans the odds only slightly. The engine models P(stronger side wins the shootout) = 0.5 + SHOOTOUT_SKILL_LEAN * (win_expectancy - 0.5).",
+    "conversion_rate_shootout": 0.694,
+    "conversion_rate_in_play_and_et": 0.791,
+    "total_shootouts_in_wc_history": 35,
+    "most_in_one_tournament": 5,
+    "most_in_one_tournament_year": 2022,
+    "first_shootout": "1982 West Germany 5-4 France",
+    "skill_lean_used": 0.20,
+    "skill_lean_note": "0.20 means the stronger side in a 60/40 (by 90' win-expectancy) tie wins the shootout only ~52% of the time — deliberately close to a coin-flip, matching the historical record that shootouts barely track favouritism."
+  }
+}

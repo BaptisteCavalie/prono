@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, calibration, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, standings, strategies, team_signals, updater
+from engine import autonomous, betting, calibration, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, outrights, prediction, solidity, standings, strategies, team_signals, tournament, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -816,7 +816,13 @@ def _build_data_info(fixtures: List[Dict], ratings: Dict, team_status: Dict,
     }
 
 
-_TAB_LABELS = {"matchs": "Matchs", "paris": "Paris", "diagnostics": "Diagnostics"}
+_TAB_LABELS = {"matchs": "Matchs", "paris": "Paris", "phases": "Phases finales",
+               "diagnostics": "Diagnostics"}
+
+# Nombre de simulations Monte-Carlo pour l'onglet Phases finales. Plus bas que le
+# défaut CLI (20000) pour garder le rendu de page sous ~1,5 s ; l'incertitude
+# d'échantillonnage à 6000 reste sous ~0,6 pt sur une proba de titre.
+_UI_SIMS = 6000
 
 _CSS = "".join([
     ":root{--bg:#f6f4ec;--surface:#fffefa;--surface-2:#f2eee3;--surface-3:#fbfdff;"
@@ -999,6 +1005,22 @@ _CSS = "".join([
     "thead th{text-align:left;font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.11em;padding-bottom:4px}",
     "tbody tr{border-top:1px solid var(--line)}",
     "tbody tr.match-row:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
+    # --- Onglet Phases finales (simulation tournoi) ---
+    ".panel-title{margin:0 0 6px;font-size:1rem;font-weight:700}",
+    ".table-wrap{overflow-x:auto}",
+    ".ph-table{table-layout:auto}",
+    ".ph-table td,.ph-table th{font-size:.9rem;font-family:var(--font-mono);text-align:right;white-space:nowrap}",
+    ".ph-table td.ph-team,.ph-table th:first-child,.ph-table td:nth-child(2){text-align:left;font-family:inherit}",
+    ".ph-table td.ph-team{font-weight:600}",
+    ".ph-table td.ph-strong{font-weight:700;color:var(--brand-dark)}",
+    ".ph-table tbody tr:hover{background:color-mix(in srgb,var(--brand) 3%,var(--surface))}",
+    ".ph-pos{color:var(--ok,#157347);font-weight:700}",
+    ".ph-r32{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:7px;margin:8px 0}",
+    ".ph-tie{display:flex;align-items:baseline;gap:7px;padding:6px 9px;border:1px solid var(--line);border-radius:9px;background:var(--surface-3);font-size:.9rem}",
+    ".ph-mid{font-family:var(--font-mono);font-size:.7rem;color:var(--muted)}",
+    ".ph-h{font-weight:600}",".ph-a{font-weight:600;margin-left:auto;text-align:right}",
+    ".ph-v{color:var(--muted);font-size:.78rem}",
+    ".ph-x2{margin-top:6px;padding:9px 12px;border:1px dashed var(--line-2);border-radius:10px;font-size:.88rem;line-height:1.4}",
     "td strong{font-weight:700}",
     ".nutri{display:inline-block;min-width:30px;text-align:center;padding:6px 0;border-radius:8px;font-weight:700;font-size:.88rem;color:var(--nutri-ink)}",
     ".nutri-a{background:var(--nutri-a)}",
@@ -1167,6 +1189,7 @@ def _render_sidebar(safe_tab: str, health: Optional[Dict], health_meta: Dict[str
         "<nav aria-label='Navigation principale'><ul class='side-nav'>",
         item("matchs", "Matchs"),
         item("paris", "Paris"),
+        item("phases", "Phases finales"),
         item("diagnostics", "Diagnostics"),
         "</ul></nav>",
         "<div class='sidebar-foot'>",
@@ -2001,10 +2024,119 @@ def _render_recap(past_rows: List[Dict]) -> List[str]:
     return out
 
 
+def _pct_cell(x: Optional[float]) -> str:
+    """Cellule pourcentage : vide si None, sinon arrondi entier."""
+    return "—" if x is None else f"{round(x * 100)}%"
+
+
+def _render_phases(projection: Optional[Dict], bankroll: float = 50.0) -> List[str]:
+    """Onglet Phases finales : la simulation Monte-Carlo du tournoi.
+
+    Trois blocs, dans l'ordre d'utilité : (1) parcours simulé par équipe — proba
+    de qualification, de chaque tour et de titre, pour savoir où porter ses pronos
+    et son x2 ; (2) bracket projeté (scénario le plus probable) + conseil x2 ;
+    (3) value outright (cotes Winamax dictées vs proba simulée). La simulation
+    réutilise exactement le modèle des pronos par match, donc aucun désaccord
+    possible entre cet onglet et l'onglet Matchs.
+    """
+    if not projection:
+        return ["<div class='panel'><div class='muted'>Simulation indisponible "
+                "(données équipes incomplètes).</div></div>"]
+
+    parts: List[str] = []
+    teams = projection["teams"]
+    ranked = sorted(teams.items(), key=lambda kv: -kv[1]["p_champion"])
+
+    # --- Bloc 1 : parcours simulé ---
+    parts.append("<div class='panel'>")
+    parts.append("<h2 class='panel-title'>Parcours simulé</h2>")
+    parts.append(f"<p class='muted' style='margin-top:0'>{projection['n_sims']} "
+                 "simulations Monte-Carlo du tournoi restant. Distribution calibrée — "
+                 "jamais une certitude. Les phases finales sont volatiles (~2/3 favori), "
+                 "d'où l'intérêt de raisonner en probabilité de parcours, pas en vainqueur sec.</p>")
+    parts.append("<div class='table-wrap'><table class='ph-table'>")
+    parts.append("<thead><tr><th>Équipe</th><th>Gr</th><th>Qualif</th><th>8e</th>"
+                 "<th>4e</th><th>1/2</th><th>Finale</th><th>Titre</th></tr></thead><tbody>")
+    for t, p in ranked[:32]:
+        champ = p["p_champion"]
+        strong = " class='ph-strong'" if champ >= 0.05 else ""
+        parts.append(
+            f"<tr><td class='ph-team'>{html.escape(t)}</td>"
+            f"<td>{html.escape(str(p['group'] or ''))}</td>"
+            f"<td>{_pct_cell(p['p_qualify'])}</td>"
+            f"<td>{_pct_cell(p['p_r16'])}</td>"
+            f"<td>{_pct_cell(p['p_qf'])}</td>"
+            f"<td>{_pct_cell(p['p_sf'])}</td>"
+            f"<td>{_pct_cell(p['p_final'])}</td>"
+            f"<td{strong}>{_pct_cell(champ)}</td></tr>")
+    parts.append("</tbody></table></div></div>")
+
+    # --- Bloc 2 : bracket projeté ---
+    pb = projection.get("projected_bracket") or {}
+    if pb.get("r32"):
+        parts.append("<div class='panel'>")
+        parts.append("<h2 class='panel-title'>Bracket projeté</h2>")
+        parts.append("<p class='muted' style='margin-top:0'>Le scénario <strong>le plus "
+                     "probable</strong> aujourd'hui (1ers/2es par groupe + 8 meilleurs 3es), "
+                     "pour planifier un tour à l'avance — pas un pronostic figé, le tirage "
+                     "réel se verrouille après la 3e journée.</p>")
+        parts.append("<div class='ph-r32'>")
+        for m in pb["r32"]:
+            h, a = m.get("home"), m.get("away")
+            parts.append(
+                f"<div class='ph-tie'><span class='ph-mid'>M{m['m']}</span>"
+                f"<span class='ph-h'>{html.escape(str(h) if h else '?')}</span>"
+                f"<span class='ph-v'>vs</span>"
+                f"<span class='ph-a'>{html.escape(str(a) if a else '?')}</span></div>")
+        parts.append("</div>")
+        adv = tournament_x2_advice()
+        parts.append(f"<div class='ph-x2'><strong>Plan x2 (8es) :</strong> "
+                     f"{html.escape(adv['action'].upper())} — {html.escape(adv['reason'])}</div>")
+        parts.append("</div>")
+
+    # --- Bloc 3 : value outrights ---
+    parts.append("<div class='panel'>")
+    parts.append("<h2 class='panel-title'>Value outrights</h2>")
+    value = outrights.find_value(projection)
+    if not value:
+        parts.append("<p class='muted' style='margin-top:0'>Aucune cote long-terme chargée "
+                     "(<code>data/outrights.json</code> vide) ou aucune value détectée. "
+                     "Dictez les cotes Winamax (vainqueur, finaliste, 1er de groupe…) à Claude "
+                     "pour activer la comparaison cote ↔ proba simulée.</p>")
+    else:
+        budget = bankroll
+        parts.append("<p class='muted' style='margin-top:0'>Cote bookmaker vs proba simulée "
+                     "(prudemment ramenée vers le marché). Mise = fraction de Kelly plafonnée, "
+                     f"sur un budget outright de {budget:.0f} €.</p>")
+        parts.append("<div class='table-wrap'><table class='ph-table'>")
+        parts.append("<thead><tr><th>Marché</th><th>Sélection</th><th>Cote</th>"
+                     "<th>Sim</th><th>Value (EV)</th><th>Mise</th></tr></thead><tbody>")
+        for r in value:
+            stake = r["stake_frac"] * budget
+            parts.append(
+                f"<tr><td>{html.escape(r['label'])}</td>"
+                f"<td class='ph-team'>{html.escape(r['team'])}</td>"
+                f"<td>{r['odds']:.2f}</td>"
+                f"<td>{_pct_cell(r['sim'])}</td>"
+                f"<td class='ph-pos'>+{round(r['ev'] * 100)}%</td>"
+                f"<td>{stake:.2f} €</td></tr>")
+        parts.append("</tbody></table></div>")
+    parts.append("</div>")
+    return parts
+
+
+def tournament_x2_advice() -> Dict:
+    """Conseil x2 par défaut pour la fenêtre des 8es (fenêtre optimale du playbook).
+    Position-neutre côté UI : Baptiste affine via la CLI (--leading/--points-behind)."""
+    from engine import x2
+    return x2.advise("r16")
+
+
 def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str = "",
                  tab: str = "matchs", health: Optional[Dict] = None,
                  solidity_report: Optional[Dict] = None, data_info: Optional[Dict] = None,
-                 bankroll: float = 50.0, bets: Optional[List[Dict]] = None) -> bytes:
+                 bankroll: float = 50.0, bets: Optional[List[Dict]] = None,
+                 projection: Optional[Dict] = None) -> bytes:
     safe_tab = tab if tab in _TAB_LABELS else "matchs"
 
     past_rows = [r for r in rows if r.get("completed")]
@@ -2043,6 +2175,13 @@ def _render_page(rows: List[Dict], recommendations: Optional[Dict], error: str =
         parts.extend(_render_suivi_paris(bets or []))
         parts.extend(_render_paris(recommendations, bankroll, bet_blocked,
                                    placed_picks=_placed_picks(bets)))
+
+    elif safe_tab == "phases":
+        parts.append("<div class='topbar'><div><h1>Phases finales</h1>"
+                     "<p class='subtitle'>Simulation Monte-Carlo du tournoi : "
+                     "probabilité de qualification, de parcours et de titre, bracket "
+                     "projeté et value sur les paris long-terme.</p></div></div>")
+        parts.extend(_render_phases(projection, bankroll=bankroll))
 
     elif safe_tab == "diagnostics":
         parts.append("<div class='topbar'><div><h1>Diagnostics</h1>"
@@ -2221,6 +2360,7 @@ def handle_request(params: Dict[str, str]) -> bytes:
     health = None
     solidity_report = None
     data_info = None
+    projection = None
 
     try:
         try:
@@ -2268,6 +2408,11 @@ def handle_request(params: Dict[str, str]) -> bytes:
                              all_fixtures=fixtures)
         if tab == "paris" and (health or {}).get("level") != "critical":
             recommendations = _build_recommendations(rows, bankroll=bankroll)
+        if tab == "phases":
+            # Simulation du tournoi : réutilise les ratings déjà préparés (forme +
+            # priors experts) pour rester cohérente avec les pronos par match.
+            projection = tournament.project(n_sims=_UI_SIMS, ratings=ratings,
+                                            fixtures=fixtures)
     except UiError as exc:
         error = str(exc)          # message métier déjà rédigé pour l'utilisateur
     except Exception:
@@ -2276,7 +2421,7 @@ def handle_request(params: Dict[str, str]) -> bytes:
 
     return _render_page(rows, recommendations, error=error, tab=tab, health=health,
                         solidity_report=solidity_report, data_info=data_info,
-                        bankroll=bankroll, bets=data.load_bets())
+                        bankroll=bankroll, bets=data.load_bets(), projection=projection)
 
 
 class Handler(BaseHTTPRequestHandler):
