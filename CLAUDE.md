@@ -16,10 +16,14 @@ dans Winamax. **Desktop uniquement** (refonte dashboard 2026-06-12) ; le
 mobile n'est plus une cible (décision Baptiste — on n'améliore plus le
 responsive, on ne le démantèle pas pour autant).
 Forme de l'UI (décidée 2026-06-12) : **dashboard à menu latéral** — sidebar
-persistante (entrées : Matchs · Paris · Diagnostics), passés et futurs
-fusionnés sur la page Matchs avec les passés **masquables** (repliés par
-défaut), et un **filtre pays** instantané sur la liste. Parti-pris visuel
+persistante (entrées : Matchs · Paris · Phases finales · Diagnostics), passés
+et futurs fusionnés sur la page Matchs avec les passés **masquables** (repliés
+par défaut), et un **filtre pays** instantané sur la liste. Parti-pris visuel
 « dashboard pro » (sidebar sombre / contenu clair) — voir `design/da.md`.
+L'entrée **Phases finales** (ajoutée 2026-06-23) porte la simulation
+Monte-Carlo du tournoi : proba de qualification / parcours / titre par équipe,
+bracket projeté (scénario le plus probable) et **value outright** — distincte
+des pronos match par match, qui restent l'objet de la page Matchs.
 Spécificités : sortie = distribution de probabilités calibrée, jamais un
 score sec présenté comme certitude ; transparence du modèle (Elo, forme,
 prior expert) ; aucune incitation à parier.

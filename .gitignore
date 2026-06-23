@@ -16,3 +16,7 @@ data/.auto_refresh_state.json
 data/odds_api_key.txt
 data/.odds_state.json
 data/kickoffs.json
+# outright (futures) auto-fetch runtime cache + state — regenerated, not the
+# manual data/outrights.json overlay which IS committed
+data/outrights_cache.json
+data/.outrights_state.json

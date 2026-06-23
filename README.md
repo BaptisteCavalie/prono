@@ -11,6 +11,10 @@ No install needed — system Python 3.9+ only (pure stdlib).
 ```bash
 python3 predict.py --match "France vs Senegal"   # any two teams (also what-if / knockout)
 python3 predict.py --match "France vs Croatia" --knockout  # scored on the 120' result (MPP rule)
+python3 predict.py --simulate                     # Monte-Carlo tournament: qualif/run/title prob per team
+python3 predict.py --bracket                       # projected bracket (most-likely scenario) + x2 plan
+python3 predict.py --outrights                     # value on long-term markets (data/outrights.json)
+python3 predict.py --simulate --bracket --outrights --sims 30000  # everything, more precise
 python3 predict.py --group I                      # a whole group
 python3 predict.py --matchday 1                   # every matchday-1 game
 python3 predict.py --matchday 1 --sheet          # one-page daily card (score + bet with %)
@@ -82,6 +86,31 @@ Controls in the page:
 | `data/fixtures.json` | 72 group matches (generated) | `python3 tools/build_fixtures.py` |
 | `data/team_status.json` | injuries/suspensions/form/news signals | update frequently (manual/Claude/automation) |
 | `data/expert_sources/*.json` | trusted pundit priors (e.g. Wiloo) | edit by hand or ask Claude with the pundit's calls |
+| `data/bracket.json` | WC2026 knockout tree (R32→final, FIFA structure) | static — only edit if FIFA changes the format |
+| `data/history.json` | historical WC knockout base rates (calibration targets) | static reference, sourced |
+| `data/outrights.json` | manual overlay for long-term markets the API lacks (finalist, group winner…) | **ask Claude** to dictate the odds; the `champion` market is auto-fetched from The Odds API in prod |
+
+## Phases finales — tournament simulation (`engine/tournament.py`)
+Once the knockouts loom, single-match probabilities are not enough: who reaches
+the R32/16/quarters/semis/final, what the bracket will look like, and each
+team's title odds need a **forward Monte-Carlo** of the whole remaining
+tournament. Each simulation samples every unplayed group game from the *same*
+Dixon-Coles score matrix the per-match prono uses (so the two can never
+disagree), builds the 12 final tables (top-2 + the 8 best thirds), allocates the
+thirds to FIFA's R32 slots (`data/bracket.json`), then plays the bracket as
+knockout ties — 90′, tempo-damped extra time, near-coin-flip shootout — grounded
+in historical World Cup base rates (`data/history.json`, checked by
+`tournament.calibration_check`). It feeds the **Phases finales** UI tab and
+`engine/outrights.py`, which flags value on long-term markets the same safe way
+single bets are (de-vig → shrink to market → edge + EV → capped fractional
+Kelly). Knockouts are ~2/3 favourite, so outrights MUST come from this sim, never
+from chaining single-match favourites.
+
+Outright odds source: in prod the **champion (winner)** market is auto-fetched
+from The Odds API (`engine/odds_fetch.ensure_outrights`, same `ODDS_API_KEY`,
+cooldown + credit guard as the 1X2 feed — only the Phases finales tab triggers a
+fetch). Markets the API doesn't carry for soccer (finalist, group winner…) come
+from the manual `data/outrights.json` overlay, which wins on any conflict.
 
 ### Cotes (The Odds API)
 L'onglet Paris et l'analyse value ont besoin de cotes bookmaker. Deux options :

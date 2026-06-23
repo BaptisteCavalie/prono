@@ -841,6 +841,84 @@
           "odds": 3.3
         }
       ]
+    },
+    {
+      "id": 39,
+      "ref": "6FMOI8DJ",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Nul Équateur-Allemagne + Iran",
+      "odds": 14.25,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G29",
+          "home": "Ecuador",
+          "away": "Germany",
+          "pick": "draw",
+          "odds": 3.85
+        },
+        {
+          "match": "G42",
+          "home": "Egypt",
+          "away": "Iran",
+          "pick": "away",
+          "odds": 3.7
+        }
+      ]
+    },
+    {
+      "id": 40,
+      "ref": "6FMOHR5A",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Nul Curaçao-Côte d'Ivoire + Australie",
+      "odds": 29.6,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G30",
+          "home": "Curaçao",
+          "away": "Ivory Coast",
+          "pick": "draw",
+          "odds": 8.0
+        },
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 3.7
+        }
+      ]
+    },
+    {
+      "id": 41,
+      "ref": "6FMOH1CY",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Côte d'Ivoire + Australie",
+      "odds": 4.18,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G30",
+          "home": "Curaçao",
+          "away": "Ivory Coast",
+          "pick": "away",
+          "odds": 1.13
+        },
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 3.7
+        }
+      ]
     }
   ]
 }

@@ -1,5 +1,48 @@
 # Project Work Log
 
+## 2026-06-23 (ter) — Phases finales : simulation de tournoi de bout en bout
+
+### Objectif (demande Baptiste)
+Anticiper les phases éliminatoires ; le modèle doit évoluer en prenant en compte
+les chiffres historiques des Coupes du Monde. Buts : **1er sur MPP** et **paris
+gagnants**. Le moteur ne pricé qu'un match à la fois — incapable de répondre aux
+questions qui font gagner le classement et les outrights une fois les KO en vue.
+
+### Ce qui a été construit
+- **`data/bracket.json`** — arbre KO WC2026 (structure FIFA pré-planifiée) :
+  16 affiches R32 (slots 1er/2e/3e avec éligibilité des 8 meilleurs 3es) →
+  8es → quarts → demies → finale. Vérifié contre Wikipédia (12 vainqueurs +
+  12 2es + 8 slots 3es, chaque groupe représenté une fois).
+- **`data/history.json`** — base historique CdM (≈25 % des KO en prolongation,
+  ≈13 % aux tirs au but, conversion shootout 69,4 %, ~2/3 favori) servant de
+  **cibles de calibration**, sourcée.
+- **`engine/tournament.py`** — Monte-Carlo du tournoi restant. Chaque sim :
+  échantillonne les matchs de groupe restants depuis la **même** matrice
+  Dixon-Coles que le prono par match (cohérence garantie), construit les 12
+  tableaux finaux (top 2 + 8 meilleurs 3es), alloue les 3es aux slots R32 en
+  respectant l'éligibilité FIFA, puis joue le bracket (90′ → prolongation
+  tempo-amortie → tirs au but quasi pile/face). Sortie : proba de
+  qualif/8e/4e/1-2/finale/titre par équipe + **bracket projeté** (scénario le
+  plus probable, pour planifier le x2 un tour à l'avance). Réutilise le pipeline
+  ratings exact (forme + priors experts + malus enjeu). ~0,8 s/4000 sims.
+- **`engine/outrights.py`** — value sur marchés long-terme (vainqueur, finaliste,
+  1er de groupe, qualification) : même doctrine prudente que les paris simples
+  (retrait de marge → shrink vers le marché → edge + EV → Kelly fractionné
+  plafonné). **Source des cotes** : en prod le marché *champion* est récupéré
+  automatiquement via The Odds API (`odds_fetch.ensure_outrights`, marché
+  `outrights` de la clé sport `*_winner`, même clé/cooldown/garde-crédits que le
+  1X2 ; seul l'onglet Phases finales déclenche un fetch). Les marchés absents de
+  l'API en foot (finaliste, 1er de groupe…) viennent de l'overlay manuel
+  `data/outrights.json`, prioritaire en cas de conflit.
+- **CLI** : `--simulate`, `--bracket`, `--outrights`, `--sims N`.
+- **UI** : 4e entrée sidebar **Phases finales** (parcours simulé, bracket
+  projeté + plan x2, value outrights).
+- **Calibration** : `tournament.calibration_check` confronte les taux réalisés
+  (prolongation/tirs au but/buts) aux cibles historiques — vert sur les trois.
+- **Tests** : `tests/test_tournament.py` (17) — structure du bracket, allocation
+  des 3es (bijection + éligibilité sur 200 sous-ensembles), invariants de la sim
+  (titre somme 1, 32 qualifiés, tours imbriqués), outrights. Suite : 147/147.
+
 ## 2026-06-23 (bis) — Contexte compétition (enjeu / motivation J3)
 
 ### Summary

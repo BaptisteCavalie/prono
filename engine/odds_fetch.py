@@ -312,6 +312,162 @@ def fetch_events(key: str):
         return [], None, None, errors, sk
 
 
+# --- Outright / futures market (tournament winner) ---------------------------
+# The Odds API serves tournament futures under a dedicated "*_winner" sport key
+# with the `outrights` market: one event whose outcomes are {team: price}. That
+# covers the CHAMPION market in prod; markets the API doesn't carry for soccer
+# (group winner, reach-final) stay on the manual data/outrights.json overlay.
+WINNER_MARKET = "outrights"
+DEFAULT_WINNER_SPORT = "soccer_fifa_world_cup_winner"
+
+
+def _outright_cache_paths() -> Tuple[Path, Path]:
+    if _writable_data():
+        return DATA_DIR / "outrights_cache.json", DATA_DIR / ".outrights_state.json"
+    tmp = Path(tempfile.gettempdir())
+    return tmp / "prono_outrights.json", tmp / "prono_outrights_state.json"
+
+
+def _read_outright_board(path: Path) -> Dict:
+    """Read a cached ``{"markets": {...}}`` outright board (no network)."""
+    if not path.is_file():
+        return {"markets": {}}
+    try:
+        with open(path, encoding="utf-8") as f:
+            raw = json.load(f)
+        return raw if isinstance(raw, dict) and isinstance(raw.get("markets"), dict) else {"markets": {}}
+    except (OSError, json.JSONDecodeError):
+        return {"markets": {}}
+
+
+def load_cached_outrights() -> Dict:
+    """Read auto-fetched outright odds from cache only (no network, no credits)."""
+    cache_path, _ = _outright_cache_paths()
+    return _read_outright_board(cache_path)
+
+
+def read_outright_state() -> Dict:
+    _, state_path = _outright_cache_paths()
+    if not state_path.is_file():
+        return {}
+    try:
+        with open(state_path, encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _discover_winner_sport_key(key: str) -> str:
+    url = f"{API_BASE}/sports/?" + urlencode({"apiKey": key})   # free, no quota
+    try:
+        sports, _ = _http(url)
+    except Exception:
+        return DEFAULT_WINNER_SPORT
+    keys = [s.get("key") for s in sports
+            if isinstance(s, dict) and isinstance(s.get("key"), str)]
+    wc = [k for k in keys if k.startswith("soccer") and "world_cup" in k
+          and "winner" in k and "women" not in k and "qualif" not in k]
+    return wc[0] if wc else DEFAULT_WINNER_SPORT
+
+
+def fetch_outright_events(key: str):
+    """Return (events, remaining_credits, used_credits, errors, sport_key)."""
+    errors: List[str] = []
+    sk = _discover_winner_sport_key(key)
+    url = f"{API_BASE}/sports/{sk}/odds/?" + urlencode({
+        "apiKey": key, "regions": REGIONS, "markets": WINNER_MARKET, "oddsFormat": "decimal",
+    })
+    try:
+        payload, headers = _http(url)
+        remaining = _to_int(headers.get("x-requests-remaining"))
+        used = _to_int(headers.get("x-requests-used"))
+        events = payload if isinstance(payload, list) else []
+        return events, remaining, used, errors, sk
+    except HTTPError as e:
+        errors.append(f"outrights_http_{e.code}")
+        remaining = None
+        try:
+            remaining = _to_int(e.headers.get("x-requests-remaining"))
+        except Exception:
+            pass
+        return [], remaining, None, errors, sk
+    except Exception as e:
+        errors.append(f"outrights_fetch_{type(e).__name__}")
+        return [], None, None, errors, sk
+
+
+def outright_events_to_market(events: List[Dict], ratings_payload: Dict) -> Dict[str, float]:
+    """Pure mapping (no network): outright events -> {team: consensus_odds}.
+
+    Median price per team across every bookmaker offering the `outrights` market,
+    with team names resolved to the canonical ratings spelling (so the sim and
+    the odds line up)."""
+    prices: Dict[str, List[float]] = {}
+    for ev in events or []:
+        for bk in ev.get("bookmakers", []):
+            for mk in bk.get("markets", []):
+                if mk.get("key") != WINNER_MARKET:
+                    continue
+                for o in mk.get("outcomes", []):
+                    price = o.get("price")
+                    if not isinstance(price, (int, float)) or price <= 1.0:
+                        continue
+                    raw = (o.get("name") or "").strip()
+                    team = data.resolve_team(raw, ratings_payload) or raw
+                    if team:
+                        prices.setdefault(team, []).append(float(price))
+    market: Dict[str, float] = {}
+    for team, vals in prices.items():
+        med = _median(vals)
+        if med:
+            market[team] = round(med, 2)
+    return market
+
+
+def ensure_outrights(ratings_payload: Dict, cooldown_min: int = COOLDOWN_MIN,
+                     force: bool = False) -> Dict:
+    """Return the auto-fetched outright board ``{"markets": {"champion": {...}}}``,
+    fetching at most once per cooldown and stopping when credits run low. Never
+    raises; falls back to the cache. Same credit discipline as ``ensure_board``."""
+    cache_path, state_path = _outright_cache_paths()
+    state = read_outright_state()
+    cached = _read_outright_board(cache_path)
+
+    if not has_key():
+        return cached
+
+    rem = state.get("remaining_credits")
+    if isinstance(rem, int) and rem < MIN_CREDITS and not force:
+        return cached
+    if not force and _fresh(state.get("attempted_at"), cooldown_min):
+        return cached
+
+    events, remaining, used, errors, sk = fetch_outright_events(get_key())
+    market = outright_events_to_market(events, ratings_payload)
+    board = {"markets": {"champion": market}} if market else {"markets": {}}
+
+    new_state = {
+        "attempted_at": _iso_now(),
+        "source": "The Odds API (median EU bookmakers, outrights)",
+        "sport_key": sk,
+        "remaining_credits": remaining if remaining is not None else state.get("remaining_credits"),
+        "used_credits": used if used is not None else state.get("used_credits"),
+        "errors": errors,
+    }
+    try:
+        if market:                                      # don't wipe good odds with an empty fetch
+            new_state["fetched_at"] = new_state["attempted_at"]
+            new_state["teams"] = len(market)
+            _write_json(cache_path, board)
+            _write_json(state_path, new_state)
+            return board
+        new_state["fetched_at"] = state.get("fetched_at")
+        _write_json(state_path, new_state)              # record the attempt -> honour cooldown
+    except OSError:
+        pass
+    return cached
+
+
 def ensure_board(ratings_payload: Dict, fixtures: List[Dict],
                  cooldown_min: int = COOLDOWN_MIN, force: bool = False) -> Dict[str, List[float]]:
     """Return the odds board, fetching at most once per cooldown and stopping when
