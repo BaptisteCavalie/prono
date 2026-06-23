@@ -919,6 +919,32 @@
           "odds": 3.7
         }
       ]
+    },
+    {
+      "id": 42,
+      "ref": "6FMOSY4T",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Iran + Algérie",
+      "odds": 12.03,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G42",
+          "home": "Egypt",
+          "away": "Iran",
+          "pick": "away",
+          "odds": 3.7
+        },
+        {
+          "match": "G60",
+          "home": "Algeria",
+          "away": "Austria",
+          "pick": "home",
+          "odds": 3.25
+        }
+      ]
     }
   ]
 }
