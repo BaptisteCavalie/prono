@@ -37,6 +37,8 @@ from __future__ import annotations
 from itertools import product
 from typing import Dict, List, Optional, Tuple
 
+from engine import common
+
 # Motivation malus (Elo points), applied to a stakeless side's rating. See the
 # module docstring for the WC2022 measurement these are scaled from.
 QUALIFIED_MALUS = -85.0    # guaranteed top 2 -> rotates ("dead rubber")
@@ -54,7 +56,11 @@ _LABELS = {QUALIFIED: "Qualifiée (top 2)", ELIMINATED: "Éliminée", CONTENTION
 
 
 def _is_completed(match: Dict) -> bool:
-    return match.get("actual_home") is not None and match.get("actual_away") is not None
+    if match.get("actual_home") is None or match.get("actual_away") is None:
+        return False
+    # Filet partagé avec l'UI : pas de match « terminé » avant son coup d'envoi,
+    # même si un score a été inscrit par erreur (cf. common.kickoff_in_future).
+    return not common.kickoff_in_future(match)
 
 
 def _group_matches(group: str, fixtures: List[Dict]) -> List[Dict]:

@@ -42,7 +42,12 @@ def _as_int(value) -> Optional[int]:
 
 
 def _is_completed(match: Dict) -> bool:
-    return match.get("actual_home") is not None and match.get("actual_away") is not None
+    if match.get("actual_home") is None or match.get("actual_away") is None:
+        return False
+    # Filet : un match dont le coup d'envoi est dans le futur ne peut pas être
+    # terminé, même si un score a été inscrit par erreur (saisie auto avant
+    # l'heure). On l'affiche « à venir » plutôt qu'avec un faux score.
+    return not common.kickoff_in_future(match)
 
 
 def _effective_date(match: Dict) -> Optional[str]:

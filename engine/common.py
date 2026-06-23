@@ -2,13 +2,31 @@
 from __future__ import annotations
 
 import json
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
 class UserFacingError(ValueError):
     """Error whose message is safe and useful to show to an end user."""
+
+
+def kickoff_in_future(match: Dict, now: Optional[datetime] = None) -> bool:
+    """True si le coup d'envoi du match est connu ET encore à venir.
+
+    Filet de sécurité partagé : un match ne peut être « terminé » avant d'avoir
+    commencé, même si un score a été inscrit par erreur (p.ex. saisie auto avant
+    l'heure, cf. /maj-resultats). On préfère le montrer « à venir » qu'afficher
+    un faux score. Sans ``kickoff_utc`` connu, on ne tranche pas (retourne False).
+    """
+    raw = match.get("kickoff_utc")
+    if not raw:
+        return False
+    try:
+        ko = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return False
+    return ko > (now or datetime.now(timezone.utc))
 
 
 def split_match(s: str) -> Optional[Tuple[str, str]]:
