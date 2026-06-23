@@ -578,6 +578,198 @@
         }
       ],
       "settled_at": "2026-06-19T04:34:10Z"
+    },
+    {
+      "id": 27,
+      "ref": "6FMJLQQE",
+      "date": "2026-06-23",
+      "label": "Rép. tchèque – Mexique",
+      "sel": "Mexique vainqueur",
+      "odds": 1.88,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G05",
+          "home": "Czechia",
+          "away": "Mexico",
+          "pick": "away",
+          "odds": 1.88
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "ref": "6FMJM6Q9",
+      "date": "2026-06-23",
+      "label": "Curaçao – Côte d'Ivoire",
+      "sel": "Match nul",
+      "odds": 8.0,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G30",
+          "home": "Curaçao",
+          "away": "Ivory Coast",
+          "pick": "draw",
+          "odds": 8.0
+        }
+      ]
+    },
+    {
+      "id": 29,
+      "ref": "6FMJMNRL",
+      "date": "2026-06-23",
+      "label": "Turquie – États-Unis",
+      "sel": "Match nul",
+      "odds": 4.1,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G23",
+          "home": "Türkiye",
+          "away": "United States",
+          "pick": "draw",
+          "odds": 4.1
+        }
+      ]
+    },
+    {
+      "id": 30,
+      "ref": "6FMJPFVM",
+      "date": "2026-06-23",
+      "label": "Égypte – Iran",
+      "sel": "Iran vainqueur",
+      "odds": 3.7,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G42",
+          "home": "Egypt",
+          "away": "Iran",
+          "pick": "away",
+          "odds": 3.7
+        }
+      ]
+    },
+    {
+      "id": 31,
+      "ref": "6FMJPR5E",
+      "date": "2026-06-23",
+      "label": "Croatie – Ghana",
+      "sel": "Croatie vainqueur",
+      "odds": 1.49,
+      "stake": 5.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G72",
+          "home": "Croatia",
+          "away": "Ghana",
+          "pick": "home",
+          "odds": 1.49
+        }
+      ]
+    },
+    {
+      "id": 32,
+      "ref": "6FMJQ2IN",
+      "date": "2026-06-23",
+      "label": "Algérie – Autriche",
+      "sel": "Algérie vainqueur",
+      "odds": 3.3,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G60",
+          "home": "Algeria",
+          "away": "Austria",
+          "pick": "home",
+          "odds": 3.3
+        }
+      ]
+    },
+    {
+      "id": 33,
+      "ref": "6FMJQU51",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Nul Curaçao-Côte d'Ivoire + Iran",
+      "odds": 29.6,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G30",
+          "home": "Curaçao",
+          "away": "Ivory Coast",
+          "pick": "draw",
+          "odds": 8.0
+        },
+        {
+          "match": "G42",
+          "home": "Egypt",
+          "away": "Iran",
+          "pick": "away",
+          "odds": 3.7
+        }
+      ]
+    },
+    {
+      "id": 34,
+      "ref": "6FMJREXL",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "États-Unis + Australie",
+      "odds": 6.96,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G23",
+          "home": "Türkiye",
+          "away": "United States",
+          "pick": "away",
+          "odds": 1.88
+        },
+        {
+          "match": "G24",
+          "home": "Paraguay",
+          "away": "Australia",
+          "pick": "away",
+          "odds": 3.7
+        }
+      ]
+    },
+    {
+      "id": 35,
+      "ref": "6FMJRZ6L",
+      "date": "2026-06-23",
+      "combo": true,
+      "label": "Mexique + Algérie",
+      "odds": 6.2,
+      "stake": 2.0,
+      "status": "en_cours",
+      "legs": [
+        {
+          "match": "G05",
+          "home": "Czechia",
+          "away": "Mexico",
+          "pick": "away",
+          "odds": 1.88
+        },
+        {
+          "match": "G60",
+          "home": "Algeria",
+          "away": "Austria",
+          "pick": "home",
+          "odds": 3.3
+        }
+      ]
     }
   ]
 }
