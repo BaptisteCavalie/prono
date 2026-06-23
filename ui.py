@@ -541,6 +541,8 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
 
         rows.append({
             "id": m.get("id", ""),
+            "stage": str(m.get("stage") or "group"),
+            "is_knockout": knockout,
             "group": m.get("group", "?"),
             "matchday": m.get("matchday", "?"),
             "date": _effective_date(m),
@@ -620,6 +622,20 @@ def _group_rows_by_matchday(rows: List[Dict]):
     for _, items in ordered:
         items.sort(key=lambda x: (x.get("date") or "", x.get("id") or ""))
     return ordered
+
+
+_STAGE_LABELS = {
+    "round_of_32": "16es de finale",
+    "round_of_16": "8es de finale",
+    "quarter_final": "Quart de finale",
+    "semi_final": "Demi-finale",
+    "third_place": "Petite finale",
+    "final": "Finale",
+}
+
+
+def _stage_label(stage: Optional[str]) -> str:
+    return _STAGE_LABELS.get(str(stage or ""), "Phase finale")
 
 
 def _fr_date_label(iso_date: str) -> str:
@@ -1763,8 +1779,11 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
     kick = r.get("kickoff_paris") or ""
     kick_html = (f"<span class='kick'>{html.escape(kick)}</span>" if kick
                  else "<span class='kick kick-tbd'>&mdash;</span>")
-    meta_sub = (f"J{html.escape(str(r['matchday']))} · Gr. {html.escape(str(r['group']))}"
-                f" · {html.escape(str(r['id']))}")
+    if r.get("is_knockout"):
+        meta_sub = f"{html.escape(_stage_label(r.get('stage')))} · {html.escape(str(r['id']))}"
+    else:
+        meta_sub = (f"J{html.escape(str(r['matchday']))} · Gr. {html.escape(str(r['group']))}"
+                    f" · {html.escape(str(r['id']))}")
     meta_cell = f"<td class='cell-meta'>{kick_html}<span class='meta-sub'>{meta_sub}</span></td>"
     teams_cell = (
         f"<td class='cell-teams'>"

@@ -158,6 +158,145 @@ def team_status(team: str, group: str, fixtures: List[Dict],
     return CONTENTION
 
 
+# --------------------------------------------------------------------------
+# Final standings + qualification (used to build the Round-of-32 bracket).
+#
+# The stakes layer above answers "is a team's fate sealed for the motivation
+# malus". This block answers the stronger question once a group is *complete*:
+# who finished 1st / 2nd / 3rd, and which 8 thirds advance. It is deliberately
+# conservative — any tie it can't break by the FIFA order (points, goal diff,
+# goals for, then head-to-head among the tied teams) is reported as an unbroken
+# tie rather than guessed, so the /maj-resultats bracket step can fall back to
+# the officially published table (Règle d'or: a hole beats a wrong pairing).
+# Fair-play / drawing-of-lots tie-breaks are not modelled here on purpose.
+# --------------------------------------------------------------------------
+
+def _completed_group_matches(group: str, fixtures: List[Dict]) -> List[Dict]:
+    return [m for m in _group_matches(group, fixtures) if _is_completed(m)]
+
+
+def group_complete(group: str, fixtures: List[Dict]) -> bool:
+    """True when a round-robin group is fully played: no unplayed games AND every
+    pairing accounted for (n teams ⇒ n·(n−1)/2 games, i.e. 6 for the usual four)."""
+    teams, remaining = group_table(group, fixtures)
+    n = len(teams)
+    if n < 2 or remaining:
+        return False
+    played = sum(r["played"] for r in teams.values()) // 2
+    return played == n * (n - 1) // 2
+
+
+def _head_to_head(cluster: List[str], group: str, fixtures: List[Dict]) -> Dict[str, Tuple[int, int, int]]:
+    """Mini-table (pts, gd, gf) restricted to games *among* the tied teams."""
+    sub = {t: {"pts": 0, "gf": 0, "ga": 0} for t in cluster}
+    members = set(cluster)
+    for m in _completed_group_matches(group, fixtures):
+        h, a = m.get("home"), m.get("away")
+        if h not in members or a not in members:
+            continue
+        gh, ga = m["actual_home"], m["actual_away"]
+        sub[h]["gf"] += gh; sub[h]["ga"] += ga
+        sub[a]["gf"] += ga; sub[a]["ga"] += gh
+        if gh > ga:
+            sub[h]["pts"] += 3
+        elif gh < ga:
+            sub[a]["pts"] += 3
+        else:
+            sub[h]["pts"] += 1; sub[a]["pts"] += 1
+    return {t: (r["pts"], r["gf"] - r["ga"], r["gf"]) for t, r in sub.items()}
+
+
+def rank_group(group: str, fixtures: List[Dict]) -> Tuple[List[Tuple[str, Dict]], List[frozenset]]:
+    """Final 1→4 ranking of a complete group, best first.
+
+    Returns ``(ranked, ties)`` where ``ranked`` is ``[(team, row), ...]`` and
+    ``ties`` lists the sets of teams that even head-to-head could not separate
+    (empty when the table is clean). Sort key: points, goal difference, goals
+    for; clusters still level are reordered by the head-to-head mini-table.
+    """
+    teams, _ = group_table(group, fixtures)
+    primary = lambda t: (teams[t]["pts"], teams[t]["gd"], teams[t]["gf"])
+    names = sorted(teams, key=primary, reverse=True)
+
+    ranked: List[str] = []
+    ties: List[frozenset] = []
+    i = 0
+    while i < len(names):
+        j = i + 1
+        while j < len(names) and primary(names[j]) == primary(names[i]):
+            j += 1
+        cluster = names[i:j]
+        if len(cluster) > 1:
+            h2h = _head_to_head(cluster, group, fixtures)
+            cluster = sorted(cluster, key=lambda t: h2h[t], reverse=True)
+            k = 0
+            while k < len(cluster):
+                l = k + 1
+                while l < len(cluster) and h2h[cluster[l]] == h2h[cluster[k]]:
+                    l += 1
+                if l - k > 1:
+                    ties.append(frozenset(cluster[k:l]))
+                k = l
+        ranked.extend(cluster)
+        i = j
+    return [(t, teams[t]) for t in ranked], ties
+
+
+def _rank_thirds(thirds: List[Tuple[str, str, Dict]]) -> Tuple[List[Tuple[str, str, Dict]], List[frozenset]]:
+    """Rank third-placed teams across groups (pts, gd, gf). Flags any tie that
+    straddles the 8th/9th cut-off, since that decides who advances."""
+    key = lambda x: (x[2]["pts"], x[2]["gd"], x[2]["gf"])
+    ordered = sorted(thirds, key=key, reverse=True)
+    ties: List[frozenset] = []
+    if len(ordered) > 8:
+        boundary = key(ordered[7])
+        straddling = [x for x in ordered if key(x) == boundary]
+        if len(straddling) > 1 and key(ordered[8]) == boundary:
+            ties.append(frozenset(g for g, _, _ in straddling))
+    return ordered, ties
+
+
+def final_standings(fixtures: List[Dict]) -> Dict[str, object]:
+    """Group winners / runners-up / ranked thirds once groups are complete.
+
+    Returns ``{complete, incomplete, winners, runners_up, thirds_ranked,
+    best_thirds, ties}`` where ``winners``/``runners_up`` map ``group -> team``,
+    ``thirds_ranked`` is ``[(group, team, row), ...]`` best first, ``best_thirds``
+    the top 8 (the ones that advance), and ``ties`` the unbroken ties to resolve
+    against the official table. Groups still in progress are listed in
+    ``incomplete`` and skipped (no guess on an unfinished table).
+    """
+    groups = sorted({m.get("group") for m in fixtures
+                     if str(m.get("stage") or "group") == "group" and m.get("group")})
+    winners: Dict[str, str] = {}
+    runners_up: Dict[str, str] = {}
+    thirds: List[Tuple[str, str, Dict]] = []
+    incomplete: List[str] = []
+    ties: List[frozenset] = []
+
+    for g in groups:
+        if not group_complete(g, fixtures):
+            incomplete.append(g)
+            continue
+        ranked, gties = rank_group(g, fixtures)
+        ties.extend(gties)
+        winners[g] = ranked[0][0]
+        runners_up[g] = ranked[1][0]
+        thirds.append((g, ranked[2][0], ranked[2][1]))
+
+    thirds_ranked, third_ties = _rank_thirds(thirds)
+    ties.extend(third_ties)
+    return {
+        "complete": not incomplete and len(winners) == len(groups) == 12,
+        "incomplete": incomplete,
+        "winners": winners,
+        "runners_up": runners_up,
+        "thirds_ranked": thirds_ranked,
+        "best_thirds": thirds_ranked[:8],
+        "ties": ties,
+    }
+
+
 def stakes_for(match: Dict, fixtures: List[Dict]) -> Dict[str, object]:
     """Stakes + motivation deltas for one upcoming group fixture.
 
