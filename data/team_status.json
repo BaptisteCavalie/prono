@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-22T04:33:10Z",
+  "as_of": "2026-06-23T04:37:14Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -75,7 +75,7 @@
       ]
     },
     "Portugal": {
-      "form": -0.15,
+      "form": 0.42,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -219,7 +219,7 @@
       ]
     },
     "Austria": {
-      "form": 0.7,
+      "form": -0.23,
       "injury_impact": 0.2,
       "suspension_impact": 0.0,
       "news_risk": 0.0,

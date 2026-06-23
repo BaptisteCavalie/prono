@@ -268,7 +268,7 @@
       "label": "Argentine + France",
       "odds": 1.46,
       "stake": 1.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G55",
@@ -284,7 +284,8 @@
           "pick": "home",
           "odds": 1.07
         }
-      ]
+      ],
+      "settled_at": "2026-06-23T04:37:17Z"
     },
     {
       "id": 14,
