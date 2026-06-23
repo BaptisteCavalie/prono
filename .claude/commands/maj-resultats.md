@@ -1,11 +1,11 @@
 ---
-description: Met à jour data/fixtures.json en autonomie — scores des matchs joués ET horaires (kickoff_utc) des matchs à venir — puis déploie. Conçu pour tourner en session programmée (sans intervention de Baptiste).
+description: Met à jour data/fixtures.json en autonomie — scores des matchs joués, horaires (kickoff_utc) des matchs à venir, et peuplement du tableau final (Round of 32) une fois la phase de groupes terminée — puis déploie. Conçu pour tourner en session programmée (sans intervention de Baptiste).
 allowed-tools: Bash, Read, Edit, WebSearch, WebFetch, Glob, Grep
 ---
 
 # /maj-resultats — résultats + horaires en autonomie
 
-Quatre jobs, dans cet ordre :
+Cinq jobs, dans cet ordre :
 - **A. Scores** : remplir `actual_home`/`actual_away` des matchs **terminés**
   encore vides.
 - **B. Horaires** : renseigner `kickoff_utc` (instant UTC du coup d'envoi) des
@@ -19,6 +19,9 @@ Quatre jobs, dans cet ordre :
 - **D. Règlement des paris** : régler les paris Winamax en cours d'après les
   scores qui viennent d'être saisis (`python3 tools/settle_bets.py`), pour que
   le bilan P&L/ROI de la page Paris reste à jour sans dictée de Baptiste.
+- **E. Tableau final (16es)** : une fois la phase de groupes **terminée**,
+  déterminer les qualifiés (1ers, 2es, 8 meilleurs 3es) et peupler les 16 matchs
+  du **Round of 32** dans `data/fixtures.json`, pour pouvoir les pronostiquer.
 
 Le tout sans que Baptiste ait à dicter quoi que ce soit. Pensé pour une session
 **programmée** (trigger récurrent Claude Code web). Une exécution = un cycle
@@ -135,9 +138,61 @@ réels** (cf. `engine/updater.apply_completed_results`).
    `data/bets.json`). En cas de doute sur un score (match sauté en A), le match
    n'est pas saisi : le pari reste donc `en_cours`, ce qui est correct.
 
-### Finalisation (commun A + B + C + D)
+### E. Tableau final — Round of 32 (16es de finale)
 
-8. **Hygiène des effets de bord `data/`** (règle CLAUDE.md). Si une commande a
+Ne concerne que la **fin de la phase de groupes**. Tant que les 12 groupes ne
+sont pas terminés, cette étape n'écrit rien (l'outil le dit lui-même).
+
+8. **Rapport de qualification** (lecture seule) :
+   ```bash
+   python3 tools/build_knockout_r32.py
+   ```
+   Il affiche, par groupe, les **1er/2e** et le **3e**, le **classement des 12
+   3es** avec les **8 qualifiés**, et la grille des 16 matchs R32 (numéros 73-88,
+   dates et villes figées) avec les emplacements encore à résoudre (`<1E>`,
+   `<3:ABCDF>`…). Tout ce qui n'est pas dérivable des scores est listé en bas
+   (« À résoudre avant écriture »).
+   - S'il reste des groupes **non terminés** → rien à faire ici ce cycle, on
+     passe à la finalisation (ne pas forcer).
+
+9. **Confirmer les appariements sur source officielle.** Les **24** 1ers/2es
+   sont déterministes (l'outil les calcule). La **seule** chose non dérivable des
+   scores est l'allocation des **8 meilleurs 3es** aux 8 emplacements « 3e » (FIFA
+   la tire de sa table à 495 combinaisons une fois les 8 groupes connus). Comme
+   pour les scores : **on vérifie le tableau R32 officiel sur le web** (FIFA,
+   ESPN…), **on ne devine jamais** (Règle d'or).
+   - **Recoupement obligatoire** : les 1ers/2es du rapport doivent coïncider
+     **exactement** avec le bracket officiel. Toute divergence — ou une **égalité
+     non tranchée** signalée par le rapport (`Égalité non tranchée …`) — → on
+     **n'écrit pas**, on **signale** pour résolution manuelle. Mieux vaut un trou
+     qu'un mauvais appariement.
+
+10. **Écrire l'allocation des 3es** dans `data/knockout_seed.json` (couche
+    ask-Claude, comme `bets.json`/`odds.json`) — pour chaque match à emplacement
+    « 3e », la **lettre du groupe** dont le 3e y joue (doit appartenir aux
+    candidats que le rapport imprime) :
+    ```json
+    { "thirds_by_match": {"74":"B","77":"D","79":"C","80":"K","81":"F","82":"A","85":"G","87":"L"} }
+    ```
+
+11. **Composer + écrire les fixtures R32** :
+    ```bash
+    python3 tools/build_knockout_r32.py --write
+    ```
+    Il écrit les 16 fixtures (équipes réelles, dates/villes figées, `stage:
+    round_of_32`) dans `data/fixtures.json`. Il **refuse** d'écrire si un
+    emplacement reste non résolu, si une équipe apparaît deux fois, ou si un 3e
+    est hors de ses candidats — dans ce cas, **signaler** et ne rien committer
+    pour cette étape. Les R32 sont alors **pronosticables** (le modèle les note
+    sur la distribution 120', `stage != group`).
+    - Les `kickoff_utc` des R32 sont laissés vides : l'**étape B** les remplira au
+      prochain passage dans sa fenêtre (le R32 démarre le 28 juin). Aucun
+      `predicted_*` n'est figé ici — le gel se fait par le chemin habituel quand
+      le coup d'envoi approche.
+
+### Finalisation (commun A + B + C + D + E)
+
+12. **Hygiène des effets de bord `data/`** (règle CLAUDE.md). Si une commande a
    fait tourner l'UI/`autonomous_refresh` et muté `data/ratings.json` sans
    intention, restaurer. `data/team_status.json` peut, lui, avoir été modifié
    **volontairement** par l'étape C — dans ce cas on le **garde** :
@@ -146,10 +201,10 @@ réels** (cf. `engine/updater.apply_completed_results`).
    git restore data/ratings.json                      # toujours : jamais modifié à la main ici
    git restore data/team_status.json                  # SEULEMENT si l'étape C n'a rien écrit
    ```
-   Doivent rester modifiés : `data/fixtures.json` (A/B) et, si la forme a bougé,
-   `data/team_status.json` (C).
+   Doivent rester modifiés : `data/fixtures.json` (A/B/E) et, si la forme a bougé,
+   `data/team_status.json` (C) ; `data/knockout_seed.json` si l'étape E a écrit.
 
-9. **Valider** : JSON correct + récap justesse cohérent :
+13. **Valider** : JSON correct + récap justesse cohérent :
    ```bash
    python3 -c "import json; json.load(open('data/fixtures.json')); json.load(open('data/team_status.json')); print('JSON ok')"
    python3 -c "
@@ -159,27 +214,29 @@ réels** (cf. `engine/updater.apply_completed_results`).
    "
    ```
 
-10. **Committer + déployer.** Ce job vise la **prod** : commit sur la branche
+14. **Committer + déployer.** Ce job vise la **prod** : commit sur la branche
     courante, push, puis fast-forward de `main` et push `main` (= déploiement
-    Vercel). Message clair couvrant ce qui a changé (scores, horaires, forme),
+    Vercel). Message clair couvrant ce qui a changé (scores, horaires, forme, R32),
     p.ex. : `git commit -m "Maj auto <date> : résultats G07 1-1 + forme MAJ"`.
-    N'ajouter `data/team_status.json` que s'il a été modifié par l'étape C :
+    N'ajouter chaque fichier que s'il a effectivement changé :
     ```bash
     git add data/fixtures.json
     git add data/team_status.json   # seulement si l'étape C a écrit (sinon ignorer)
     git add data/bets.json          # seulement si l'étape D a réglé des paris (sinon ignorer)
+    git add data/knockout_seed.json # seulement si l'étape E a peuplé le R32 (sinon ignorer)
     git commit -m "Maj auto du $(date +%F) (résultats + horaires + forme + paris)"
     git push -u origin "$(git branch --show-current)"
     git fetch origin main && git checkout main && git merge --ff-only -
     git push -u origin main
     ```
-    S'il n'y a eu **ni score, ni horaire, ni forme** à écrire → ne pas faire de
-    commit vide.
+    S'il n'y a eu **ni score, ni horaire, ni forme, ni R32** à écrire → ne pas
+    faire de commit vide.
 
-11. **Rapport final** (toujours) : lister ce qui a été **saisi** (scores,
-    horaires), la **forme** recalculée (équipes dont le signal a bougé) et
-    surtout ce qui a été **sauté** et pourquoi (à traiter à la main). Si tout est
-    propre et rien à signaler, un résumé d'une ligne suffit.
+15. **Rapport final** (toujours) : lister ce qui a été **saisi** (scores,
+    horaires), la **forme** recalculée (équipes dont le signal a bougé), le **R32
+    peuplé** le cas échéant, et surtout ce qui a été **sauté** et pourquoi (à
+    traiter à la main). Si tout est propre et rien à signaler, un résumé d'une
+    ligne suffit.
 
 ## Hors périmètre
 - **Saisie d'un nouveau pari** (placer un pari, l'ajouter à `data/bets.json`)
