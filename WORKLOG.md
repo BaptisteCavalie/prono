@@ -28,7 +28,12 @@ questions qui font gagner le classement et les outrights une fois les KO en vue.
 - **`engine/outrights.py`** — value sur marchés long-terme (vainqueur, finaliste,
   1er de groupe, qualification) : même doctrine prudente que les paris simples
   (retrait de marge → shrink vers le marché → edge + EV → Kelly fractionné
-  plafonné). Cotes dictées via `data/outrights.json` (couche ask-Claude).
+  plafonné). **Source des cotes** : en prod le marché *champion* est récupéré
+  automatiquement via The Odds API (`odds_fetch.ensure_outrights`, marché
+  `outrights` de la clé sport `*_winner`, même clé/cooldown/garde-crédits que le
+  1X2 ; seul l'onglet Phases finales déclenche un fetch). Les marchés absents de
+  l'API en foot (finaliste, 1er de groupe…) viennent de l'overlay manuel
+  `data/outrights.json`, prioritaire en cas de conflit.
 - **CLI** : `--simulate`, `--bracket`, `--outrights`, `--sims N`.
 - **UI** : 4e entrée sidebar **Phases finales** (parcours simulé, bracket
   projeté + plan x2, value outrights).

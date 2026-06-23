@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import data, model, outrights, tournament
+from engine import data, model, odds_fetch, outrights, tournament
 
 GROUP_LETTERS = list("ABCDEFGHIJKL")
 
@@ -181,6 +181,46 @@ class TestOutrights(unittest.TestCase):
     def test_empty_board_returns_nothing(self):
         sim = self._sim_stub({"A": 1.0})
         self.assertEqual(outrights.find_value(sim, {"markets": {}}), [])
+
+
+class TestOutrightFetch(unittest.TestCase):
+    """The Odds API 'outrights' (tournament winner) mapping + manual overlay."""
+
+    RATINGS = {"teams": {"France": {"rating": 2100}, "Brazil": {"rating": 2000},
+                         "United States": {"rating": 1800}}}
+
+    def test_market_is_median_across_bookmakers_and_resolves_names(self):
+        events = [{"bookmakers": [
+            {"markets": [{"key": "outrights", "outcomes": [
+                {"name": "France", "price": 5.0}, {"name": "Brazil", "price": 7.0},
+                {"name": "USA", "price": 21.0}]}]},
+            {"markets": [{"key": "outrights", "outcomes": [
+                {"name": "France", "price": 5.5}, {"name": "Brazil", "price": 6.0},
+                {"name": "USA", "price": 19.0}]}]},
+        ]}]
+        mkt = odds_fetch.outright_events_to_market(events, self.RATINGS)
+        self.assertAlmostEqual(mkt["France"], 5.25)      # median of 5.0, 5.5
+        self.assertAlmostEqual(mkt["Brazil"], 6.5)
+        self.assertIn("United States", mkt)              # "USA" alias resolved
+        self.assertNotIn("USA", mkt)
+
+    def test_bad_prices_are_dropped(self):
+        events = [{"bookmakers": [{"markets": [{"key": "outrights", "outcomes": [
+            {"name": "France", "price": 1.0},            # <= 1 -> invalid
+            {"name": "Brazil", "price": "x"},            # non-numeric -> invalid
+        ]}]}]}]
+        self.assertEqual(odds_fetch.outright_events_to_market(events, self.RATINGS), {})
+
+    def test_manual_overlay_wins_over_api_cache(self):
+        # Simulate find_value with an explicit merged board (manual wins).
+        api = {"markets": {"champion": {"France": 5.2, "Brazil": 6.8}}}
+        manual = {"markets": {"champion": {"France": 9.9}}}
+        merged = {}
+        for src in (api, manual):
+            for m, s in src["markets"].items():
+                merged.setdefault(m, {}).update(s)
+        self.assertEqual(merged["champion"]["France"], 9.9)
+        self.assertEqual(merged["champion"]["Brazil"], 6.8)
 
 
 if __name__ == "__main__":

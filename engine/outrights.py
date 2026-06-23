@@ -22,7 +22,7 @@ from __future__ import annotations
 
 from typing import Callable, Dict, List, Optional
 
-from engine import betting, data, model
+from engine import betting, data, model, odds_fetch
 
 # Tighter than single-match betting: outrights are long-odds, high-variance.
 MARKET_WEIGHT = 0.50        # blend sim<-market (same overconfidence guard)
@@ -94,14 +94,19 @@ def evaluate_market(prices: Dict[str, float], prob: Callable[[str], float],
     return sorted(out, key=lambda c: c["ev"], reverse=True)
 
 
-def find_value(sim: Dict, board: Optional[Dict] = None) -> List[Dict]:
-    """All outright value bets across every market in data/outrights.json.
+def find_value(sim: Dict, board: Optional[Dict] = None,
+               ratings: Optional[Dict] = None, fetch: bool = False) -> List[Dict]:
+    """All outright value bets across every available market.
 
-    ``sim`` is an engine/tournament.py projection. ``board`` defaults to the
-    loaded outrights file. Returns rows ``{market, label, ...bet}`` best EV first;
-    empty when no odds are supplied (the common case until Baptiste dictates them).
+    ``sim`` is an engine/tournament.py projection. Odds come from
+    :func:`load_board` (The Odds API champion market in prod, merged with the
+    manual data/outrights.json overlay) unless an explicit ``board`` is passed.
+    Pass ``ratings`` to enable the API source; ``fetch=True`` to refresh it now
+    (cooldown + credit guarded), else the cache is read. Returns rows
+    ``{market, label, ...bet}`` best EV first; empty when no odds are available.
     """
-    board = board if board is not None else load_outrights()
+    if board is None:
+        board = load_board(ratings=ratings, fetch=fetch)
     markets = (board or {}).get("markets", {})
     teams = sim.get("teams", {})
     rows: List[Dict] = []
@@ -123,8 +128,34 @@ def find_value(sim: Dict, board: Optional[Dict] = None) -> List[Dict]:
     return sorted(rows, key=lambda r: r["ev"], reverse=True)
 
 
+def load_board(ratings: Optional[Dict] = None, fetch: bool = False) -> Dict:
+    """Merged outright odds board ``{"markets": {market: {team: odds}}}``.
+
+    Two sources, layered:
+      * **The Odds API** — the auto-fetched ``champion`` market (prod). With
+        ``ratings`` given, ``fetch=True`` refreshes it (cooldown + credit
+        guarded), otherwise the cache is read with no network/credits.
+      * **data/outrights.json** — the manual ask-Claude overlay for markets the
+        API doesn't carry for soccer (group winner, finalist…).
+
+    The manual file wins on any per-selection conflict (Baptiste's dictated cote
+    is ground truth over a stale cache)."""
+    api = {"markets": {}}
+    if ratings is not None:
+        api = odds_fetch.ensure_outrights(ratings) if fetch else odds_fetch.load_cached_outrights()
+    elif not fetch:
+        api = odds_fetch.load_cached_outrights()
+    manual = load_outrights()
+    merged: Dict[str, Dict[str, float]] = {}
+    for src in (api, manual):                          # manual applied last -> wins
+        for market, sels in (src.get("markets") or {}).items():
+            if isinstance(sels, dict):
+                merged.setdefault(market, {}).update(sels)
+    return {"markets": merged}
+
+
 def load_outrights() -> Dict:
-    """Bookmaker outright odds (data/outrights.json), ask-Claude-written.
+    """Manual bookmaker outright odds (data/outrights.json), ask-Claude-written.
 
     Shape: ``{"markets": {"champion": {"France": 4.5, ...}, "winner_group_A":
     {...}, "qualify": {...}}}``. Optional file, tolerant of broken JSON: a

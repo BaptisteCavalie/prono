@@ -2097,12 +2097,13 @@ def _render_phases(projection: Optional[Dict], bankroll: float = 50.0) -> List[s
     # --- Bloc 3 : value outrights ---
     parts.append("<div class='panel'>")
     parts.append("<h2 class='panel-title'>Value outrights</h2>")
-    value = outrights.find_value(projection)
+    value = projection.get("outright_value") or []
     if not value:
-        parts.append("<p class='muted' style='margin-top:0'>Aucune cote long-terme chargée "
-                     "(<code>data/outrights.json</code> vide) ou aucune value détectée. "
-                     "Dictez les cotes Winamax (vainqueur, finaliste, 1er de groupe…) à Claude "
-                     "pour activer la comparaison cote ↔ proba simulée.</p>")
+        parts.append("<p class='muted' style='margin-top:0'>Aucune value détectée pour l'instant. "
+                     "Le marché <strong>vainqueur</strong> se charge automatiquement via The Odds API "
+                     "(prod) ; les autres marchés (finaliste, 1er de groupe…) se dictent à Claude "
+                     "dans <code>data/outrights.json</code>. La comparaison cote ↔ proba simulée "
+                     "s'affiche dès qu'une cote est disponible.</p>")
     else:
         budget = bankroll
         parts.append("<p class='muted' style='margin-top:0'>Cote bookmaker vs proba simulée "
@@ -2413,6 +2414,11 @@ def handle_request(params: Dict[str, str]) -> bytes:
             # priors experts) pour rester cohérente avec les pronos par match.
             projection = tournament.project(n_sims=_UI_SIMS, ratings=ratings,
                                             fixtures=fixtures)
+            # Cotes outright auto (The Odds API, marché vainqueur) + overlay manuel.
+            # Comme la page Paris : seul cet onglet déclenche un fetch (cooldown +
+            # garde-crédits), les autres pages lisent le cache.
+            projection["outright_value"] = outrights.find_value(
+                projection, ratings=ratings, fetch=True)
     except UiError as exc:
         error = str(exc)          # message métier déjà rédigé pour l'utilisateur
     except Exception:

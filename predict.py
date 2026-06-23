@@ -322,13 +322,13 @@ def _print_bracket(sim: Dict, args) -> None:
     print()
 
 
-def _print_outrights(sim: Dict) -> None:
+def _print_outrights(sim: Dict, ratings: Dict) -> None:
     print("PARIS VALUE — marchés long-terme (outrights)")
     print("=" * 78)
-    rows = outrights.find_value(sim)
+    rows = outrights.find_value(sim, ratings=ratings, fetch=True)
     if not rows:
-        print("  Aucune cote outright chargée (data/outrights.json vide) ou aucune value.")
-        print("  Faites dicter les cotes Winamax à Claude pour activer la détection.")
+        print("  Aucune value détectée. Marché vainqueur auto via The Odds API")
+        print("  (clé ODDS_API_KEY) ; autres marchés dictés dans data/outrights.json.")
         print()
         return
     for r in rows:
@@ -506,7 +506,7 @@ def main(argv=None) -> int:
         if args.bracket:
             _print_bracket(sim, args)
         if args.outrights:
-            _print_outrights(sim)
+            _print_outrights(sim, ratings)
         return 0
 
     mode = args.mpp_mode
