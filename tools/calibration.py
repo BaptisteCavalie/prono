@@ -37,7 +37,7 @@ FIXTURES_PATH = ROOT / "data" / "fixtures.json"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from engine import data, expert_signals, prediction, updater
+from engine import calibration, data, expert_signals, prediction, updater
 
 
 def _sort_key(m):
@@ -90,7 +90,10 @@ def main(argv=None) -> int:
         out = prediction.analyse_match(m, ratings_as_of(m, fixtures))
         if not out:
             continue
-        p = [float(out["p_home"]), float(out["p_draw"]), float(out["p_away"])]
+        # Probas CALIBRÉES (température, cf. engine/calibration.py) — la confiance
+        # réellement déployée. Argmax inchangé : l'issue la + probable est la même
+        # qu'en brut, seule la confiance (donc Brier/RPS/log-loss) bouge.
+        p = list(calibration.calibrated_1x2(out))
         s = sum(p) or 1.0
         p = [x / s for x in p]               # normalise (sécurité)
         actual = _outcome_index(int(m["actual_home"]), int(m["actual_away"]))
@@ -130,7 +133,8 @@ def main(argv=None) -> int:
             score_hits += int(_outcome_index(int(ph), int(pa)) == a)
 
     print(f"=== Calibration 1N2 — {n} matchs terminés ===")
-    print("(probas reconstruites : Elo as-of + priors experts, hors overlay forme — indicatif)\n")
+    print(f"(probas reconstruites : Elo as-of + priors experts, calibrées T={calibration.CALIBRATION_T}, "
+          "hors overlay forme — indicatif)\n")
     print(f"  Issue la + probable du modèle tombe : {argmax_hits}/{n} = {100*argmax_hits/n:.0f}%")
     print(f"  Issue du SCORE SEC affiché tombe     : {score_hits}/{n} = {100*score_hits/n:.0f}%"
           f"   <- le récap actuel")

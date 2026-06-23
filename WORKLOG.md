@@ -1,5 +1,44 @@
 # Project Work Log
 
+## 2026-06-23 — Contre-analyse paris + calibration du modèle
+
+### Summary
+- **Recul sur les paris** (17 paris réglés) : **P&L −16,74 € / ROI −19,9 %**.
+  Pertes concentrées sur des **favoris « vainqueur » qui ont fait nul** (Belgique-
+  Égypte ×2, Iran, Tchéquie-RSA) ou battus par l'outsider (USA-Australie). Les
+  gains = favoris nets qui ont tenu (Mexique, Argentine, France, Allemagne).
+- **Contre-analyse modèle vs marché** (matchs terminés, reconstruction honnête
+  *as-of*, sans fuite forme) :
+  - Le modèle déployé (Elo + status + experts) **bat l'Elo brut** sur toutes les
+    métriques, mais **reste derrière le marché** (consensus des pronostiqueurs).
+  - **Faille = surconfiance des extrêmes** : log-loss 1.105 *pire qu'un 33/33/33*
+    (1.099), tirée par des « locks » à 95 % qui ont fait nul (Espagne-Cap-Vert,
+    Portugal-RDC). Bucket 90-99 % : hit réel ~57-60 %. Brier/RPS battaient
+    l'uniforme, mais la proba elle-même était le point faible.
+  - Benchmark externe (web) : Opta supercomputer (Espagne 16,1 % / France 13,0 %
+    / Angleterre 11,2 % / Argentine 10,4 %) **corrobore l'ordre du haut de
+    tableau** de nos ratings.
+- **Amélioration : calibration par température** (`engine/calibration.py`, T=1.5).
+  - `p_i' ∝ p_i^(1/T)`, renormalisée. **Monotone → argmax/pick/précision/gel des
+    pronos inchangés** ; seule la *confiance* est ramenée vers l'honnêteté.
+  - T choisi conservateur : le basin log-loss optimal (~2.0-2.3) **réplique
+    hors-échantillon** sur deux tournois (WC2026 44 matchs *et* WC2022 48 matchs).
+    1.5 capte ~80 % du gain et garde l'expressivité (un carton à 95 % → ~85 %, pas
+    ~75 %).
+  - Câblée dans les surfaces de *confiance/EV* uniquement : Solidité/Diagnostics,
+    value/EV (`odds.value_1x2`), confiance (`report.confidence`), distribution +
+    verdict + Nutri de l'UI. **Score MPP / gel restent sur la grille brute.**
+  - Effets mesurés : backtest log-loss **1.113→1.009**, gap calib **+15.8→+6.5pt** ;
+    as-of honnête **1.105→1.005** (passe sous l'uniforme) ; proba moyenne de nul
+    sur les nuls réels **17 %→23 %** ; +2 matchs « Piège : nul probable » sur les
+    à-venir (l'alerte qui manquait aux paris perdus).
+- Critics : 121 tests OK (8 nouveaux, `tests/test_temperature.py`, dont la
+  régression log-loss WC2022 hors-échantillon). 3 onglets rendent (smoke).
+
+### Key Files Added/Updated
+- engine/calibration.py (nouveau), tests/test_temperature.py (nouveau)
+- engine/solidity.py, engine/odds.py, engine/report.py, ui.py, tools/calibration.py
+
 ## 2026-06-12 (après-midi) — /feature refonte dashboard
 
 ### Summary

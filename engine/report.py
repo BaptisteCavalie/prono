@@ -1,7 +1,7 @@
 """Render model output as a human-readable prediction card + Claude brief."""
 from typing import Dict
 
-from engine import mpp
+from engine import calibration, mpp
 
 
 def _pct(x: float) -> str:
@@ -13,7 +13,9 @@ def _scores(top) -> str:
 
 
 def confidence(out: Dict, both_live: bool) -> str:
-    maxp = max(out["p_home"], out["p_draw"], out["p_away"])
+    # Confidence reads off the *calibrated* distribution, not the raw (overconfident)
+    # one — a 95% raw favourite is really ~85% (see engine/calibration.py).
+    maxp = max(calibration.calibrated_1x2(out))
     level = "high" if maxp >= 0.55 else "medium" if maxp >= 0.45 else "low"
     if level == "high" and not both_live:
         level = "medium"  # never claim high confidence on estimated ratings
