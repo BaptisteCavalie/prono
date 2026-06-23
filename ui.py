@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import parse_qs, urlparse
 
-from engine import autonomous, betting, calibration, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, strategies, team_signals, updater
+from engine import autonomous, betting, calibration, common, data, data_quality, expert_signals, live_ratings, mpp, odds as oddsmod, odds_fetch, prediction, solidity, standings, strategies, team_signals, updater
 
 ROOT = Path(__file__).resolve().parent
 
@@ -397,10 +397,11 @@ def _best_selection(home_label: str, away_label: str, probs: Dict[str, float]) -
 
 
 def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, List[float]],
-                  team_status: Optional[Dict] = None):
+                  team_status: Optional[Dict] = None, all_fixtures: Optional[List[Dict]] = None):
     rows = []
     expert_sources = expert_signals.load_sources()
     mpp_board = data.load_mpp_board()
+    standings_fixtures = all_fixtures if all_fixtures is not None else fixtures
     for m in fixtures:
         home = m["home"]
         away = m["away"]
@@ -408,7 +409,13 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
         away_label = _team_label(away)
         rh = ratings["teams"][home]
         ra = ratings["teams"][away]
-        out = prediction.analyse_match(m, ratings)
+        # Competition state ('stakes'): an already-qualified side rotates and an
+        # eliminated side has reduced stakes, so their Elo overstates the game.
+        # apply_stakes nudges the two ratings for THIS fixture only (engine/
+        # standings.py); completed/early matches get no change. Same call as the
+        # freeze (autonomous._refresh_prediction_snapshots), so display == frozen.
+        ratings_m, stakes = standings.apply_stakes(ratings, m, standings_fixtures)
+        out = prediction.analyse_match(m, ratings_m)
         # Calibrated 1X2 = the honest confidence the whole page reads off (bar,
         # verdict, Nutri pastille, value EV). Temperature scaling is monotone, so
         # the favourite never flips; only the confidence is pulled toward honesty
@@ -503,6 +510,18 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
                 notes.append(f"Signal expert {team_lbl} : {sign}{edelta:.1f} Elo")
             for n in expert_signals.expert_notes(team, expert_sources):
                 notes.append(n)
+        if stakes.get("dead_rubber"):
+            notes.append(
+                "Match sans enjeu (les deux équipes ont leur sort réglé) : "
+                "rotation probable, résultat peu prédictible — aucun pari conseillé.")
+        else:
+            for side, lbl, who in (("label_home", stakes.get("label_home"), home_label),
+                                   ("label_away", stakes.get("label_away"), away_label)):
+                if lbl:
+                    why = ("déjà qualifiée, elle fait souvent tourner (–85 Elo motivation)"
+                           if lbl.startswith("Qualifiée")
+                           else "éliminée, enjeu réduit (–45 Elo motivation)")
+                    notes.append(f"{who} : {lbl.lower()} — {why}.")
         if est:
             notes.append("Au moins une cote Elo est estimée. La confiance peut changer après mise à jour des ratings live.")
         if not odds:
@@ -582,6 +601,11 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "completed": completed,
             "verdict": verdict,
             "est": est,
+            "stakes_home": stakes.get("status_home"),
+            "stakes_away": stakes.get("status_away"),
+            "stakes_label_home": stakes.get("label_home"),
+            "stakes_label_away": stakes.get("label_away"),
+            "dead_rubber": bool(stakes.get("dead_rubber")),
         })
     return rows
 
@@ -649,7 +673,10 @@ def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
     for r in future_rows:
         odds = r.get("odds")
         bet = None
-        if odds:
+        # Garde-fou enjeu : sur un match-poubelle (les DEUX équipes ont leur sort
+        # réglé), rotation probable + résultat erratique — c'est précisément là que
+        # l'edge du modèle s'inverse (cf. J3 CDM 2022). On ne propose aucun pari.
+        if odds and not r.get("dead_rubber"):
             out = {"p_home": r["probs"]["home"], "p_draw": r["probs"]["draw"],
                    "p_away": r["probs"]["away"]}
             bet = betting.evaluate_single(out, tuple(odds), mw, kf)
@@ -1018,6 +1045,9 @@ _CSS = "".join([
     ".cv-valeur{background:var(--warn-bg);color:var(--warn-text);border-color:var(--warn-line)}",
     ".score-sub-line{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:5px}",
     ".score-sub-line .delta{margin-top:0}",
+    ".stakes-chip{display:inline-flex;align-items:center;width:max-content;padding:3px 9px;border-radius:999px;font-size:.74rem;font-weight:700;background:var(--surface-2);border:1px solid var(--line-2);color:var(--muted)}",
+    ".stakes-chip.dead{background:var(--warn-bg);border-color:var(--warn-line);color:var(--warn-text)}",
+    ".stakes-chip.dead::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:6px;flex:none}",
     ".score-sub{font-family:var(--font-mono);font-size:.75rem;color:var(--muted);white-space:nowrap}",
     ".delta{display:flex;width:max-content;align-items:center;gap:6px;margin-top:5px;padding:3px 8px;border-radius:6px;background:var(--warn-bg);border:1px solid var(--warn-line);color:var(--warn-text);font-size:.76rem;font-weight:700;white-space:nowrap}",
     ".delta::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--warn);flex:none}",
@@ -1788,10 +1818,27 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
         f"aria-label='Prono {html.escape(r['score'])}'>prono {html.escape(r['score'])}</span>"
     )
 
+    # Tag enjeu compétition : « Sans enjeu » (match-poubelle, aucun pari) ou, si un
+    # seul côté est réglé, quelle équipe et son statut — pour lire d'un coup d'œil
+    # pourquoi la confiance/le pari bouge (motivation prise en compte).
+    stakes_chip = ""
+    if r.get("dead_rubber"):
+        stakes_chip = (
+            "<span class='stakes-chip dead' "
+            "title='Les deux équipes ont leur sort réglé — rotation probable, aucun pari conseillé'>"
+            "Sans enjeu</span>")
+    elif r.get("stakes_label_home") or r.get("stakes_label_away"):
+        who = r["home_label"] if r.get("stakes_label_home") else r["away_label"]
+        lbl = r.get("stakes_label_home") or r.get("stakes_label_away")
+        stakes_chip = (
+            f"<span class='stakes-chip' "
+            f"title='Contexte compétition pris en compte (ajustement motivation)'>"
+            f"{html.escape(who)} : {html.escape(lbl.lower())}</span>")
+
     parts = [row_open, meta_cell, teams_cell]
     parts.append(
         f"<td class='cell-prono'><span class='verdict-line'>{verdict_block}</span>"
-        f"<span class='score-sub-line'>{score_sub}{delta_badge}</span></td>"
+        f"<span class='score-sub-line'>{score_sub}{delta_badge}{stakes_chip}</span></td>"
     )
     parts.append(f"<td class='cell-nutri'>{nutri_chip}</td>")
     parts.append(f"<td class='cell-prob'>{prob_block}</td>")
@@ -2217,7 +2264,8 @@ def handle_request(params: Dict[str, str]) -> bytes:
         # Après le chargement des cotes : un odds_file rejeté ne doit pas
         # apparaître comme « source de données » dans les diagnostics.
         data_info = _build_data_info(fixtures, ratings, team_status, health, odds_file)
-        rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status)
+        rows = _analyse_rows(selected, ratings, odds_board, team_status=team_status,
+                             all_fixtures=fixtures)
         if tab == "paris" and (health or {}).get("level") != "critical":
             recommendations = _build_recommendations(rows, bankroll=bankroll)
     except UiError as exc:
