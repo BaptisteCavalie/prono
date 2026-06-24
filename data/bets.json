@@ -528,7 +528,7 @@
       "sel": "Croatie vainqueur",
       "odds": 1.47,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G70",
@@ -537,7 +537,8 @@
           "pick": "away",
           "odds": 1.47
         }
-      ]
+      ],
+      "settled_at": "2026-06-24T04:32:07Z"
     },
     {
       "id": 25,
