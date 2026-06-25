@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-24T04:32:07Z",
+  "as_of": "2026-06-25T04:33:42Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -12,7 +12,7 @@
       ]
     },
     "South Korea": {
-      "form": -0.23,
+      "form": -0.62,
       "injury_impact": 0.08,
       "suspension_impact": 0.0,
       "news_risk": 0.12,
@@ -21,7 +21,7 @@
       ]
     },
     "Czechia": {
-      "form": -0.33,
+      "form": -0.52,
       "injury_impact": 0.03,
       "suspension_impact": 0.0,
       "news_risk": 0.08,
@@ -66,7 +66,7 @@
       ]
     },
     "Brazil": {
-      "form": 0.42,
+      "form": 0.56,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -156,7 +156,7 @@
       ]
     },
     "Switzerland": {
-      "form": 0.42,
+      "form": 0.56,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -201,7 +201,7 @@
       ]
     },
     "Morocco": {
-      "form": 0.51,
+      "form": 0.61,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -255,7 +255,7 @@
       ]
     },
     "Scotland": {
-      "form": -0.23,
+      "form": -0.47,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -264,7 +264,7 @@
       ]
     },
     "Canada": {
-      "form": 0.42,
+      "form": -0.14,
       "injury_impact": 0.06,
       "suspension_impact": 0.0,
       "news_risk": 0.1,
@@ -300,7 +300,7 @@
       ]
     },
     "Bosnia-Herzegovina": {
-      "form": -0.42,
+      "form": 0.14,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -336,7 +336,7 @@
       ]
     },
     "South Africa": {
-      "form": -0.13,
+      "form": 0.43,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -354,7 +354,7 @@
       ]
     },
     "Qatar": {
-      "form": -0.42,
+      "form": -0.56,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
