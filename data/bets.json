@@ -588,7 +588,7 @@
       "sel": "Mexique vainqueur",
       "odds": 1.88,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G05",
@@ -597,7 +597,8 @@
           "pick": "away",
           "odds": 1.88
         }
-      ]
+      ],
+      "settled_at": "2026-06-25T04:33:45Z"
     },
     {
       "id": 28,
