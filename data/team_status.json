@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-25T04:33:42Z",
+  "as_of": "2026-06-26T04:32:40Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -30,7 +30,7 @@
       ]
     },
     "United States": {
-      "form": 0.82,
+      "form": 0.06,
       "injury_impact": 0.04,
       "suspension_impact": 0.0,
       "news_risk": 0.08,
@@ -93,7 +93,7 @@
       ]
     },
     "Netherlands": {
-      "form": 0.46,
+      "form": 0.58,
       "injury_impact": 0.08,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -102,7 +102,7 @@
       ]
     },
     "Ecuador": {
-      "form": -0.43,
+      "form": 0.13,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -120,7 +120,7 @@
       ]
     },
     "Germany": {
-      "form": 0.7,
+      "form": 0.0,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -138,7 +138,7 @@
       ]
     },
     "Türkiye": {
-      "form": -0.86,
+      "form": -0.08,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -147,7 +147,7 @@
       ]
     },
     "Japan": {
-      "form": 0.48,
+      "form": 0.16,
       "injury_impact": 0.12,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -228,7 +228,7 @@
       ]
     },
     "Ivory Coast": {
-      "form": -0.13,
+      "form": 0.28,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -273,7 +273,7 @@
       ]
     },
     "Sweden": {
-      "form": -0.23,
+      "form": -0.04,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -291,7 +291,7 @@
       ]
     },
     "Paraguay": {
-      "form": 0.26,
+      "form": 0.11,
       "injury_impact": 0.15,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -309,7 +309,7 @@
       ]
     },
     "Australia": {
-      "form": -0.22,
+      "form": -0.08,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -417,7 +417,7 @@
       ]
     },
     "Curaçao": {
-      "form": -0.13,
+      "form": -0.42,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,

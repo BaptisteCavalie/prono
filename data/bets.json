@@ -171,7 +171,7 @@
       "label": "Australie + Nul Cap-Vert-Arabie S.",
       "odds": 10.08,
       "stake": 1.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G24",
@@ -187,7 +187,8 @@
           "pick": "draw",
           "odds": 3.2
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 10,
@@ -242,7 +243,7 @@
       "label": "Corée du Sud + Australie",
       "odds": 7.67,
       "stake": 1.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G02",
@@ -258,7 +259,8 @@
           "pick": "away",
           "odds": 2.95
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 13,
@@ -295,7 +297,7 @@
       "label": "Mexique + Australie",
       "odds": 5.07,
       "stake": 1.0,
-      "status": "en_cours",
+      "status": "perdu",
       "note": "réf illisible sur la capture — à confirmer",
       "legs": [
         {
@@ -312,7 +314,8 @@
           "pick": "away",
           "odds": 2.95
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 15,
@@ -341,7 +344,7 @@
       "sel": "Australie vainqueur",
       "odds": 2.95,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G24",
@@ -350,7 +353,8 @@
           "pick": "away",
           "odds": 2.95
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 17,
@@ -420,7 +424,7 @@
       "label": "Croatie + Pays-Bas",
       "odds": 1.82,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G70",
@@ -436,7 +440,8 @@
           "pick": "away",
           "odds": 1.24
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 21,
@@ -608,7 +613,7 @@
       "sel": "Match nul",
       "odds": 8.0,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G30",
@@ -617,7 +622,8 @@
           "pick": "draw",
           "odds": 8.0
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 29,
@@ -627,7 +633,7 @@
       "sel": "Match nul",
       "odds": 4.1,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G23",
@@ -636,7 +642,8 @@
           "pick": "draw",
           "odds": 4.1
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 30,
@@ -703,7 +710,7 @@
       "label": "Nul Curaçao-Côte d'Ivoire + Iran",
       "odds": 29.6,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G30",
@@ -719,7 +726,8 @@
           "pick": "away",
           "odds": 3.7
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 34,
@@ -729,7 +737,7 @@
       "label": "États-Unis + Australie",
       "odds": 6.96,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G23",
@@ -745,7 +753,8 @@
           "pick": "away",
           "odds": 3.7
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 35,
@@ -781,7 +790,7 @@
       "sel": "Match nul",
       "odds": 3.85,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G29",
@@ -790,7 +799,8 @@
           "pick": "draw",
           "odds": 3.85
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 37,
@@ -800,7 +810,7 @@
       "label": "Nul Équateur-Allemagne + Australie",
       "odds": 14.25,
       "stake": 1.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G29",
@@ -816,7 +826,8 @@
           "pick": "away",
           "odds": 3.7
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 38,
@@ -852,7 +863,7 @@
       "label": "Nul Équateur-Allemagne + Iran",
       "odds": 14.25,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G29",
@@ -868,7 +879,8 @@
           "pick": "away",
           "odds": 3.7
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 40,
@@ -878,7 +890,7 @@
       "label": "Nul Curaçao-Côte d'Ivoire + Australie",
       "odds": 29.6,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G30",
@@ -894,7 +906,8 @@
           "pick": "away",
           "odds": 3.7
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 41,
@@ -904,7 +917,7 @@
       "label": "Côte d'Ivoire + Australie",
       "odds": 4.18,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G30",
@@ -920,7 +933,8 @@
           "pick": "away",
           "odds": 3.7
         }
-      ]
+      ],
+      "settled_at": "2026-06-26T04:32:41Z"
     },
     {
       "id": 42,
