@@ -656,7 +656,7 @@
       "sel": "Iran vainqueur",
       "odds": 3.7,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G42",
@@ -665,7 +665,8 @@
           "pick": "away",
           "odds": 3.7
         }
-      ]
+      ],
+      "settled_at": "2026-06-27T07:05:15Z"
     },
     {
       "id": 31,
@@ -947,7 +948,7 @@
       "label": "Iran + Algérie",
       "odds": 12.03,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G42",
@@ -963,7 +964,8 @@
           "pick": "home",
           "odds": 3.25
         }
-      ]
+      ],
+      "settled_at": "2026-06-27T07:05:15Z"
     }
   ]
 }
