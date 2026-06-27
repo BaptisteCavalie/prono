@@ -198,7 +198,7 @@
       "sel": "Match nul",
       "odds": 3.2,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G48",
@@ -207,7 +207,8 @@
           "pick": "draw",
           "odds": 3.2
         }
-      ]
+      ],
+      "settled_at": "2026-06-27T04:32:22Z"
     },
     {
       "id": 11,
@@ -217,7 +218,7 @@
       "label": "France + Sénégal",
       "odds": 1.9,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G49",
@@ -233,7 +234,8 @@
           "pick": "home",
           "odds": 1.32
         }
-      ]
+      ],
+      "settled_at": "2026-06-27T04:32:22Z"
     },
     {
       "id": 12,
@@ -325,7 +327,7 @@
       "sel": "Sénégal vainqueur",
       "odds": 1.32,
       "stake": 10.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G54",
@@ -334,7 +336,8 @@
           "pick": "home",
           "odds": 1.32
         }
-      ]
+      ],
+      "settled_at": "2026-06-27T04:32:22Z"
     },
     {
       "id": 16,

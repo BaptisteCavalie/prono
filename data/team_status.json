@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-26T04:32:40Z",
+  "as_of": "2026-06-27T04:32:22Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -39,7 +39,7 @@
       ]
     },
     "Spain": {
-      "form": 0.42,
+      "form": 0.56,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -129,7 +129,7 @@
       ]
     },
     "Norway": {
-      "form": 0.7,
+      "form": 0.0,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -165,7 +165,7 @@
       ]
     },
     "Uruguay": {
-      "form": -0.15,
+      "form": -0.42,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -192,7 +192,7 @@
       ]
     },
     "Senegal": {
-      "form": -0.7,
+      "form": 0.0,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -381,7 +381,7 @@
       ]
     },
     "Saudi Arabia": {
-      "form": -0.42,
+      "form": -0.2,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -390,7 +390,7 @@
       ]
     },
     "Cape Verde": {
-      "form": 0.15,
+      "form": 0.07,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
