@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Tuple
 
-from engine import model
+from engine import calibration, model
 
 # --- Tunable safety knobs ---------------------------------------------------
 MARKET_WEIGHT = 0.50        # blend model<-market: shrunk = (1-w)*model + w*fair
@@ -34,6 +34,12 @@ MIN_ODDS = 1.30             # skip very short prices: no room for value, big dow
 COMBO_MAX_LEGS = 2          # never stack more than this
 COMBO_BANKROLL_FRAC = 0.05  # combos may only use this share of bankroll, total
 COMBO_STAKE_FRAC = 0.005    # flat 0.5% of bankroll per combo ticket
+COMBO_MIN_COMBINED_PROB = 0.33  # skip lottery-ticket combos: even at +EV, a combo
+                            # whose CALIBRATED hit-rate is below this is the exact
+                            # pattern that bled the real bankroll (combos hit ~20%
+                            # vs ~75% on singles). Two thin legs compound into a
+                            # coin-flip-of-a-coin-flip; ring-fenced or not, we don't
+                            # suggest it.
 
 SELECTIONS = ("home", "draw", "away")
 
@@ -69,7 +75,13 @@ def evaluate_single(out: Dict, odds_triple: Tuple[float, float, float],
     """
     odds_home, odds_draw, odds_away = odds_triple
     fair = model.devig([odds_home, odds_draw, odds_away])
-    model_p = [out["p_home"], out["p_draw"], out["p_away"]]
+    # Use the CALIBRATED 1X2, not the raw grid. The raw model is overconfident on
+    # big favourites (cf. the -20% ROI on real favourite bets); feeding it here
+    # manufactured fake edges and oversized stakes on short prices — and it
+    # disagreed with the per-match value display, which already calibrates
+    # (engine/odds.py). Calibrating first pulls confidence toward honesty BEFORE
+    # any edge or Kelly stake is computed, so both value paths now agree.
+    model_p = list(calibration.calibrated_1x2(out))
     shrunk = shrink_probs(model_p, fair, market_weight)
     decs = [odds_home, odds_draw, odds_away]
 
@@ -138,6 +150,8 @@ def build_combos(staked_singles: List[Dict], bankroll: float) -> List[Dict]:
             p *= leg["bet"]["shrunk"]
         ev = p * dec - 1.0
         if ev <= 0:                      # combo doesn't survive the margin -> skip
+            continue
+        if p < COMBO_MIN_COMBINED_PROB:  # +EV but lottery-ticket: the losing pattern
             continue
         if spent + stake > budget:
             break
