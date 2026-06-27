@@ -133,6 +133,18 @@ def _find_match_odds(match: Dict, board: Dict[str, List[float]]) -> Optional[Lis
     return board.get(str(match.get("id", "")).upper()) or board.get(_match_key(match))
 
 
+def _load_qualif_odds() -> Dict[str, List[float]]:
+    """Optional 2-way 'who advances' odds for knockout ties, ask-Claude-written
+    like the 1X2 board. Shape ``{MATCH_ID: [odds_home_adv, odds_away_adv]}``.
+    Absent/broken file -> no qualif market (graceful, never crashes the page)."""
+    try:
+        with open(data.DATA_DIR / "odds_qualif.json", encoding="utf-8") as f:
+            raw = json.load(f)
+    except (FileNotFoundError, ValueError, OSError):
+        return {}
+    return raw if isinstance(raw, dict) else {}
+
+
 def _select_fixtures(fixtures: List[Dict], date_value: str, matchday: str) -> List[Dict]:
     def sort_key(m: Dict):
         return (_effective_date(m) or "9999-99-99", m.get("matchday") or 99, m.get("id") or "")
@@ -406,6 +418,7 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
     rows = []
     expert_sources = expert_signals.load_sources()
     mpp_board = data.load_mpp_board()
+    qualif_board = _load_qualif_odds()
     standings_fixtures = all_fixtures if all_fixtures is not None else fixtures
     for m in fixtures:
         home = m["home"]
@@ -501,6 +514,26 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
                 "away": odds[2],
             }[pick_sel]
 
+        # The sized value bet for this match — the page is "pari d'abord". Computed
+        # ONCE here off the raw model output (evaluate_single calibrates internally),
+        # so the Matchs card and the Paris plan read the same object and the
+        # calibration is never applied twice. No bet on a dead rubber (model edge
+        # inverts on rotation) or a match with no odds.
+        single_bet = None
+        if odds and not stakes.get("dead_rubber") and not completed:
+            single_bet = betting.evaluate_single(out, tuple(odds))
+
+        # Knockout "who advances" market (90' → ET → pens): a 2-way value bet
+        # priced off the same analytic model as the bracket sim. Only when the
+        # ask-Claude qualif odds are present for this tie.
+        adv_home = None
+        qualif_bet = None
+        if knockout and not completed:
+            adv_home = tournament.advance_prob(home, away, ratings_m)
+            qodds = qualif_board.get(str(m.get("id", "")).upper())
+            if adv_home is not None and isinstance(qodds, list) and len(qodds) == 2:
+                qualif_bet = betting.evaluate_qualif(adv_home, qodds[0], qodds[1])
+
         notes = [_fr_strategy_flag(x) for x in strategies.flags(m, home, away, rh, ra, out)]
         for team, team_lbl, row in ((home, home_label, rh), (away, away_label, ra)):
             delta = float(row.get("status_delta", 0.0) or 0.0)
@@ -581,6 +614,9 @@ def _analyse_rows(fixtures: List[Dict], ratings: Dict, odds_board: Dict[str, Lis
             "pick_prob": pick_prob,
             "pick_odds": pick_odds,
             "odds": odds,
+            "value_bet": single_bet,
+            "qualif_bet": qualif_bet,
+            "adv_home": adv_home,
             "value_summaries": value_summaries,
             "notes": notes,
             "p_home": round(cal["home"] * 100),
@@ -690,17 +726,7 @@ def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
     if not future_rows:
         return None
 
-    evals = []
-    for r in future_rows:
-        odds = r.get("odds")
-        bet = None
-        # Garde-fou enjeu : sur un match-poubelle (les DEUX équipes ont leur sort
-        # réglé), rotation probable + résultat erratique — c'est précisément là que
-        # l'edge du modèle s'inverse (cf. J3 CDM 2022). On ne propose aucun pari.
-        if odds and not r.get("dead_rubber"):
-            out = {"p_home": r["probs"]["home"], "p_draw": r["probs"]["draw"],
-                   "p_away": r["probs"]["away"]}
-            bet = betting.evaluate_single(out, tuple(odds), mw, kf)
+    def _eval_row(r, bet):
         when = ""
         if r.get("date"):
             try:
@@ -709,29 +735,42 @@ def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
                 when = str(r["date"])
             if r.get("kickoff_paris"):
                 when += f" · {r['kickoff_paris']} (heure FR)"
-        evals.append({
+        return {
             "key": r.get("id", ""),
             "match_id": r.get("id", ""),
             "label": f"{r['home_label']} vs {r['away_label']}",
             "home": r["home_label"],
             "away": r["away_label"],
             "when": when,
-            "has_odds": bool(odds),
+            "has_odds": bool(r.get("odds")),
             "bet": bet,
-        })
+        }
 
-    singles = betting.plan_singles(evals, bankroll)            # value bets only, capped
+    # The sized value bet for each match is computed once in _analyse_rows
+    # (off the raw model, calibrated inside evaluate_single) and carried on the
+    # row as value_bet — reuse it here so the Matchs card and the Paris plan can't
+    # disagree, and calibration is never applied twice. The dead-rubber / no-odds
+    # guards already happened there (value_bet is None in those cases).
+    evals = [_eval_row(r, r.get("value_bet")) for r in future_rows]
+    qualif_evals = [_eval_row(r, r["qualif_bet"]) for r in future_rows
+                    if r.get("qualif_bet")]
+
+    singles = betting.plan_singles(evals, bankroll)            # 1X2 value bets, capped
     combos = betting.build_combos(singles, bankroll)           # <=2 legs, tiny stake
+    qualifs = betting.plan_singles(qualif_evals, bankroll)     # KO "who advances", capped
 
     n_with_odds = sum(1 for e in evals if e["has_odds"])
     single_stake = sum(s["stake"] for s in singles)
     combo_stake = sum(c["stake"] for c in combos)
+    qualif_stake = sum(q["stake"] for q in qualifs)
     ev_profit = (sum(s["stake"] * s["bet"]["ev"] for s in singles)
-                 + sum(c["stake"] * c["ev"] for c in combos))
+                 + sum(c["stake"] * c["ev"] for c in combos)
+                 + sum(q["stake"] * q["bet"]["ev"] for q in qualifs))
 
     return {
         "singles": singles,
         "combos": combos,
+        "qualifs": qualifs,
         "bankroll": bankroll,
         "market_weight": mw,
         "kelly": kf,
@@ -739,7 +778,8 @@ def _build_recommendations(rows: List[Dict], bankroll: float = 50.0,
         "n_with_odds": n_with_odds,
         "single_stake": single_stake,
         "combo_stake": combo_stake,
-        "total_stake": single_stake + combo_stake,
+        "qualif_stake": qualif_stake,
+        "total_stake": single_stake + combo_stake + qualif_stake,
         "ev_profit": ev_profit,
         "has_full_odds": n_with_odds > 0,
     }
@@ -1073,6 +1113,15 @@ _CSS = "".join([
     ".cs-watch{background:var(--warn-bg);color:var(--warn-text);border:1px solid var(--warn-line)}",
     ".cs-note{font-size:.8rem;color:var(--muted)}",
     ".verdict-line{display:block}",
+    # « Pari d'abord » : la décision argent mène la cellule Matchs. Value en vert
+    # (--ok, le même registre « gain » que le P&L), absence de value en muet — la
+    # couleur ne fait que renforcer le texte (double encodage). Le prono MPP et le
+    # verdict sont démotés en sous-ligne.
+    ".pari-line{display:block}",
+    ".pari-lead{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap;font-weight:700;font-size:.92rem;line-height:1.2}",
+    ".pari-lead.has-value{color:var(--ok)}",
+    ".pari-lead.no-value{color:var(--muted);font-weight:600;font-size:.85rem}",
+    ".pari-edge{font-family:var(--font-mono);font-size:.78rem;color:var(--ok);background:var(--ok-bg);border:1px solid var(--ok-line);border-radius:999px;padding:1px 7px}",
     # La COULEUR ne signale que le RISQUE : piège/ouvert en ambré (à examiner),
     # solide/serré neutres — pour ne pas faire doublon avec le badge Nutri (la
     # note de confiance signature, cf. DA). Le verdict mène la colonne (0.9rem/700)
@@ -1468,6 +1517,7 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
         f"<div class='stamp'>Avec cotes : {rec['n_with_odds']}</div>",
         f"<div class='stamp'>Paris simples value : {len(rec['singles'])}</div>",
         f"<div class='stamp'>Combinés : {len(rec['combos'])}</div>",
+        (f"<div class='stamp'>Qualif. (KO) : {len(rec['qualifs'])}</div>" if rec.get("qualifs") else ""),
         f"<div class='stamp'>Mise totale : {_eur(rec['total_stake'], 2)}</div>",
         f"<div class='stamp'>Gain attendu (modèle) : {_eur_signed(rec['ev_profit'])}</div>",
         "</div>",
@@ -1548,6 +1598,39 @@ def _render_paris(rec: Optional[Dict], bankroll: float, bet_blocked: bool,
     else:
         parts.append("<div class='muted'>Aucun combiné ne passe le filtre prudent — sautez les combinés (ils ont perdu ~69% au backtest WC2022).</div>")
     parts.extend(["</div>", "</section>"])
+
+    # Marché « qualification » des matchs à élimination directe : pari à 2 issues
+    # sur l'équipe qui passe (90' → prolongation → tirs au but), distinct du 1N2
+    # 90 min. N'apparaît que si des cotes qualif ont été dictées (data/odds_qualif.json).
+    qualifs = rec.get("qualifs") or []
+    if qualifs:
+        parts.extend([
+            "<section class='bet-section'>",
+            "<h3>Qualification (élimination directe &middot; qui passe)</h3>",
+            "<div class='bet-grid'>",
+        ])
+        for q in qualifs:
+            b = q["bet"]
+            who = q["home"] if b["sel"] == "home" else q["away"]
+            sel = f"{who} se qualifie"
+            ret = q["stake"] * b["odds"]
+            parts.extend([
+                "<article class='bet-card'>",
+                f"<div class='bet-sel-line'>{html.escape(sel)} <span class='bet-odds'>@ {b['odds']:.2f}</span></div>",
+                "<div class='bet-context'>Qualification (90' + prolong. + t.a.b.)</div>",
+                f"<div class='bet-context'>{html.escape(q['label'])}"
+                + (f" &middot; {html.escape(q['when'])}" if q.get("when") else "")
+                + "</div>",
+                f"<div class='bet-stake-line'><span class='bet-stake'>Miser {_eur(q['stake'], 2)}</span> "
+                f"<span class='bet-return'>retour si gagné ~{_eur(ret, 2)}</span></div>",
+                "<details class='bet-why'><summary>Détail du calcul</summary><ul class='note-list'>",
+                f"<li>Modèle {round(b['model']*100)}% &rarr; ajusté {round(b['shrunk']*100)}% "
+                f"(juste marché {round(b['fair']*100)}%)</li>",
+                f"<li>Avantage +{round(b['edge']*100)} pt &middot; EV {b['ev']*100:+.1f}%</li>",
+                "</ul></details>",
+                "</article>",
+            ])
+        parts.extend(["</div>", "</section>"])
 
     return parts
 
@@ -1865,6 +1948,34 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
         f"aria-label='Prono {html.escape(r['score'])}'>prono {html.escape(r['score'])}</span>"
     )
 
+    # Tête d'affiche « pari d'abord » : la décision argent (pari value) mène la
+    # cellule ; le prono MPP + le verdict passent en sous-ligne. Le pari simple
+    # 1N2 prime ; à défaut, le marché qualification (KO) ; sinon « Pas de value ».
+    vb, qb = r.get("value_bet"), r.get("qualif_bet")
+    if vb:
+        sel_txt = _sel_fr(vb["sel"], r["home_label"], r["away_label"])
+        pari_block = (
+            f"<span class='pari-lead has-value' "
+            f"title='Pari value : modèle calibré {round(vb['model']*100)}% vs marché "
+            f"{round(vb['fair']*100)}% — EV {vb['ev']*100:+.1f}%'>"
+            f"Miser : {html.escape(sel_txt)} <span class='bet-odds'>@ {vb['odds']:.2f}</span> "
+            f"<span class='pari-edge'>+{round(vb['edge']*100)} pt</span></span>"
+        )
+    elif qb:
+        who = r["home_label"] if qb["sel"] == "home" else r["away_label"]
+        pari_block = (
+            f"<span class='pari-lead has-value' "
+            f"title='Qualification (90' + prolong. + t.a.b.) — EV {qb['ev']*100:+.1f}%'>"
+            f"Miser : {html.escape(who)} se qualifie <span class='bet-odds'>@ {qb['odds']:.2f}</span> "
+            f"<span class='pari-edge'>+{round(qb['edge']*100)} pt</span></span>"
+        )
+    elif r.get("dead_rubber"):
+        pari_block = "<span class='pari-lead no-value'>Sans enjeu — pas de pari</span>"
+    elif not r.get("odds"):
+        pari_block = "<span class='pari-lead no-value'>Cotes absentes</span>"
+    else:
+        pari_block = "<span class='pari-lead no-value'>Pas de value</span>"
+
     # Tag enjeu compétition : « Sans enjeu » (match-poubelle, aucun pari) ou, si un
     # seul côté est réglé, quelle équipe et son statut — pour lire d'un coup d'œil
     # pourquoi la confiance/le pari bouge (motivation prise en compte).
@@ -1884,8 +1995,8 @@ def _render_row(r: Dict, past: bool = False) -> List[str]:
 
     parts = [row_open, meta_cell, teams_cell]
     parts.append(
-        f"<td class='cell-prono'><span class='verdict-line'>{verdict_block}</span>"
-        f"<span class='score-sub-line'>{score_sub}{delta_badge}{stakes_chip}</span></td>"
+        f"<td class='cell-prono'><span class='pari-line'>{pari_block}</span>"
+        f"<span class='score-sub-line'>{verdict_block}{score_sub}{delta_badge}{stakes_chip}</span></td>"
     )
     parts.append(f"<td class='cell-nutri'>{nutri_chip}</td>")
     parts.append(f"<td class='cell-prob'>{prob_block}</td>")

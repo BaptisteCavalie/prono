@@ -108,6 +108,49 @@ def evaluate_single(out: Dict, odds_triple: Tuple[float, float, float],
     return max(candidates, key=lambda c: c["ev"])
 
 
+def evaluate_qualif(p_home_adv: float, odds_home: float, odds_away: float,
+                    market_weight: float = MARKET_WEIGHT,
+                    kelly_fraction_mult: float = KELLY_FRACTION) -> Optional[Dict]:
+    """Best value bet on a knockout tie's 2-way "who advances" market, or None.
+
+    ``p_home_adv`` is the model's probability that the home side advances (90' →
+    extra time → penalties, see ``engine.tournament.advance_prob``); the away
+    side is its complement. Same doctrine as ``evaluate_single``: de-vig the
+    2-way price, SHRINK the model toward the market to tame overconfidence,
+    require a real edge AND positive EV, size with fractional Kelly under the
+    single-bet cap. This is a one-night resolution like any single, so it uses
+    the single-match knobs (not the tighter long-variance outright ones).
+    """
+    if not (0.0 <= p_home_adv <= 1.0):
+        return None
+    model_p = [p_home_adv, 1.0 - p_home_adv]
+    fair = model.devig([odds_home, odds_away])
+    shrunk = shrink_probs(model_p, fair, market_weight)
+    decs = [odds_home, odds_away]
+
+    candidates = []
+    for sel, mp, sp, fp, dec in zip(("home", "away"), model_p, shrunk, fair, decs):
+        if dec < MIN_ODDS:
+            continue
+        if mp - fp > MAX_PLAUSIBLE_EDGE:        # too-good-to-be-true => model error
+            continue
+        edge = sp - fp
+        ev = sp * dec - 1.0
+        if edge < MIN_EDGE or ev <= 0:
+            continue
+        stake = min(MAX_STAKE_FRAC, kelly_fraction_mult * kelly_fraction(sp, dec))
+        if stake <= 0:
+            continue
+        candidates.append({
+            "market": "qualif", "sel": sel, "odds": dec,
+            "model": mp, "shrunk": sp, "fair": fp,
+            "edge": edge, "ev": ev, "stake_frac": stake,
+        })
+    if not candidates:
+        return None
+    return max(candidates, key=lambda c: c["ev"])
+
+
 def plan_singles(evaluations: List[Dict], bankroll: float) -> List[Dict]:
     """Apply the slate exposure cap across a set of single-bet evaluations.
 

@@ -97,5 +97,53 @@ class TestComboFloor(unittest.TestCase):
                                 betting.COMBO_MIN_COMBINED_PROB)
 
 
+class TestEvaluateQualif(unittest.TestCase):
+    """2-way knockout 'who advances' market staking (engine/betting.evaluate_qualif)."""
+
+    def test_value_on_underpriced_side(self):
+        # Model: home advances 62%; market prices it at 1.90 (~52% fair) -> value.
+        bet = betting.evaluate_qualif(0.62, 1.90, 1.95)
+        self.assertIsNotNone(bet)
+        self.assertEqual(bet["sel"], "home")
+        self.assertEqual(bet["market"], "qualif")
+        self.assertGreater(bet["ev"], 0)
+        self.assertLessEqual(bet["stake_frac"], betting.MAX_STAKE_FRAC + 1e-9)
+
+    def test_no_value_when_fairly_priced(self):
+        # Model 55% vs a 55%-implied price: no edge after the market shrink.
+        self.assertIsNone(betting.evaluate_qualif(0.55, 1.82, 2.00))
+
+    def test_rejects_out_of_range_prob(self):
+        self.assertIsNone(betting.evaluate_qualif(1.4, 1.9, 1.9))
+        self.assertIsNone(betting.evaluate_qualif(-0.1, 1.9, 1.9))
+
+
+class TestAdvanceProb(unittest.TestCase):
+    """Analytic knockout advance probability (engine/tournament.advance_prob)."""
+
+    def _ratings(self, rh, ra):
+        return {"teams": {"A": {"rating": rh}, "B": {"rating": ra}}}
+
+    def test_even_tie_is_a_coin_flip(self):
+        from engine import tournament
+        p = tournament.advance_prob("A", "B", self._ratings(1700, 1700))
+        self.assertAlmostEqual(p, 0.5, places=2)
+
+    def test_favourite_advances_more_often_but_below_certainty(self):
+        from engine import tournament
+        p = tournament.advance_prob("A", "B", self._ratings(1900, 1500))
+        self.assertGreater(p, 0.5)
+        self.assertLess(p, 1.0)
+
+    def test_complement_and_missing_team(self):
+        from engine import tournament
+        r = self._ratings(1850, 1600)
+        p_ab = tournament.advance_prob("A", "B", r)
+        p_ba = tournament.advance_prob("B", "A", r)
+        # Swapping sides is ~complementary (neither is a host, so no home term).
+        self.assertAlmostEqual(p_ab + p_ba, 1.0, places=2)
+        self.assertIsNone(tournament.advance_prob("A", "Z", r))
+
+
 if __name__ == "__main__":
     unittest.main()

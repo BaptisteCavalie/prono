@@ -160,6 +160,66 @@ class _KnockoutModel:
         return home if rng.random() < p_home else away
 
 
+def _poisson_win_probs(lam_h: float, lam_a: float, max_goals: int = 12):
+    """Analytic P(home wins), P(level), P(away wins) for two independent
+    Poisson scorers — used for the (low-scoring) extra-time period, which the
+    sim draws from plain Poisson (no Dixon-Coles), so this matches ``play``."""
+    ph = [model.poisson_pmf(k, lam_h) for k in range(max_goals + 1)]
+    pa = [model.poisson_pmf(k, lam_a) for k in range(max_goals + 1)]
+    p_home = p_draw = p_away = 0.0
+    for i in range(max_goals + 1):
+        for j in range(max_goals + 1):
+            p = ph[i] * pa[j]
+            if i > j:
+                p_home += p
+            elif i == j:
+                p_draw += p
+            else:
+                p_away += p
+    return p_home, p_draw, p_away
+
+
+def advance_prob(home: str, away: str, ratings: Dict) -> Optional[float]:
+    """Analytic P(``home`` advances) in a knockout tie, or ``None`` if a rating
+    is missing. The exact closed form of ``_KnockoutModel.play``:
+
+        P(adv) = P(win 90') + P(draw 90') · [ P(win ET) + P(draw ET) · p_pens ]
+
+    90' comes from the Dixon-Coles matrix the whole app uses, extra time from a
+    tempo-damped Poisson, the shootout from the historical near-coin-flip with a
+    slight skill lean. Same constants and host bonus as the Monte-Carlo, so the
+    per-tie "who qualifies" price and the bracket sim can never disagree.
+    """
+    teams = ratings.get("teams", {})
+    if home not in teams or away not in teams:
+        return None
+    rh, ra = teams[home], teams[away]
+    adv = 0.0
+    if home_advantage.is_host(home) and not home_advantage.is_host(away):
+        adv = KO_HOST_ADV
+    elif home_advantage.is_host(away) and not home_advantage.is_host(home):
+        adv = -KO_HOST_ADV
+    rate_h = float(rh.get("rating", 0.0))
+    rate_a = float(ra.get("rating", 0.0))
+    lam_h, lam_a = model.expected_goals(
+        rate_h, rate_a, home_adv=adv,
+        ad_home=model.ad_from_row(rh), ad_away=model.ad_from_row(ra))
+
+    m = model.score_matrix(lam_h, lam_a)
+    n = len(m)
+    total = sum(m[i][j] for i in range(n) for j in range(n))
+    p_home90 = sum(m[i][j] for i in range(n) for j in range(n) if i > j) / total
+    p_draw90 = sum(m[i][i] for i in range(n)) / total
+
+    et_h, et_a = lam_h * ET_FRACTION * ET_TEMPO, lam_a * ET_FRACTION * ET_TEMPO
+    p_home_et, p_draw_et, _ = _poisson_win_probs(et_h, et_a)
+
+    we_home = model.win_expectancy((rate_h + adv - rate_a) * model.RATING_SHRINK)
+    p_pens_home = 0.5 + SHOOTOUT_SKILL_LEAN * (we_home - 0.5)
+
+    return p_home90 + p_draw90 * (p_home_et + p_draw_et * p_pens_home)
+
+
 # --- group stage -------------------------------------------------------------
 
 def _base_table(group: str, members: List[str], fixtures: List[Dict]):
