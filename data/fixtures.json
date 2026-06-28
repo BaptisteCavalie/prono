@@ -1234,7 +1234,7 @@
       "away": "Canada",
       "venue": "Inglewood, CA",
       "date": "2026-06-28",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-06-28T19:00:00Z",
       "home_adv": -65.0,
       "actual_home": null,
       "actual_away": null
@@ -1249,7 +1249,7 @@
       "away": "Paraguay",
       "venue": "Foxborough, MA",
       "date": "2026-06-29",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-06-29T20:30:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1264,7 +1264,7 @@
       "away": "Morocco",
       "venue": "Guadalupe, Mexico",
       "date": "2026-06-29",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-06-30T01:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1279,7 +1279,7 @@
       "away": "Japan",
       "venue": "Houston, TX",
       "date": "2026-06-29",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-06-29T17:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1294,7 +1294,7 @@
       "away": "Sweden",
       "venue": "East Rutherford, NJ",
       "date": "2026-06-30",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-06-30T21:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1309,7 +1309,7 @@
       "away": "Norway",
       "venue": "Arlington, TX",
       "date": "2026-06-30",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-06-30T17:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1324,7 +1324,7 @@
       "away": "Ecuador",
       "venue": "Mexico City",
       "date": "2026-06-30",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-01T01:00:00Z",
       "home_adv": 65.0,
       "actual_home": null,
       "actual_away": null
@@ -1339,7 +1339,7 @@
       "away": "DR Congo",
       "venue": "Atlanta, GA",
       "date": "2026-07-01",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-01T16:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1354,7 +1354,7 @@
       "away": "Bosnia-Herzegovina",
       "venue": "Santa Clara, CA",
       "date": "2026-07-01",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-02T00:00:00Z",
       "home_adv": 65.0,
       "actual_home": null,
       "actual_away": null
@@ -1369,7 +1369,7 @@
       "away": "Senegal",
       "venue": "Seattle, WA",
       "date": "2026-07-01",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-01T20:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1384,7 +1384,7 @@
       "away": "Croatia",
       "venue": "Toronto",
       "date": "2026-07-02",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-02T23:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1399,7 +1399,7 @@
       "away": "Austria",
       "venue": "Inglewood, CA",
       "date": "2026-07-02",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-02T19:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1414,7 +1414,7 @@
       "away": "Algeria",
       "venue": "Vancouver",
       "date": "2026-07-02",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-03T03:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1429,7 +1429,7 @@
       "away": "Cape Verde",
       "venue": "Miami Gardens, FL",
       "date": "2026-07-03",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-03T22:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1444,7 +1444,7 @@
       "away": "Ghana",
       "venue": "Kansas City, MO",
       "date": "2026-07-03",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-04T01:30:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
@@ -1459,7 +1459,7 @@
       "away": "Egypt",
       "venue": "Arlington, TX",
       "date": "2026-07-03",
-      "kickoff_utc": null,
+      "kickoff_utc": "2026-07-03T18:00:00Z",
       "home_adv": 0.0,
       "actual_home": null,
       "actual_away": null
