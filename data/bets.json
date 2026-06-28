@@ -676,7 +676,7 @@
       "sel": "Croatie vainqueur",
       "odds": 1.49,
       "stake": 5.0,
-      "status": "en_cours",
+      "status": "gagne",
       "legs": [
         {
           "match": "G72",
@@ -685,7 +685,8 @@
           "pick": "home",
           "odds": 1.49
         }
-      ]
+      ],
+      "settled_at": "2026-06-28T04:32:25Z"
     },
     {
       "id": 32,
@@ -695,7 +696,7 @@
       "sel": "Algérie vainqueur",
       "odds": 3.3,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G60",
@@ -704,7 +705,8 @@
           "pick": "home",
           "odds": 3.3
         }
-      ]
+      ],
+      "settled_at": "2026-06-28T04:32:25Z"
     },
     {
       "id": 33,
@@ -768,7 +770,7 @@
       "label": "Mexique + Algérie",
       "odds": 6.2,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G05",
@@ -784,7 +786,8 @@
           "pick": "home",
           "odds": 3.3
         }
-      ]
+      ],
+      "settled_at": "2026-06-28T04:32:25Z"
     },
     {
       "id": 36,
@@ -841,7 +844,7 @@
       "label": "Croatie + Algérie",
       "odds": 4.92,
       "stake": 2.0,
-      "status": "en_cours",
+      "status": "perdu",
       "legs": [
         {
           "match": "G72",
@@ -857,7 +860,8 @@
           "pick": "home",
           "odds": 3.3
         }
-      ]
+      ],
+      "settled_at": "2026-06-28T04:32:25Z"
     },
     {
       "id": 39,
