@@ -1236,8 +1236,8 @@
       "date": "2026-06-28",
       "kickoff_utc": "2026-06-28T19:00:00Z",
       "home_adv": -65.0,
-      "actual_home": null,
-      "actual_away": null
+      "actual_home": 0,
+      "actual_away": 1
     },
     {
       "id": "K74",

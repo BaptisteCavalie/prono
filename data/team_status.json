@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-28T04:32:24Z",
+  "as_of": "2026-06-29T04:32:18Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -264,7 +264,7 @@
       ]
     },
     "Canada": {
-      "form": -0.14,
+      "form": 0.23,
       "injury_impact": 0.06,
       "suspension_impact": 0.0,
       "news_risk": 0.1,
@@ -336,7 +336,7 @@
       ]
     },
     "South Africa": {
-      "form": 0.43,
+      "form": 0.01,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
