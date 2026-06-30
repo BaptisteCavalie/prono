@@ -1251,8 +1251,8 @@
       "date": "2026-06-29",
       "kickoff_utc": "2026-06-29T20:30:00Z",
       "home_adv": 0.0,
-      "actual_home": null,
-      "actual_away": null
+      "actual_home": 1,
+      "actual_away": 1
     },
     {
       "id": "K75",
@@ -1266,8 +1266,8 @@
       "date": "2026-06-29",
       "kickoff_utc": "2026-06-30T01:00:00Z",
       "home_adv": 0.0,
-      "actual_home": null,
-      "actual_away": null
+      "actual_home": 1,
+      "actual_away": 1
     },
     {
       "id": "K76",
@@ -1281,8 +1281,8 @@
       "date": "2026-06-29",
       "kickoff_utc": "2026-06-29T17:00:00Z",
       "home_adv": 0.0,
-      "actual_home": null,
-      "actual_away": null
+      "actual_home": 2,
+      "actual_away": 1
     },
     {
       "id": "K77",
