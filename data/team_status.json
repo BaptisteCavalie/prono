@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-06-30T04:34:28Z",
+  "as_of": "2026-07-01T04:32:11Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -102,7 +102,7 @@
       ]
     },
     "Ecuador": {
-      "form": 0.13,
+      "form": -0.19,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -129,7 +129,7 @@
       ]
     },
     "Norway": {
-      "form": 0.0,
+      "form": 0.23,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -174,7 +174,7 @@
       ]
     },
     "Mexico": {
-      "form": 0.7,
+      "form": 0.75,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -228,7 +228,7 @@
       ]
     },
     "Ivory Coast": {
-      "form": 0.28,
+      "form": -0.23,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -273,7 +273,7 @@
       ]
     },
     "Sweden": {
-      "form": -0.04,
+      "form": -0.42,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
