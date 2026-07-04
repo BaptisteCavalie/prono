@@ -1,5 +1,5 @@
 {
-  "as_of": "2026-07-03T07:07:15Z",
+  "as_of": "2026-07-04T04:32:56Z",
   "source": "form_from_results",
   "teams": {
     "France": {
@@ -84,7 +84,7 @@
       ]
     },
     "Colombia": {
-      "form": 0.35,
+      "form": 0.47,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -246,7 +246,7 @@
       ]
     },
     "Egypt": {
-      "form": 0.29,
+      "form": 0.17,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -309,7 +309,7 @@
       ]
     },
     "Australia": {
-      "form": -0.08,
+      "form": -0.15,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -318,7 +318,7 @@
       ]
     },
     "Ghana": {
-      "form": -0.13,
+      "form": -0.56,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
@@ -390,7 +390,7 @@
       ]
     },
     "Cape Verde": {
-      "form": 0.07,
+      "form": -0.33,
       "injury_impact": 0.0,
       "suspension_impact": 0.0,
       "news_risk": 0.0,
