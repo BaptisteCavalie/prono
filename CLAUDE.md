@@ -56,6 +56,19 @@ Kit : repo `BaptisteCavalie/product-builder` (public, marketplace
 dans un clone GitHub du kit — jamais dans le cache du plugin — et le push
 revient à Baptiste tant que la session n'a pas l'accès en écriture à ce repo.
 
+- **Le plugin lui-même ne s'installe pas seul en session cloud.** Déclarer le
+  plugin dans `.claude/settings.json` (`extraKnownMarketplaces` +
+  `enabledPlugins`) ne l'installe pas : pour une source externe (dépôt GitHub),
+  Claude Code attend qu'un **humain** accepte une invite d'installation. En
+  session cloud personne ne clique, donc `installed_plugins.json` reste vide et
+  `/da`, `/feature`, `/critique`, `/retro` sont **absents** — sans que rien ne
+  le signale. Symptôme : `find / -iname "*product-builder*"` ne renvoie rien.
+  Le hook `.claude/hooks/session-start.sh` corrige ça automatiquement (~4,5 s
+  au démarrage, puis instantané). En secours manuel, deux commandes :
+  `claude plugin marketplace add BaptisteCavalie/product-builder` puis
+  `claude plugin install product-builder@product-builder-kit`.
+  Coût du plugin une fois chargé : ~1 540 tokens toujours actifs.
+  <!-- 2026-07-29 -->
 - **Mobbin (MCP)** n'est pas monté par défaut en session cloud (serveurs montés
   cette session : Excalidraw, Papers, github). Pour l'activer : déclarer le
   serveur MCP Mobbin (compte + credentials) dans la config de l'environnement.
