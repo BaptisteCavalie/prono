@@ -1,0 +1,744 @@
+/*
+ * Boussole Mentorat — feuille de style unique.
+ *
+ * Jetons issus de la charte eXalt Group
+ * (Poppins, Bleu eXalt #5853FF, texte #08006C).
+ * Parti-pris : la hiérarchie typographique et l'espacement font le travail.
+ * Pas de dégradé, pas d'ombre, pas d'illustration décorative.
+ * Un seul accent — le Bleu eXalt — réservé aux actions et aux encarts
+ * de fiabilité.
+ */
+
+/* ---------- Police (self-hébergée : aucune requête tierce) ---------- */
+
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/poppins-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/poppins-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/poppins-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Poppins';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/poppins-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* ---------- Jetons ---------- */
+
+:root {
+  --police: 'Poppins', 'Century Gothic', system-ui, sans-serif;
+  --police-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas,
+    monospace;
+
+  --accent: #5853ff;
+  --accent-sombre: #3d34e6;
+
+  --texte-fort: #08006c;
+  --texte: #464556;
+  --texte-atenue: #5d5c6b;
+
+  --fond: #fcf8ff;
+  --surface: #f5f2ff;
+  --surface-haute: #eeecff;
+  --blanc: #ffffff;
+
+  --trait: #c7c4d9;
+  --trait-fort: #777588;
+
+  --mesure: 44rem;
+  --espace-page: clamp(1.25rem, 4vw, 2.5rem);
+}
+
+/* ---------- Base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fond);
+  color: var(--texte);
+  font-family: var(--police);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  text-underline-offset: 0.15em;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--texte-fort);
+  line-height: 1.25;
+  text-wrap: balance;
+  margin: 0;
+}
+
+p,
+ul,
+ol {
+  margin: 0 0 1em;
+}
+
+ul,
+ol {
+  padding-left: 1.35em;
+}
+
+li + li {
+  margin-top: 0.35em;
+}
+
+strong {
+  color: var(--texte-fort);
+  font-weight: 600;
+}
+
+a {
+  color: var(--accent-sombre);
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  color: var(--texte-fort);
+}
+
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--trait);
+  margin: 2.5rem 0;
+}
+
+/* ---------- Châssis ---------- */
+
+.lien-evitement {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--blanc);
+  color: var(--texte-fort);
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  z-index: 10;
+}
+
+.lien-evitement:focus {
+  left: var(--espace-page);
+  top: 0.5rem;
+}
+
+.entete-site {
+  border-bottom: 1px solid var(--trait);
+  background: var(--blanc);
+}
+
+.entete-site__interieur {
+  max-width: var(--mesure);
+  margin: 0 auto;
+  padding: 1rem var(--espace-page);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 1.5rem;
+}
+
+.entete-site__nom {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.entete-site__nom a {
+  color: var(--texte-fort);
+  text-decoration: none;
+}
+
+.nav-site {
+  display: flex;
+  gap: 1.25rem;
+  margin-left: auto;
+  font-size: 0.9375rem;
+}
+
+.nav-site a {
+  color: var(--texte);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 2px solid transparent;
+}
+
+.nav-site a:hover {
+  color: var(--texte-fort);
+  border-bottom-color: var(--trait);
+}
+
+.nav-site a[aria-current='page'] {
+  color: var(--texte-fort);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
+}
+
+.contenu-principal {
+  max-width: var(--mesure);
+  margin: 0 auto;
+  padding: clamp(2rem, 5vw, 3.5rem) var(--espace-page) 4rem;
+}
+
+.pied-site {
+  border-top: 1px solid var(--trait);
+  margin-top: 2rem;
+}
+
+.pied-site__interieur {
+  max-width: var(--mesure);
+  margin: 0 auto;
+  padding: 1.5rem var(--espace-page) 2.5rem;
+  font-size: 0.875rem;
+  color: var(--texte-atenue);
+}
+
+.pied-site p {
+  margin: 0 0 0.35em;
+}
+
+/* ---------- Fil d'Ariane ---------- */
+
+.retour {
+  display: inline-block;
+  font-size: 0.9375rem;
+  margin-bottom: 1.5rem;
+  color: var(--texte);
+}
+
+/* ---------- Accueil ---------- */
+
+.page-titre {
+  font-size: clamp(1.75rem, 5vw, 2.375rem);
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+.page-chapeau {
+  font-size: 1.125rem;
+  color: var(--texte);
+  margin: 0.75rem 0 0;
+  max-width: 38rem;
+}
+
+.liste-formats {
+  list-style: none;
+  padding: 0;
+  margin: 2.5rem 0 0;
+  border-top: 1px solid var(--trait);
+}
+
+.liste-formats > li {
+  margin: 0;
+  border-bottom: 1px solid var(--trait);
+}
+
+.carte-format {
+  display: block;
+  padding: 1.5rem 0;
+  text-decoration: none;
+  color: inherit;
+}
+
+.carte-format:hover,
+.carte-format:focus-visible {
+  background: var(--surface);
+  box-shadow: 0 0 0 var(--espace-page) var(--surface);
+}
+
+.carte-format__titre {
+  font-size: 1.25rem;
+  font-weight: 600;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.carte-format:hover .carte-format__titre {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+}
+
+.carte-format__produit {
+  display: block;
+  margin: 0.5rem 0 0;
+  color: var(--texte);
+}
+
+.carte-format__meta {
+  display: block;
+  margin: 0.6rem 0 0;
+  font-size: 0.875rem;
+  color: var(--texte-atenue);
+}
+
+.carte-format__meta span + span::before {
+  content: ' · ';
+  color: var(--trait-fort);
+}
+
+/* Étiquettes : « quand ça se déclenche » lisible sans lire la phrase. */
+.etiquette {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--trait-fort);
+  border-radius: 999px;
+  color: var(--texte-fort);
+  white-space: nowrap;
+}
+
+.etiquette--obligatoire {
+  background: var(--surface-haute);
+  border-color: var(--texte-fort);
+}
+
+.etiquette--demande {
+  background: transparent;
+}
+
+.etiquette--trous {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent-sombre);
+  background: var(--blanc);
+}
+
+/* ---------- En-tête de fiche ---------- */
+
+.fiche-entete {
+  padding-bottom: 1.75rem;
+  border-bottom: 2px solid var(--texte-fort);
+}
+
+.fiche-entete__produit {
+  font-size: 1.125rem;
+  margin: 0.85rem 0 0;
+}
+
+/* Le déclenchement est une phrase, la durée et la prime sont des valeurs :
+   la première colonne prend plus de place. */
+.reperes {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 1rem 1.5rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+}
+
+@media (max-width: 34rem) {
+  .reperes {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .reperes div:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+.reperes div {
+  border-top: 1px solid var(--trait);
+  padding-top: 0.6rem;
+}
+
+.reperes dt {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--texte-atenue);
+}
+
+.reperes dd {
+  margin: 0.25rem 0 0;
+  font-weight: 600;
+  color: var(--texte-fort);
+}
+
+/* ---------- Corps de fiche ---------- */
+
+.prose h2 {
+  font-size: 1.375rem;
+  font-weight: 700;
+  margin: 3rem 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--trait);
+}
+
+.prose > h2:first-child {
+  margin-top: 2rem;
+}
+
+/* Note de bas d'accueil : détachée de la liste des formats. */
+.liste-formats + .prose {
+  margin-top: 3rem;
+  font-size: 0.9375rem;
+}
+
+.prose h3 {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 2rem 0 0.6rem;
+}
+
+.prose h4 {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.5rem;
+}
+
+.prose blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1.25rem;
+  border-left: 3px solid var(--trait);
+  color: var(--texte);
+}
+
+/* Exemples de questions à poser à l'oral. */
+.prose em {
+  font-style: normal;
+  color: var(--texte-fort);
+  border-left: 2px solid var(--trait);
+  padding-left: 0.5rem;
+  display: inline-block;
+}
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  font-size: 0.9375rem;
+  display: block;
+  overflow-x: auto;
+}
+
+.prose th,
+.prose td {
+  text-align: left;
+  padding: 0.6rem 0.75rem 0.6rem 0;
+  border-bottom: 1px solid var(--trait);
+  vertical-align: top;
+}
+
+.prose th {
+  color: var(--texte-fort);
+  font-weight: 600;
+  border-bottom-color: var(--trait-fort);
+}
+
+/* ---------- Encarts de fiabilité ---------- */
+
+.encart {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  background: var(--surface);
+  break-inside: avoid;
+}
+
+.encart::before {
+  content: attr(data-etiquette);
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.encart > :last-child {
+  margin-bottom: 0;
+}
+
+.encart__source {
+  font-size: 0.875rem;
+  color: var(--texte-atenue);
+  border-top: 1px solid var(--trait);
+  padding-top: 0.6rem;
+  margin-top: 0.9rem;
+}
+
+/* Trou assumé : rien ne comble cette section, elle doit sauter aux yeux. */
+.encart--trou {
+  border-left: 4px dashed var(--accent);
+  background: var(--blanc);
+  border-top: 1px solid var(--trait);
+  border-right: 1px solid var(--trait);
+  border-bottom: 1px solid var(--trait);
+}
+
+.encart--trou::before {
+  color: var(--accent-sombre);
+}
+
+/* Proposition : utilisable, mais pas issue de la documentation interne. */
+.encart--proposition {
+  border-left: 4px solid var(--trait-fort);
+}
+
+.encart--proposition::before {
+  color: var(--texte-atenue);
+}
+
+/* Bandeau de fiche : compte les trous avant que le mentor ne lise. */
+.avertissement-fiche {
+  margin: 2rem 0 0;
+  padding: 0.9rem 1.1rem;
+  border: 1px dashed var(--accent);
+  background: var(--blanc);
+  font-size: 0.9375rem;
+}
+
+.avertissement-fiche p {
+  margin: 0;
+}
+
+/* ---------- Modèle de compte-rendu ---------- */
+
+.cr {
+  margin: 1.75rem 0;
+  border: 1px solid var(--trait-fort);
+  background: var(--blanc);
+  break-inside: avoid;
+}
+
+.cr__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--trait);
+  background: var(--surface);
+}
+
+.cr__legende {
+  font-size: 0.8125rem;
+  color: var(--texte-atenue);
+  margin: 0;
+}
+
+.cr__bouton {
+  font-family: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--blanc);
+  background: var(--accent-sombre);
+  border: 1px solid var(--accent-sombre);
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+.cr__bouton:hover {
+  background: var(--texte-fort);
+  border-color: var(--texte-fort);
+}
+
+.cr__bouton[data-etat='copie'] {
+  background: var(--blanc);
+  color: var(--accent-sombre);
+}
+
+.cr__texte {
+  margin: 0;
+  padding: 1.1rem 1rem;
+  font-family: var(--police-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  color: var(--texte-fort);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* Annonce de copie pour les lecteurs d'écran. */
+.annonce-visuellement-cachee {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- Mouvement ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- Impression ---------- */
+
+@media print {
+  :root {
+    --fond: #fff;
+    --surface: #fff;
+    --surface-haute: #fff;
+  }
+
+  @page {
+    margin: 12mm 14mm;
+  }
+
+  body {
+    font-size: 9.5pt;
+    line-height: 1.38;
+    background: #fff;
+    color: #000;
+  }
+
+  p,
+  ul,
+  ol {
+    margin-bottom: 0.55em;
+  }
+
+  li + li {
+    margin-top: 0.15em;
+  }
+
+  .encart {
+    padding: 0.5em 0.7em;
+    margin: 0.7em 0;
+  }
+
+  .encart__source {
+    margin-top: 0.5em;
+    padding-top: 0.35em;
+  }
+
+  .page-chapeau,
+  .fiche-entete__produit {
+    font-size: 10pt;
+  }
+
+  .entete-site,
+  .pied-site,
+  .nav-site,
+  .retour,
+  .lien-evitement,
+  .cr__bouton {
+    display: none !important;
+  }
+
+  .contenu-principal {
+    max-width: none;
+    padding: 0;
+  }
+
+  .page-titre {
+    font-size: 18pt;
+  }
+
+  .prose h2 {
+    font-size: 12pt;
+    margin: 1.1em 0 0.5em;
+    padding-top: 0.5em;
+    break-after: avoid;
+  }
+
+  .prose h3,
+  .prose h4 {
+    break-after: avoid;
+  }
+
+  .fiche-entete {
+    padding-bottom: 0.75em;
+  }
+
+  .reperes {
+    gap: 0.5em 1em;
+    margin-top: 0.75em;
+  }
+
+  .encart,
+  .cr,
+  .reperes,
+  ul,
+  ol,
+  table {
+    break-inside: avoid;
+  }
+
+  .encart--trou {
+    border: 1pt dashed #000;
+  }
+
+  .encart--proposition {
+    border-left: 3pt solid #000;
+  }
+
+  .cr {
+    border: 1pt solid #000;
+  }
+
+  .cr__texte {
+    font-size: 9pt;
+  }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+}

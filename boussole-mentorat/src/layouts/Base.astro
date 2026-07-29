@@ -1,0 +1,137 @@
+---
+import { getEntry } from 'astro:content';
+import '../styles/global.css';
+
+/**
+ * Châssis commun. Ne contient aucun contenu métier : le nom du produit et les
+ * libellés d'interface uniquement. Les intitulés de navigation qui désignent
+ * une page de contenu sont lus depuis le front-matter de cette page.
+ */
+
+const { titre, description, pageCourante } = Astro.props;
+
+const NOM_PRODUIT = 'Boussole Mentorat';
+
+// La page « dispositif » donne elle-même son intitulé de navigation.
+const dispositif = await getEntry('pages', 'dispositif');
+
+const liens = [
+  { href: '/', libelle: 'Les formats', cle: 'accueil' },
+  { href: '/dispositif', libelle: dispositif.data.titre, cle: 'dispositif' },
+];
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{titre} — {NOM_PRODUIT}</title>
+    {description && <meta name="description" content={description} />}
+    <meta name="robots" content="noindex, nofollow" />
+    <link
+      rel="preload"
+      href="/fonts/poppins-400.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/poppins-600.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  </head>
+  <body>
+    <a class="lien-evitement" href="#contenu">Aller au contenu</a>
+
+    <header class="entete-site">
+      <div class="entete-site__interieur">
+        <p class="entete-site__nom"><a href="/">{NOM_PRODUIT}</a></p>
+        <nav class="nav-site" aria-label="Navigation principale">
+          {
+            liens.map((lien) => (
+              <a
+                href={lien.href}
+                aria-current={pageCourante === lien.cle ? 'page' : undefined}
+              >
+                {lien.libelle}
+              </a>
+            ))
+          }
+        </nav>
+      </div>
+    </header>
+
+    <main class="contenu-principal" id="contenu">
+      <slot />
+    </main>
+
+    <footer class="pied-site">
+      <div class="pied-site__interieur">
+        <slot name="pied" />
+      </div>
+    </footer>
+
+    <p
+      class="annonce-visuellement-cachee"
+      role="status"
+      aria-live="polite"
+      id="annonce"
+    >
+    </p>
+
+    <script>
+      // Seule interaction du site : copier un modèle de compte-rendu.
+      // Aucune dépendance, aucun envoi réseau.
+      const LIBELLE_SUCCES = 'Modèle copié';
+      const LIBELLE_ECHEC = 'Copie impossible — sélectionnez le texte';
+      const DELAI_RETOUR = 2500;
+
+      document.querySelectorAll('[data-copier-cr]').forEach((bouton) => {
+        const bloc = bouton
+          .closest('.cr')
+          ?.querySelector('[data-source-cr]');
+        const libelle = bouton.querySelector('[data-libelle-copie]');
+        if (!bloc || !libelle) return;
+
+        const libelleInitial = libelle.textContent;
+        let minuteur;
+
+        const retour = (texte, etat) => {
+          libelle.textContent = texte;
+          if (etat) bouton.dataset.etat = etat;
+          else delete bouton.dataset.etat;
+
+          const annonce = document.getElementById('annonce');
+          if (annonce) annonce.textContent = texte;
+
+          clearTimeout(minuteur);
+          minuteur = setTimeout(() => {
+            libelle.textContent = libelleInitial;
+            delete bouton.dataset.etat;
+          }, DELAI_RETOUR);
+        };
+
+        bouton.addEventListener('click', async () => {
+          const texte = bloc.textContent ?? '';
+          try {
+            await navigator.clipboard.writeText(texte);
+            retour(LIBELLE_SUCCES, 'copie');
+          } catch {
+            // Contexte non sécurisé ou permission refusée : on sélectionne le
+            // texte pour que la copie manuelle reste à un raccourci près.
+            const selection = window.getSelection();
+            const plage = document.createRange();
+            plage.selectNodeContents(bloc);
+            selection?.removeAllRanges();
+            selection?.addRange(plage);
+            retour(LIBELLE_ECHEC, 'copie');
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

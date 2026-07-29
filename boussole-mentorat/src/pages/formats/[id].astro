@@ -1,0 +1,89 @@
+---
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import { compterMarqueurs } from '../../lib/marqueurs.mjs';
+
+export async function getStaticPaths() {
+  const formats = await getCollection('formats');
+  return formats.map((format) => ({
+    params: { id: format.id },
+    props: { format },
+  }));
+}
+
+const { format } = Astro.props;
+const { Content } = await render(format);
+const { titre, cadence, declenchement, duree, prime, produit } = format.data;
+
+const { trous, propositions } = compterMarqueurs(format.body);
+
+const estObligatoire = cadence.toLowerCase().startsWith('obligatoire');
+---
+
+<Base titre={titre} description={produit} pageCourante="accueil">
+  <a class="retour" href="/">← Tous les formats</a>
+
+  <header class="fiche-entete">
+    <p>
+      <span
+        class={`etiquette ${estObligatoire ? 'etiquette--obligatoire' : 'etiquette--demande'}`}
+      >
+        {cadence}
+      </span>
+    </p>
+    <h1 class="page-titre">{titre}</h1>
+    <p class="fiche-entete__produit">{produit}</p>
+
+    <dl class="reperes">
+      <div>
+        <dt>Déclenchement</dt>
+        <dd>{declenchement}</dd>
+      </div>
+      <div>
+        <dt>Durée</dt>
+        <dd>{duree}</dd>
+      </div>
+      <div>
+        <dt>Prime</dt>
+        <dd>{prime}</dd>
+      </div>
+    </dl>
+  </header>
+
+  {
+    (trous > 0 || propositions > 0) && (
+      <aside class="avertissement-fiche">
+        <p>
+          Cette fiche n'est pas entièrement validée.
+          {trous > 0 && (
+            <>
+              {' '}
+              <strong>
+                {trous} section{trous > 1 ? 's' : ''} à compléter
+              </strong>{' '}
+              (encadré en pointillés) — l'information n'est pas connue.
+            </>
+          )}
+          {propositions > 0 && (
+            <>
+              {' '}
+              <strong>
+                {propositions} proposition{propositions > 1 ? 's' : ''} à valider
+              </strong>{' '}
+              (barre grise) — rédigée hors documentation interne.
+            </>
+          )}
+        </p>
+      </aside>
+    )
+  }
+
+  <div class="prose">
+    <Content />
+  </div>
+
+  <p slot="pied">
+    Contenu méthodologique générique. Ce référentiel ne conserve aucune donnée
+    sur les mentorés.
+  </p>
+</Base>

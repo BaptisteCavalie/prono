@@ -1,0 +1,67 @@
+---
+import { getCollection, getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { compterMarqueurs } from '../lib/marqueurs.mjs';
+
+const accueil = await getEntry('pages', 'accueil');
+const { Content } = await render(accueil);
+
+const formats = (await getCollection('formats')).sort(
+  (a, b) => a.data.ordre - b.data.ordre,
+);
+---
+
+<Base
+  titre={accueil.data.titre}
+  description={accueil.data.chapeau}
+  pageCourante="accueil"
+>
+  <h1 class="page-titre">{accueil.data.titre}</h1>
+  <p class="page-chapeau">{accueil.data.chapeau}</p>
+
+  <ul class="liste-formats">
+    {
+      formats.map((format) => {
+        const { titre, cadence, declenchement, duree, prime, produit } =
+          format.data;
+        const { trous } = compterMarqueurs(format.body);
+        const estObligatoire = cadence.toLowerCase().startsWith('obligatoire');
+
+        return (
+          <li>
+            <a class="carte-format" href={`/formats/${format.id}`}>
+              <span class="carte-format__titre">
+                {titre}
+                <span
+                  class={`etiquette ${estObligatoire ? 'etiquette--obligatoire' : 'etiquette--demande'}`}
+                >
+                  {cadence}
+                </span>
+                {trous > 0 && (
+                  <span class="etiquette etiquette--trous">
+                    {trous} à compléter
+                  </span>
+                )}
+              </span>
+              <span class="carte-format__produit">{produit}</span>
+              <span class="carte-format__meta">
+                <span>{declenchement}</span>
+                <span>{duree}</span>
+                <span>Prime {prime}</span>
+              </span>
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
+
+  <div class="prose">
+    <Content />
+  </div>
+
+  <p slot="pied">
+    Contenu méthodologique générique. Ce référentiel ne conserve aucune donnée
+    sur les mentorés.
+  </p>
+</Base>

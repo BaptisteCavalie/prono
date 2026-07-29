@@ -1,0 +1,43 @@
+---
+import { getEntry, render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { compterMarqueurs } from '../lib/marqueurs.mjs';
+
+const page = await getEntry('pages', 'dispositif');
+const { Content } = await render(page);
+const { trous } = compterMarqueurs(page.body);
+---
+
+<Base
+  titre={page.data.titre}
+  description={page.data.chapeau}
+  pageCourante="dispositif"
+>
+  <a class="retour" href="/">← Tous les formats</a>
+
+  <h1 class="page-titre">{page.data.titre}</h1>
+  <p class="page-chapeau">{page.data.chapeau}</p>
+
+  {
+    trous > 0 && (
+      <aside class="avertissement-fiche">
+        <p>
+          <strong>
+            {trous} section{trous > 1 ? 's' : ''} à compléter
+          </strong>{' '}
+          sur cette page (encadré en pointillés) — l'information n'est pas
+          connue.
+        </p>
+      </aside>
+    )
+  }
+
+  <div class="prose">
+    <Content />
+  </div>
+
+  <p slot="pied">
+    Contenu méthodologique générique. Ce référentiel ne conserve aucune donnée
+    sur les mentorés.
+  </p>
+</Base>
