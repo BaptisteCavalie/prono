@@ -73,6 +73,9 @@ boussole-mentorat/
 └── vercel.json
 ```
 
+Le dossier `content/` est la seule partie que le responsable mentorat a besoin
+d'ouvrir. Tout le reste est le gabarit qui l'affiche.
+
 ---
 
 ## Déploiement
@@ -81,9 +84,11 @@ Le projet est un site statique : `npm run build` produit `dist/`, qui se sert
 tel quel.
 
 **Sur Vercel** — importer le dépôt, aucune configuration à saisir. Vercel
-détecte Astro et applique `npm run build` → `dist/`. Si le projet vit dans un
-sous-dossier d'un dépôt plus large, renseigner **Root Directory** =
-`boussole-mentorat`.
+détecte Astro et applique `npm run build` → `dist/`.
+
+Si le projet est importé depuis un dépôt où il vit dans un sous-dossier,
+renseigner **Root Directory** = `boussole-mentorat`. Dans son propre dépôt,
+laisser ce champ vide.
 
 Chaque enregistrement sur la branche principale republie le site.
 
